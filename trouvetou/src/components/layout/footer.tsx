@@ -85,7 +85,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-2 text-xs text-white/40">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-            Trouvez tout, restez serein.
+            Trouvez tout, tout simplement.
           </div>
         </div>
       </div>

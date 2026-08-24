@@ -207,6 +207,45 @@ function capitalize(value: string): string {
 }
 
 /**
+ * Détecte le portail le plus probable pour une requête tapée depuis la page
+ * d'accueil (où aucun univers courant n'existe). Retourne null si aucun
+ * mot-clé connu n'est détecté — dans ce cas on utilise le portail par défaut.
+ */
+export function detectTargetPortal(query: string): UniverseSuggestion | null {
+  const needle = normalize(query);
+  if (needle.length < 3) return null;
+
+  let best: UniverseProfile | null = null;
+  let bestScore = 0;
+  let bestKeyword = "";
+
+  for (const universe of UNIVERSES) {
+    let score = 0;
+    let matched = "";
+    for (const keyword of universe.keywords) {
+      if (needle.includes(keyword.norm)) {
+        score += 1;
+        if (matched === "") matched = keyword.raw;
+      }
+    }
+    if (score > bestScore) {
+      best = universe;
+      bestScore = score;
+      bestKeyword = matched;
+    }
+  }
+
+  if (!best) return null;
+
+  return {
+    targetSlug: best.slug,
+    targetLabel: best.label,
+    targetHref: best.href,
+    matchedKeyword: capitalize(bestKeyword),
+  };
+}
+
+/**
  * Détecte si la requête appartient manifestement à un autre univers.
  *
  * Règle : la requête ne contient aucun mot-clé de l'univers courant, mais

@@ -10,7 +10,7 @@ const STEPS = [
     icon: Search,
     title: "Recherchez",
     description:
-      "Trouvez la chambre, la résidence ou l'établissement idéal grâce à la recherche et aux filtres.",
+      "Trouvez l'établissement qu'il vous faut — école, clinique ou résidence — grâce à la recherche et aux filtres.",
     color: "bg-primary",
   },
   {
@@ -26,7 +26,7 @@ const STEPS = [
     icon: HandCoins,
     title: "Contactez & Réservez",
     description:
-      "Contactez directement le gérant par téléphone ou WhatsApp et finalisez votre réservation.",
+      "Contactez directement l'établissement par téléphone ou WhatsApp et finalisez votre démarche.",
     color: "bg-primary",
   },
 ];

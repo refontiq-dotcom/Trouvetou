@@ -22,7 +22,7 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-border bg-white/95 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Hamburger — always visible on mobile, hidden on desktop */}
+          {/* Hamburger */}
           <button
             onClick={() => setMobileOpen((v) => !v)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted"
@@ -48,7 +48,7 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Menu (mobile + desktop) */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.nav
@@ -56,9 +56,9 @@ export function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="md:hidden overflow-hidden border-t border-border bg-white"
+            className="overflow-hidden border-t border-border bg-white"
           >
-            <div className="px-4 py-3 space-y-1">
+            <div className="mx-auto max-w-7xl px-4 py-3 space-y-1 sm:px-6 lg:px-8">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
                 return (

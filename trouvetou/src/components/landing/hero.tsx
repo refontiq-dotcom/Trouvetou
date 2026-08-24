@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal } from "lucide-react";
+import { detectTargetPortal } from "@/lib/search-intent";
 
 export function Hero() {
   const router = useRouter();
@@ -12,7 +13,10 @@ export function Hero() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const q = query.trim();
-    router.push(q ? `/ecoles?q=${encodeURIComponent(q)}` : "/ecoles");
+    // Routage intelligent : on envoie l'utilisateur vers le portail qui
+    // correspond à son intention (clinique → /cliniques, école → /ecoles…).
+    const target = q ? detectTargetPortal(q)?.targetHref ?? "/ecoles" : "/ecoles";
+    router.push(q ? `${target}?q=${encodeURIComponent(q)}` : target);
   }
 
   return (
@@ -60,7 +64,7 @@ export function Hero() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ville, nom de l'école, niveau…"
+                placeholder="Ville, établissement, spécialité…"
                 className="h-[42px] sm:h-[46px] w-full rounded-l-lg border-0 bg-white pl-10 pr-3 text-xs sm:text-sm outline-none placeholder:text-slate-400"
               />
             </div>
