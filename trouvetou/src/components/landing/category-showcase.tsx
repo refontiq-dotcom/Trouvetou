@@ -31,7 +31,7 @@ const CATEGORIES = [
   },
   {
     slug: "residence",
-    label: "Résidences",
+    label: "Résidences & Hôtels",
     subtitle: "Hébergement & logement",
     href: "/hotels",
     image:

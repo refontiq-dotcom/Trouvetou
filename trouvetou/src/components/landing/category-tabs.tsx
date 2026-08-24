@@ -6,7 +6,7 @@ import { Heart, BookOpen, Home } from "lucide-react";
 const TABS = [
   { label: "Clinique", icon: Heart, href: "/cliniques", color: "text-emerald-500" },
   { label: "École", icon: BookOpen, href: "/ecoles", color: "text-[#1565c0]" },
-  { label: "Résidence", icon: Home, href: "/hotels", color: "text-[#f9a825]" },
+  { label: "Résidences & Hôtels", icon: Home, href: "/hotels", color: "text-[#f9a825]" },
 ];
 
 export function CategoryTabs() {
