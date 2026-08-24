@@ -362,7 +362,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
             </Button>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-4">
             {effectiveRooms.map((room, i) => (
               <RoomCard
                 key={room.id}
