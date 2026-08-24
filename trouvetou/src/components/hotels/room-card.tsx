@@ -5,14 +5,20 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
+  Heart,
   MapPin,
+  MessageCircle,
   Navigation,
   Phone,
+  Share2,
   Sparkles,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
 import { useLocation } from "@/contexts/location-context";
+import { useFavorites } from "@/contexts/favorites-context";
+import { useCompare } from "@/contexts/compare-context";
 import { haversineDistance, formatDistance } from "@/lib/geo";
+import { buildWhatsAppShareUrl } from "@/lib/whatsapp";
 import {
   buildGoogleMapsUrl,
   cn,
@@ -26,18 +32,14 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 interface RoomCardProps {
   room: ListingView;
   index?: number;
-  /** Libellé du prix affiché sous le montant (défaut : "par nuit"). */
   priceSuffix?: string;
 }
 
-/**
- * Carte d'annonce horizontale — le format standard de Trouvetou :
- * image à gauche (largeur fixe), détails à droite. Les tags et la
- * description ne se déploient qu'au clic (surtout sur mobile).
- */
 export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCardProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const { location: userLocation } = useLocation();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const establishment = room.establishment;
   const coverImage = room.images[0] ?? PLACEHOLDER_IMAGE;
@@ -47,22 +49,32 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
     establishment?.longitude,
     establishment?.address ?? establishment?.city
   );
-  const { location: userLocation } = useLocation();
+  const liked = isFavorite(room.id);
+  const { toggleCompare, isSelected: isCompared } = useCompare();
+  const compared = isCompared(room.id);
 
   const location = [establishment?.city, establishment?.address]
     .filter(Boolean)
     .join(" · ");
 
-  // Calcul de la distance si la position utilisateur et les coordonnées existent
   const distance =
-    userLocation &&
-    establishment?.latitude != null &&
-    establishment?.longitude != null
-      ? haversineDistance(userLocation, {
-          lat: establishment.latitude,
-          lng: establishment.longitude,
-        })
+    userLocation && establishment?.latitude != null && establishment?.longitude != null
+      ? haversineDistance(userLocation, { lat: establishment.latitude, lng: establishment.longitude })
       : null;
+
+  // URL de la page d'annonce (pour le partage)
+  const listingUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/${establishment?.type === "school" ? "ecoles" : establishment?.type === "clinic" ? "cliniques" : establishment?.type === "restaurant" ? "restaurants" : "hotels"}?q=${encodeURIComponent(room.name)}`
+      : "";
+
+  const whatsappUrl = buildWhatsAppShareUrl({
+    name: room.name,
+    city: establishment?.city,
+    price: room.price,
+    priceSuffix,
+    url: listingUrl,
+  });
 
   return (
     <>
@@ -79,7 +91,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         )}
         onClick={() => setExpanded((prev) => !prev)}
       >
-        {/* Image — largeur fixe, comme la maquette */}
+        {/* Image */}
         <div className="relative w-[130px] sm:w-[200px] lg:w-[240px] flex-shrink-0 overflow-hidden">
           <Image
             src={coverImage}
@@ -90,6 +102,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             loading={index < 3 ? "eager" : "lazy"}
           />
 
+          {/* Badge catégorie */}
           {room.is_boosted ? (
             <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-accent to-yellow-500 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-accent-foreground shadow-sm">
               <Sparkles className="h-2.5 w-2.5" />
@@ -100,11 +113,50 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               {establishment?.type ? getCategoryLabel(establishment.type) : "Établissement"}
             </span>
           )}
+
+          {/* Boutons haut droit : favori + comparer */}
+          <div className="absolute right-2 top-2 flex flex-col gap-1.5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(room.id);
+              }}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all",
+                liked
+                  ? "bg-red-500/90 text-white shadow-md"
+                  : "bg-black/30 text-white/80 hover:bg-black/50 hover:text-white"
+              )}
+              aria-label={liked ? "Retirer des favoris" : "Ajouter aux favoris"}
+            >
+              <Heart className={cn("h-4 w-4", liked && "fill-current")} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCompare({
+                  id: room.id,
+                  name: room.name,
+                  city: establishment?.city,
+                  price: room.price,
+                  image: coverImage,
+                });
+              }}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all text-[10px] font-bold",
+                compared
+                  ? "bg-primary/90 text-white shadow-md"
+                  : "bg-black/30 text-white/80 hover:bg-black/50 hover:text-white"
+              )}
+              aria-label={compared ? "Retirer de la comparaison" : "Comparer"}
+            >
+              ↔
+            </button>
+          </div>
         </div>
 
-        {/* Contenu — remplit l'espace, aucun vide sous la photo */}
+        {/* Contenu */}
         <div className="flex flex-1 flex-col justify-between min-w-0 p-3 sm:p-4">
-          {/* Haut : nom + établissement + localisation */}
           <div>
             <div className="flex items-start justify-between gap-2">
               <h3 className="truncate font-semibold text-foreground text-sm sm:text-base lg:text-lg leading-tight">
@@ -129,7 +181,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               </p>
             )}
 
-            {/* Tags — cachés sur mobile jusqu'au clic */}
+            {/* Tags */}
             {amenities.length > 0 && (
               <div className={cn("flex-wrap gap-1 mt-2", expanded ? "flex" : "hidden sm:flex")}>
                 {amenities.map(({ label, icon: Icon }) => (
@@ -144,7 +196,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               </div>
             )}
 
-            {/* Description — visible uniquement au clic */}
+            {/* Description */}
             <AnimatePresence>
               {expanded && room.description && (
                 <motion.div
@@ -162,7 +214,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             </AnimatePresence>
           </div>
 
-          {/* Bas : prix + actions — toujours visibles */}
+          {/* Bas : prix + actions */}
           <div className="mt-2 flex items-end justify-between gap-2 border-t border-slate-100 pt-2">
             <div className="min-w-0">
               <p className="text-sm sm:text-base lg:text-lg font-bold text-foreground leading-tight">
@@ -171,12 +223,22 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   F CFA
                 </span>
               </p>
-              <p className="text-[9px] sm:text-[10px] text-muted-foreground">
-                {priceSuffix}
-              </p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground">{priceSuffix}</p>
             </div>
 
-            <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="flex flex-shrink-0 items-center gap-1 sm:gap-1.5">
+              {/* WhatsApp */}
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                aria-label="Partager sur WhatsApp"
+              >
+                <MessageCircle className="h-3 w-3" />
+              </a>
+              {/* Itinéraire */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -185,8 +247,9 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-slate-600 transition-colors hover:text-foreground"
               >
                 <Navigation className="h-3 w-3" />
-                Itinéraire
+                <span className="hidden sm:inline">Itinéraire</span>
               </button>
+              {/* Réserver */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -200,24 +263,16 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             </div>
           </div>
 
-          {/* Indicateur d'expand sur mobile */}
+          {/* Expand indicator mobile */}
           <div className="mt-1 flex justify-center sm:hidden">
             <ChevronDown
-              className={cn(
-                "h-4 w-4 text-slate-400 transition-transform",
-                expanded && "rotate-180"
-              )}
+              className={cn("h-4 w-4 text-slate-400 transition-transform", expanded && "rotate-180")}
             />
           </div>
         </div>
       </motion.article>
 
-      <BookingModal
-        room={room}
-        open={bookingOpen}
-        onClose={() => setBookingOpen(false)}
-        priceSuffix={priceSuffix}
-      />
+      <BookingModal room={room} open={bookingOpen} onClose={() => setBookingOpen(false)} priceSuffix={priceSuffix} />
     </>
   );
 }

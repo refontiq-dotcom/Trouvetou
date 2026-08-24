@@ -3,7 +3,11 @@ import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { LocationProvider } from "@/contexts/location-context";
+import { FavoritesProvider } from "@/contexts/favorites-context";
+import { CompareProvider } from "@/contexts/compare-context";
+import { CompareBar } from "@/components/compare/compare-bar";
 import { LocationBar } from "@/components/location/location-bar";
+import { PwaRegister } from "@/components/pwa-register";
 
 export const metadata: Metadata = {
   title: {
@@ -33,12 +37,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="h-full antialiased">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#1565c0" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground font-[family-name:var(--font-poppins)]">
         <LocationProvider>
-          <Header />
-          <LocationBar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <FavoritesProvider>
+            <CompareProvider>
+              <Header />
+              <LocationBar />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <CompareBar />
+              <PwaRegister />
+            </CompareProvider>
+          </FavoritesProvider>
         </LocationProvider>
       </body>
     </html>
