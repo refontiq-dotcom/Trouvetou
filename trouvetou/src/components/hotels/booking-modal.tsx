@@ -398,7 +398,7 @@ export function BookingModal({
                 href={buildWhatsAppUrl(establishment.whatsapp, whatsappMessage)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
               >
                 <MessageCircle className="h-4 w-4" />
                 Contacter sur WhatsApp

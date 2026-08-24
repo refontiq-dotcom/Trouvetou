@@ -54,8 +54,8 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         className={cn(
           "group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow duration-300 hover:shadow-xl",
           room.is_boosted
-            ? "border-amber-300 shadow-amber-100/60 ring-1 ring-amber-300/60 hover:shadow-amber-200/60"
-            : "border-border hover:shadow-emerald-100/50"
+            ? "border-accent/60 shadow-accent/20 ring-1 ring-accent/40 hover:shadow-accent/30"
+            : "border-border hover:shadow-primary/10"
         )}
       >
         <div className="relative aspect-[4/3] overflow-hidden">
@@ -75,7 +75,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           </div>
 
           {room.is_boosted && (
-            <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-950 shadow-lg shadow-amber-500/40">
+            <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-accent to-yellow-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-foreground shadow-lg shadow-accent/40">
               <Sparkles className="h-3 w-3" />
               Sponsorisé
             </div>

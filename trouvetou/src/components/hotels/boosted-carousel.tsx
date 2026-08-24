@@ -39,7 +39,7 @@ function BoostedCard({
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="group relative h-80 overflow-hidden rounded-3xl border border-amber-200/70 shadow-lg shadow-amber-100/40"
+        className="group relative h-80 overflow-hidden rounded-3xl border border-accent/40 shadow-lg shadow-accent/20"
       >
         <Image
           src={image}
@@ -55,7 +55,7 @@ function BoostedCard({
 
         {/* Badge brillant "À la une" */}
         <div className="absolute left-4 top-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/60 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-950 shadow-lg shadow-amber-500/30">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/50 bg-gradient-to-r from-accent via-yellow-300 to-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-accent-foreground shadow-lg shadow-accent/30">
             <Sparkles className="h-3.5 w-3.5" />
             Établissement à la une
           </span>
@@ -81,7 +81,7 @@ function BoostedCard({
 
             <Button
               size="sm"
-              className="rounded-full bg-white text-slate-900 shadow hover:bg-amber-50"
+              className="rounded-full bg-white text-slate-900 shadow hover:bg-yellow-50"
               onClick={() => setBookingOpen(true)}
             >
               <Phone className="h-4 w-4" />
@@ -108,7 +108,7 @@ export function BoostedCarousel({ rooms, priceSuffix }: BoostedCarouselProps) {
     <section className="mt-8">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 text-white shadow">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-yellow-500 text-accent-foreground shadow">
             <Sparkles className="h-4 w-4" />
           </span>
           Établissements à la une
@@ -129,7 +129,7 @@ export function BoostedCarousel({ rooms, priceSuffix }: BoostedCarouselProps) {
           768: { slidesPerView: 2 },
           1280: { slidesPerView: 3 },
         }}
-        className="!pb-10 [&_.swiper-pagination-bullet]:bg-amber-400"
+        className="!pb-10 [&_.swiper-pagination-bullet]:bg-accent"
       >
         {rooms.map((room, i) => (
           <SwiperSlide key={room.id}>

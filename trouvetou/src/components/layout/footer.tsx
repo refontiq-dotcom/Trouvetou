@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Compass } from "lucide-react";
+import { Logo } from "@/components/logo";
+import { MapPin, Mail, Phone } from "lucide-react";
 
 const CATEGORIES = [
   { href: "/hotels", label: "Hôtels & Résidences meublées" },
@@ -7,27 +8,40 @@ const CATEGORIES = [
   { href: "/cliniques", label: "Cliniques & Santé" },
 ];
 
+const NAV_LINKS = [
+  { href: "/", label: "Accueil" },
+  { href: "/hotels", label: "Hôtels & Résidences" },
+  { href: "/ecoles", label: "Écoles & Établissements" },
+  { href: "/cliniques", label: "Cliniques & Santé" },
+];
+
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-card">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="bg-navy text-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="grid gap-10 md:grid-cols-4">
+          {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <Compass className="h-5 w-5" />
-              </span>
-              <span className="text-xl font-bold text-foreground">Trouvetou</span>
-            </div>
-            <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              Le portail public qui vous aide à trouver hôtels, résidences
-              meublées, écoles et cliniques de confiance, partout en Afrique de
-              l&apos;Ouest. Trouvez tout, restez serein.
+            <Logo variant="light" size="sm" />
+            <p className="mt-4 max-w-md text-sm text-white/60">
+              L&apos;endroit qu&apos;il vous faut, au moment qu&apos;il le faut.
+              Trouvetou vous aide à trouver rapidement ce que vous cherchez,
+              autour de vous — hôtels, résidences, écoles et cliniques de
+              confiance.
             </p>
+            <div className="mt-5 flex items-center gap-4 text-white/40 text-sm">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4" /> Abidjan, Côte d&apos;Ivoire
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Mail className="h-4 w-4" /> contact@trouvetou.app
+              </span>
+            </div>
           </div>
 
+          {/* Univers */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
               Univers
             </h3>
             <ul className="mt-4 space-y-3">
@@ -35,7 +49,7 @@ export function Footer() {
                 <li key={cat.label}>
                   <Link
                     href={cat.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-sm text-white/50 hover:text-accent transition-colors"
                   >
                     {cat.label}
                   </Link>
@@ -44,52 +58,35 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* Navigation */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Navigation</h3>
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+              Navigation
+            </h3>
             <ul className="mt-4 space-y-3">
-              <li>
-                <Link
-                  href="/"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/hotels"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Hôtels & Résidences
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/ecoles"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Écoles & Établissements
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/cliniques"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Cliniques & Santé
-                </Link>
-              </li>
+              {NAV_LINKS.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/50 hover:text-accent transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
+        {/* Bottom bar */}
+        <div className="mt-12 border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-white/40">
             © {new Date().getFullYear()} Trouvetou. Tous droits réservés.
           </p>
-          <p className="text-xs text-muted-foreground">
-            Powered by Séjoura · FCFA
-          </p>
+          <div className="flex items-center gap-2 text-xs text-white/40">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+            Trouvez tout, restez serein.
+          </div>
         </div>
       </div>
     </footer>
