@@ -1,5 +1,6 @@
 import { fetchListings } from "./listings";
 import { toListingViews, type ListingView } from "./listing-view";
+import { haversineDistance, type LatLng } from "@/lib/geo";
 
 // ============================================================================
 // TROUVETOU — Service de récupération des annonces du secteur Hôtels
@@ -76,8 +77,22 @@ export async function fetchBoostedRooms(
   return fetchListedListings({ limit: 20, boosted: true, categorySlugs });
 }
 
-export function sortRooms(rooms: ListingView[], sort: string): ListingView[] {
+export function sortRooms(
+  rooms: ListingView[],
+  sort: string,
+  userLocation?: LatLng | null
+): ListingView[] {
   const byCriteria = (a: ListingView, b: ListingView): number => {
+    // Tri par distance si une position utilisateur est fournie
+    if (sort === "distance" && userLocation) {
+      const distA = getDistanceOrNull(userLocation, a);
+      const distB = getDistanceOrNull(userLocation, b);
+      // Les annonces sans coordonnées passent à la fin
+      if (distA == null && distB == null) return 0;
+      if (distA == null) return 1;
+      if (distB == null) return 1;
+      return distA - distB;
+    }
     if (sort === "price_asc") return (a.price ?? 0) - (b.price ?? 0);
     if (sort === "price_desc") return (b.price ?? 0) - (a.price ?? 0);
     return a.name.localeCompare(b.name, "fr");
@@ -88,4 +103,15 @@ export function sortRooms(rooms: ListingView[], sort: string): ListingView[] {
 
   // Les annonces boostées apparaissent TOUJOURS en premier.
   return [...boosted, ...regular];
+}
+
+/** Calcule la distance ou retourne null si les coordonnées manquent. */
+function getDistanceOrNull(
+  user: LatLng,
+  room: ListingView
+): number | null {
+  const lat = room.establishment?.latitude;
+  const lng = room.establishment?.longitude;
+  if (lat == null || lng == null) return null;
+  return haversineDistance(user, { lat, lng });
 }

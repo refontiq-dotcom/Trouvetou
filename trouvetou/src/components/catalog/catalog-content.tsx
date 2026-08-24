@@ -22,6 +22,8 @@ import {
 } from "@/lib/supabase/hotels";
 import { cn, getCategoryLabel } from "@/lib/utils";
 import { detectPortalSuggestion } from "@/lib/search-intent";
+import { useLocation } from "@/contexts/location-context";
+import { haversineDistance } from "@/lib/geo";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
 
@@ -37,6 +39,7 @@ const BUDGET_OPTIONS = [
 ];
 
 const SORT_OPTIONS = [
+  { label: "À proximité", value: "distance" },
   { label: "Prix croissant", value: "price_asc" },
   { label: "Prix décroissant", value: "price_desc" },
   { label: "Nom", value: "name" },
@@ -58,10 +61,11 @@ interface CatalogContentProps {
 
 export function CatalogContent({ config, initialQuery = "" }: CatalogContentProps) {
   const router = useRouter();
+  const { location: userLocation } = useLocation();
   const [query, setQuery] = useState(initialQuery);
   const [types, setTypes] = useState<string[]>([]);
   const [budget, setBudget] = useState(0);
-  const [sort, setSort] = useState<string>("price_asc");
+  const [sort, setSort] = useState<string>(userLocation ? "distance" : "price_asc");
 
   const [rooms, setRooms] = useState<ListingView[]>([]);
   const [boostedRooms, setBoostedRooms] = useState<ListingView[]>([]);
@@ -119,7 +123,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
           setError(error.message);
         } else {
           setError(null);
-          setRooms(sortRooms(data, sort));
+          setRooms(sortRooms(data, sort, userLocation));
         }
         setLoading(false);
       })
@@ -132,7 +136,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
     return () => {
       cancelled = true;
     };
-  }, [debounced, types, budget, sort, reloadKey, limit, config, suggestion]);
+  }, [debounced, types, budget, sort, reloadKey, limit, config, suggestion, userLocation]);
 
   function toggleType(type: string) {
     setLoading(true);

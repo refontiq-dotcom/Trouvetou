@@ -11,6 +11,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
+import { useLocation } from "@/contexts/location-context";
+import { haversineDistance, formatDistance } from "@/lib/geo";
 import {
   buildGoogleMapsUrl,
   cn,
@@ -45,9 +47,22 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
     establishment?.longitude,
     establishment?.address ?? establishment?.city
   );
+  const { location: userLocation } = useLocation();
+
   const location = [establishment?.city, establishment?.address]
     .filter(Boolean)
     .join(" · ");
+
+  // Calcul de la distance si la position utilisateur et les coordonnées existent
+  const distance =
+    userLocation &&
+    establishment?.latitude != null &&
+    establishment?.longitude != null
+      ? haversineDistance(userLocation, {
+          lat: establishment.latitude,
+          lng: establishment.longitude,
+        })
+      : null;
 
   return (
     <>
@@ -106,6 +121,11 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               <p className="mt-0.5 flex items-center gap-1 text-[11px] sm:text-xs text-muted-foreground">
                 <MapPin className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{location}</span>
+                {distance != null && (
+                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-primary">
+                    {formatDistance(distance)}
+                  </span>
+                )}
               </p>
             )}
 
