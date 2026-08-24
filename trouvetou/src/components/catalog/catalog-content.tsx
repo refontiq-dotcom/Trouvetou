@@ -24,6 +24,7 @@ import { cn, getCategoryLabel } from "@/lib/utils";
 import { detectPortalSuggestion } from "@/lib/search-intent";
 import { useLocation } from "@/contexts/location-context";
 import { haversineDistance } from "@/lib/geo";
+import { VoiceButton } from "@/components/ui/voice-button";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
 
@@ -217,7 +218,16 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
                 setLimit(PAGE_SIZE);
               }}
               placeholder={config.searchPlaceholder}
-              className="h-12 pl-12"
+              className="h-12 pl-12 pr-12"
+            />
+            <VoiceButton
+              onResult={(text) => {
+                setLoading(true);
+                setQuery(text);
+                setLimit(PAGE_SIZE);
+              }}
+              size="sm"
+              className="absolute right-3 top-1/2 -translate-y-1/2"
             />
           </div>
 

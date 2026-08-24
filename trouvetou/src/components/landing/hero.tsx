@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { detectTargetPortal } from "@/lib/search-intent";
+import { VoiceButton } from "@/components/ui/voice-button";
 
 export function Hero() {
   const router = useRouter();
@@ -65,7 +66,12 @@ export function Hero() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Ville, établissement, spécialité…"
-                className="h-[42px] sm:h-[46px] w-full rounded-l-lg border-0 bg-white pl-10 pr-3 text-xs sm:text-sm outline-none placeholder:text-slate-400"
+                className="h-[42px] sm:h-[46px] w-full border-0 bg-white pl-10 pr-12 text-xs sm:text-sm outline-none placeholder:text-slate-400"
+              />
+              <VoiceButton
+                onResult={(text) => setQuery(text)}
+                size="sm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-slate-100 hover:bg-slate-200 text-slate-500"
               />
             </div>
             <button
