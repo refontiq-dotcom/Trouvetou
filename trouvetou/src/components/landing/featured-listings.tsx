@@ -89,10 +89,10 @@ export function FeaturedListings() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
-            className="flex flex-col sm:flex-row overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
+            className="flex flex-row overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
           >
             {/* Image — wider to match mockup (~40%) */}
-            <div className="relative w-full sm:w-[220px] lg:w-[260px] h-[180px] sm:h-auto flex-shrink-0">
+            <div className="relative w-[130px] sm:w-[200px] lg:w-[260px] h-[140px] sm:h-[170px] lg:h-auto flex-shrink-0">
               <img
                 src={listing.image}
                 alt={listing.name}
