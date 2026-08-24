@@ -62,7 +62,7 @@ export function AdBanner() {
   const ad = ADS[current];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
       <div className="relative overflow-hidden rounded-2xl bg-white border border-border shadow-sm">
         <AnimatePresence mode="wait">
           <motion.div
@@ -73,40 +73,40 @@ export function AdBanner() {
             transition={{ duration: 0.3 }}
           >
             {/* Badge */}
-            <span className="absolute top-3 left-4 text-xs text-muted-foreground z-10">
+            <span className="absolute top-2 left-3 text-[11px] text-muted-foreground z-10">
               {ad.badge}
             </span>
 
             {/* Horizontal layout: logo | dark text | photo */}
-            <div className="flex flex-col sm:flex-row min-h-[180px]">
-              {/* Logo area */}
-              <div className="flex items-center justify-center sm:w-[140px] p-4 sm:p-6 bg-white">
+            <div className="flex min-h-[160px] sm:min-h-[180px]">
+              {/* Logo area — compact */}
+              <div className="flex items-center justify-center w-[100px] sm:w-[120px] flex-shrink-0 p-3 sm:p-4 bg-white">
                 <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                  <div className="text-xl sm:text-2xl font-extrabold text-primary tracking-tight leading-none">
                     {ad.logoText}
                   </div>
-                  <div className="text-[9px] sm:text-[10px] font-medium text-muted-foreground mt-1 uppercase tracking-wider leading-tight max-w-[120px]">
+                  <div className="text-[7px] sm:text-[8px] font-medium text-muted-foreground mt-1 uppercase tracking-wider leading-tight">
                     {ad.logoSubtext}
                   </div>
                 </div>
               </div>
 
-              {/* Dark text area */}
-              <div className="flex-1 bg-[#0d47a1] text-white p-5 sm:p-6 flex flex-col justify-center">
-                <h3 className="text-lg sm:text-xl font-bold">
+              {/* Dark text area — takes remaining space */}
+              <div className="flex-1 bg-[#0d47a1] text-white px-5 sm:px-7 py-5 sm:py-6 flex flex-col justify-center">
+                <h3 className="text-base sm:text-lg font-bold leading-snug">
                   {ad.title}
                 </h3>
-                <p className="mt-1.5 text-sm text-white/80 whitespace-pre-line leading-relaxed">
+                <p className="mt-1.5 text-xs sm:text-sm text-white/80 whitespace-pre-line leading-relaxed">
                   {ad.subtitle}
                 </p>
-                <button className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white border border-white/40 rounded-full px-5 py-2 w-fit hover:bg-white/10 transition-colors">
+                <button className="mt-3 sm:mt-4 inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-white border border-white/40 rounded-full px-4 sm:px-5 py-1.5 sm:py-2 w-fit hover:bg-white/10 transition-colors">
                   {ad.cta}
-                  <span className="text-base">→</span>
+                  <span>→</span>
                 </button>
               </div>
 
               {/* Photo area */}
-              <div className="relative sm:w-[200px] lg:w-[260px] h-40 sm:h-auto flex-shrink-0">
+              <div className="relative w-[140px] sm:w-[180px] lg:w-[220px] flex-shrink-0">
                 <img
                   src={ad.image}
                   alt={ad.title}
@@ -117,20 +117,20 @@ export function AdBanner() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation arrows */}
+        {/* Navigation arrows — at the very bottom of the card */}
         <button
           onClick={prev}
-          className="absolute left-3 bottom-14 sm:bottom-4 h-9 w-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-600 hover:text-foreground transition-colors z-10"
+          className="absolute left-2 bottom-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center text-slate-500 hover:text-foreground transition-colors z-10"
           aria-label="Précédent"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
         <button
           onClick={next}
-          className="absolute right-3 bottom-14 sm:bottom-4 h-9 w-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-slate-600 hover:text-foreground transition-colors z-10"
+          className="absolute right-2 bottom-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center text-slate-500 hover:text-foreground transition-colors z-10"
           aria-label="Suivant"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
