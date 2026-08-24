@@ -58,8 +58,7 @@ export default function RootLayout({
             <CompareProvider>
               <Header />
               <LocationBar />
-              {/* pb-20 sur mobile pour laisser de la place au BottomNav */}
-              <main className="flex-1 pb-20 md:pb-0">{children}</main>
+              <main className="flex-1">{children}</main>
               <Footer />
               <BottomNav />
               <CompareBar />
