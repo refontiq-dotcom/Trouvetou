@@ -10,7 +10,7 @@
 // aucun mot-clé de l'univers courant (évite les faux positifs).
 // ============================================================================
 
-export type UniverseSlug = "hotels" | "ecoles" | "cliniques";
+export type UniverseSlug = "hotels" | "ecoles" | "cliniques" | "restaurants";
 
 export interface UniverseSuggestion {
   targetSlug: UniverseSlug;
@@ -143,6 +143,50 @@ const UNIVERSES: UniverseProfile[] = [
       "franco arabe",
       "bachi",
       "proff",
+    ]),
+  },
+  {
+    slug: "restaurants",
+    label: "Restaurants",
+    href: "/restaurants",
+    keywords: toKeywords([
+      "restaurant",
+      "restaurants",
+      "resto",
+      "restos",
+      "brasserie",
+      "brasseries",
+      "bar",
+      "bars",
+      "café",
+      "cafés",
+      "terrasse",
+      "terrasse",
+      "cuisine",
+      "gastronomie",
+      "gastronomique",
+      "plat",
+      "plats",
+      "menu",
+      "repas",
+      "dîner",
+      "déjeuner",
+      "petit-déjeuner",
+      "brunch",
+      "buffet",
+      "traiteur",
+      "pizzeria",
+      "grill",
+      "grillade",
+      "poissonnerie",
+      "boulangerie",
+      "pâtisserie",
+      "fast-food",
+      "take-away",
+      "livraison",
+      "manger",
+      "déguster",
+      "saveurs",
     ]),
   },
   {

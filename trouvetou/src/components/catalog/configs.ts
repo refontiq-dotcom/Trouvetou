@@ -56,6 +56,19 @@ export const ECOLES_CONFIG: CatalogContentConfig = {
     "Les annonces sont gérées par les établissements via nos logiciels partenaires.",
 };
 
+export const RESTAURANTS_CONFIG: CatalogContentConfig = {
+  slug: "restaurants",
+  categories: ["restaurant"],
+  title: "Restaurants & Gastronomie",
+  breadcrumbLabel: "Restaurants",
+  subtitle:
+    "Restaurants, brasseries et bars partenaires : carte, spécialités et ambiance.",
+  searchPlaceholder: "Rechercher un restaurant, une cuisine, une ville…",
+  priceSuffix: "par plat",
+  footerNote:
+    "Les annonces sont gérées par les établissements partenaires.",
+};
+
 export const CLINIQUES_CONFIG: CatalogContentConfig = {
   slug: "cliniques",
   categories: ["clinic"],
