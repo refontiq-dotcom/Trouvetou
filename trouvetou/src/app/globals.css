@@ -153,3 +153,18 @@ body {
 .animate-pin-pulse {
   animation: pin-pulse 2s ease-in-out infinite;
 }
+
+/* PWA safe area insets (iPhone notch / Dynamic Island) */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Bottom nav PWA en plein écran */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
