@@ -58,8 +58,8 @@ export default function RootLayout({
             <CompareProvider>
               <Header />
               <LocationBar />
-              <main className="flex-1">{children}</main>
-              <Footer />
+              <main className="flex-1 pb-20 md:pb-0">{children}</main>
+              <div className="hidden md:block"><Footer /></div>
               <BottomNav />
               <CompareBar />
               <PwaRegister />
