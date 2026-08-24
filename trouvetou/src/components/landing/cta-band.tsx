@@ -2,25 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, BadgeCheck, ShieldCheck, TrendingUp } from "lucide-react";
-
-const TRUST_POINTS = [
-  {
-    icon: ShieldCheck,
-    title: "Établissements vérifiés",
-    description: "Seuls les partenaires avec un abonnement actif sont affichés.",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Photos réelles",
-    description: "Chaque annonce est publiée directement depuis Séjoura.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Prix affichés en FCFA",
-    description: "Le tarif est clair, sans surprise — nuit, scolarité ou consultation.",
-  },
-];
+import { ArrowRight } from "lucide-react";
 
 export function CtaBand() {
   return (
@@ -74,32 +56,6 @@ export function CtaBand() {
         </div>
       </motion.div>
 
-      {/* Trust points */}
-      <div className="mt-14 grid gap-6 sm:grid-cols-3">
-        {TRUST_POINTS.map((point, i) => {
-          const Icon = point.icon;
-          return (
-            <motion.div
-              key={point.title}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.4, delay: i * 0.1 }}
-              className="flex items-start gap-4"
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Icon className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-foreground">{point.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                  {point.description}
-                </p>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
     </section>
   );
 }
