@@ -174,7 +174,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         <div className="flex flex-1 flex-col justify-between min-w-0 p-3 sm:p-4">
           <div>
             <div className="flex items-start justify-between gap-2">
-              <h3 className="truncate font-semibold text-foreground text-sm sm:text-base lg:text-lg leading-tight">
+              <h3 className="truncate font-semibold text-foreground text-sm sm:text-base leading-snug">
                 {room.name}
               </h3>
             </div>
@@ -193,7 +193,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
 
             {/* Tags */}
             {amenities.length > 0 && (
-              <div className={cn("flex-wrap gap-1 mt-2", expanded ? "flex" : "hidden sm:flex")}>
+              <div className={cn("flex-wrap gap-1 mt-1.5", expanded ? "flex" : "hidden sm:flex")}>
                 {amenities.map(({ label, icon: Icon }) => (
                   <span
                     key={label}
@@ -216,7 +216,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   transition={{ duration: 0.25 }}
                   className="overflow-hidden"
                 >
-                  <p className="mt-2 text-xs sm:text-sm leading-relaxed text-muted-foreground">
+                  <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-muted-foreground">
                     {room.description}
                   </p>
                 </motion.div>
@@ -225,37 +225,37 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           </div>
 
           {/* Bas : prix visuel + actions avec icônes */}
-          <div className="mt-2 flex items-end justify-between gap-2 border-t border-slate-100 pt-2">
+          <div className="mt-1.5 flex items-end justify-between gap-1.5 border-t border-slate-100 pt-1.5">
             {/* Prix avec icône wallet */}
-            <div className="min-w-0 flex items-center gap-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10">
-                <Wallet className="h-3.5 w-3.5 text-accent" />
+            <div className="min-w-0 flex items-center gap-1">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10">
+                <Wallet className="h-3 w-3 text-accent" />
               </div>
               <div>
-                <p className="text-sm sm:text-base lg:text-lg font-bold text-foreground leading-tight">
+                <p className="text-sm font-bold text-foreground leading-tight">
                   {formatFCFA(room.price ?? 0)}
                 </p>
-                <p className="text-[9px] sm:text-[10px] text-muted-foreground">{priceSuffix}</p>
+                <p className="text-[8px] text-muted-foreground">{priceSuffix}</p>
               </div>
             </div>
 
             {/* Boutons avec icônes */}
-            <div className="flex flex-shrink-0 items-center gap-1 sm:gap-1.5">
+            <div className="flex flex-shrink-0 items-center gap-0.5">
               {/* WhatsApp */}
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 h-8 w-8 text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 h-7 w-7 text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                 aria-label="Partager sur WhatsApp"
               >
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-3.5 w-3.5" />
               </a>
               {/* Itinéraire */}
               <button
                 onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 sm:px-2.5 h-8 text-[10px] sm:text-xs font-medium text-slate-600 transition-colors hover:text-foreground"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 h-7 text-[10px] font-medium text-slate-600 transition-colors hover:text-foreground"
               >
                 <Navigation className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Itinéraire</span>
@@ -264,7 +264,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               {isBookable ? (
                 <button
                   onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 sm:px-3 h-8 text-[10px] sm:text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Réserver</span>
@@ -275,7 +275,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 sm:px-3 h-8 text-[10px] sm:text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Contacter</span>
@@ -285,7 +285,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           </div>
 
           {/* Expand indicator */}
-          <div className="mt-1 flex justify-center sm:hidden">
+          <div className="mt-0.5 flex justify-center sm:hidden">
             <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform", expanded && "rotate-180")} />
           </div>
         </div>

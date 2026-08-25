@@ -93,7 +93,7 @@ export default function FavorisPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {rooms.map((room, i) => (
             <RoomCard key={room.id} room={room} index={i} priceSuffix={getPriceSuffix(room.category_slug)} />
           ))}

@@ -375,7 +375,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {effectiveRooms.map((room, i) => (
               <RoomCard
                 key={room.id}
@@ -389,7 +389,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
       </div>
 
       {canLoadMore && (
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 flex justify-center">
           <Button variant="outline" onClick={loadMore}>
             Voir plus d&apos;annonces
           </Button>
@@ -397,7 +397,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
       )}
 
       {!effectiveLoading && !effectiveError && effectiveRooms.length > 0 && (
-        <p className="mt-8 flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+        <p className="mt-6 flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 text-accent" />
           {config.footerNote}
         </p>
