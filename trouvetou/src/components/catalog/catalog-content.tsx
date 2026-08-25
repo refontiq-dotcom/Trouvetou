@@ -17,7 +17,6 @@ import {
 import { RoomCard } from "@/components/hotels/room-card";
 import { RoomCardSkeletonGrid } from "@/components/hotels/room-card-skeleton";
 import { BoostedCarousel } from "@/components/hotels/boosted-carousel";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   fetchBoostedRooms,
@@ -206,24 +205,34 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         <CategoryBanner categorySlug={config.categories[0] ?? ""} />
       </div>
 
-      {/* Search bar + category toggles + filtre drawer */}
-      <div className="mt-5 rounded-2xl border border-border bg-card p-3 shadow-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+      {/* Search bar — style identique à la home */}
+      <div className="mt-5 flex w-full items-stretch gap-0 rounded-xl bg-white shadow-sm border border-slate-200">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
             value={query}
             onChange={(e) => { setLoading(true); setQuery(e.target.value); setLimit(PAGE_SIZE); }}
             placeholder={config.searchPlaceholder}
-            className="h-12 pl-11 pr-12"
+            className="h-12 w-full border-0 bg-transparent pl-10 pr-12 text-sm outline-none placeholder:text-slate-400"
           />
           <VoiceButton
             onResult={(text) => { setLoading(true); setQuery(text); setLimit(PAGE_SIZE); }}
-            className="!right-2 !h-9 !w-9"
+            className="!right-1 !h-8 !w-8"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => { setLoading(true); setLimit(PAGE_SIZE); }}
+          className="inline-flex h-12 items-center gap-1.5 rounded-r-xl bg-[#0a3a7d] px-4 text-xs font-semibold text-white hover:bg-[#1565c0] transition-colors"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Rechercher</span>
+        </button>
+      </div>
 
-        {/* Category toggles + Filtres button — même ligne */}
-        <div className="mt-3 flex items-center gap-2 flex-wrap">
+      {/* Category toggles + Filtres button — même ligne */}
+      <div className="mt-3 flex items-center gap-2 flex-wrap">
           {config.typeFilters && config.typeFilters.length > 0 && (
             <>
               {config.typeFilters.map((type) => {
@@ -260,7 +269,6 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
             onReset={() => { setLoading(true); setBudget(0); setSort("price_asc"); setLimit(PAGE_SIZE); }}
           />
         </div>
-      </div>
 
       {/* Active filter chips — résumé compact */}
       {hasActiveFilters && (
