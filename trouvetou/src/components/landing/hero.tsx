@@ -8,10 +8,10 @@ import { detectTargetPortal } from "@/lib/search-intent";
 import { VoiceButton } from "@/components/ui/voice-button";
 
 const QUICK_CHIPS = [
-  { label: "Clinique", icon: Stethoscope, query: "clinique", color: "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" },
-  { label: "École", icon: GraduationCap, query: "école", color: "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10" },
-  { label: "Restaurant", icon: UtensilsCrossed, query: "restaurant", color: "bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100" },
-  { label: "Hôtel", icon: Building2, query: "hôtel", color: "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100" },
+  { label: "Clinique", icon: Stethoscope, query: "clinique", color: "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100" },
+  { label: "École", icon: GraduationCap, query: "école", color: "bg-white text-[#1565c0] border-white/60 hover:bg-white/90" },
+  { label: "Restaurant", icon: UtensilsCrossed, query: "restaurant", color: "bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100" },
+  { label: "Hôtel", icon: Building2, query: "hôtel", color: "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100" },
 ];
 
 export function Hero() {
