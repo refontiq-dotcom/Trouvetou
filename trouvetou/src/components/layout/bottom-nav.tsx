@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Heart, MapPin, User, Building2 } from "lucide-react";
+import { Home, Heart, MapPin, User } from "lucide-react";
 import { LocationPicker } from "@/components/location/location-picker";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,6 @@ const NAV_ITEMS = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/favoris", label: "Favoris", icon: Heart },
   { href: "__autour__", label: "Autour", icon: MapPin },
-  { href: "/hotels", label: "Hôtels", icon: Building2 },
   { href: "/profil", label: "Profil", icon: User },
 ];
 
