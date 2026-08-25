@@ -4,13 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Heart, MapPin, User, Building2 } from "lucide-react";
-import { useFavorites } from "@/contexts/favorites-context";
 import { LocationPicker } from "@/components/location/location-picker";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/", label: "Accueil", icon: Home },
-  { href: "/favoris", label: "Favoris", icon: Heart, showCount: true },
+  { href: "/favoris", label: "Favoris", icon: Heart },
   { href: "__autour__", label: "Autour", icon: MapPin },
   { href: "/hotels", label: "Hôtels", icon: Building2 },
   { href: "/profil", label: "Profil", icon: User },
@@ -18,7 +17,6 @@ const NAV_ITEMS = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { count: favCount } = useFavorites();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
@@ -56,14 +54,7 @@ export function BottomNav() {
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <div className="relative">
-                  <Icon className={cn("h-5 w-5", isActive && "fill-primary/10")} />
-                  {item.showCount && favCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                      {favCount > 9 ? "9+" : favCount}
-                    </span>
-                  )}
-                </div>
+                <Icon className={cn("h-5 w-5", isActive && "fill-primary/10")} />
                 <span className={cn("text-[10px] font-medium", isActive && "text-primary")}>
                   {item.label}
                 </span>

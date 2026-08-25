@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { useFavorites } from "@/contexts/favorites-context";
 
 const NAV_LINKS = [
   { href: "/", label: "Accueil" },
@@ -19,17 +18,16 @@ const NAV_LINKS = [
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { count } = useFavorites();
-
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-white/95 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between gap-4">
           {/* Groupe gauche : hamburger (mobile) + logo (desktop) */}
           <div className="flex items-center gap-2">
+            {/* Hamburger — visible on mobile only, bottom nav handles mobile navigation */}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted md:hidden"
+              className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted"
               aria-label="Menu"
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -41,7 +39,7 @@ export function Header() {
             </Link>
           </div>
 
-          {/* Logo — mobile (centré absolu, comportement actuel) */}
+          {/* Logo — mobile (centré absolu) */}
           <Link
             href="/"
             className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 group"
@@ -72,7 +70,7 @@ export function Header() {
 
           {/* Actions droite */}
           <div className="flex items-center gap-2">
-            {/* Favoris — chip desktop */}
+            {/* Favoris — chip desktop (sans badge) */}
             <Link
               href="/favoris"
               className="relative hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-white px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/5"
@@ -80,25 +78,15 @@ export function Header() {
             >
               <Heart className="h-4 w-4" />
               <span className="hidden lg:inline">Favoris</span>
-              {count > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                  {count > 99 ? "99+" : count}
-                </span>
-              )}
             </Link>
 
-            {/* Favoris — mobile (icône seule) */}
+            {/* Favoris — mobile (icône seule, sans badge) */}
             <Link
               href="/favoris"
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted sm:hidden"
               aria-label="Mes favoris"
             >
               <Heart className="h-5 w-5" />
-              {count > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                  {count > 99 ? "99+" : count}
-                </span>
-              )}
             </Link>
 
             {/* Profil */}
