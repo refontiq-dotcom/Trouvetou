@@ -77,7 +77,7 @@ export async function CategoryShowcase() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-sm mx-auto">
         {CATEGORIES.map((cat) => {
           const count = displayCounts[cat.slug] ?? 0;
           const Icon = cat.icon;
@@ -85,7 +85,7 @@ export async function CategoryShowcase() {
             <Link
               key={cat.slug}
               href={cat.href}
-              className="group inline-flex items-center gap-2 rounded-full border bg-white py-1.5 pl-1.5 pr-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md active:scale-[0.98]"
+              className="group flex items-center justify-between gap-2 rounded-full border bg-white py-1.5 pl-1.5 pr-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md active:scale-[0.98]"
             >
               {/* Petite pastille icône colorée */}
               <span
