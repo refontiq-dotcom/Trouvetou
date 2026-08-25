@@ -39,7 +39,7 @@ export function BottomNav() {
                   className="relative flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors text-muted-foreground"
                 >
                   <Icon className="h-5 w-5" />
-                  <span className="text-[10px] font-medium">Autour</span>
+                  <span className="text-[10px] font-medium">Près de moi</span>
                 </button>
               );
             }
