@@ -121,6 +121,13 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             {getCategoryLabel(catSlug)}
           </span>
 
+          {/* Badge Sponsorisé — pour les annonces boostées */}
+          {room.is_boosted && (
+            <span className="absolute left-2 top-8 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-2 py-0.5 text-[8px] sm:text-[9px] font-bold text-white shadow-sm">
+              ⭐ Sponsorisé
+            </span>
+          )}
+
           {/* Boutons favori + comparer */}
           <div className="absolute right-2 top-2 flex flex-col gap-1.5">
             <button

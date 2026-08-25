@@ -29,6 +29,7 @@ import { cn, getCategoryLabel } from "@/lib/utils";
 import { detectPortalSuggestion } from "@/lib/search-intent";
 import { useLocation } from "@/contexts/location-context";
 import { VoiceButton } from "@/components/ui/voice-button";
+import { CategoryBanner } from "@/components/catalog/category-banner";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
 
@@ -210,6 +211,11 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{config.subtitle}</p>
       </motion.div>
+
+      {/* Bannière contextuelle catégorie — pub partenaire */}
+      <div className="mt-4">
+        <CategoryBanner categorySlug={config.categories[0] ?? ""} />
+      </div>
 
       {/* Search bar */}
       <div className="mt-6 rounded-2xl border border-border bg-card p-3 shadow-sm">
