@@ -191,7 +191,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground hidden sm:block">
           Accueil <span className="mx-1">/</span>
           <span className="font-medium text-foreground">{config.breadcrumbLabel}</span>
         </p>
