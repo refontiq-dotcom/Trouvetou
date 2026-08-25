@@ -5,15 +5,14 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowRightLeft,
-  ArrowDownWideNarrow,
   CircleAlert,
   Coins,
-  MapPin,
   Search,
-  SlidersHorizontal,
   Sparkles,
   TrendingDown,
   TrendingUp,
+  MapPin,
+  ArrowDownWideNarrow,
 } from "lucide-react";
 import { RoomCard } from "@/components/hotels/room-card";
 import { RoomCardSkeletonGrid } from "@/components/hotels/room-card-skeleton";
@@ -30,36 +29,27 @@ import { detectPortalSuggestion } from "@/lib/search-intent";
 import { useLocation } from "@/contexts/location-context";
 import { VoiceButton } from "@/components/ui/voice-button";
 import { CategoryBanner } from "@/components/catalog/category-banner";
+import { FilterDrawer } from "@/components/catalog/filter-drawer";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
 
 const PAGE_SIZE = 30;
 const MAX_CLIENT_LIMIT = 100;
 
-/** Filtres visuels budget — chaque chip a une icône pour les illettrés */
 const BUDGET_OPTIONS = [
   { label: "Tous", value: 0, icon: Coins, color: "text-muted-foreground" },
   { label: "≤ 15 000", value: 15000, icon: TrendingDown, color: "text-emerald-600" },
   { label: "≤ 30 000", value: 30000, icon: TrendingUp, color: "text-amber-600" },
-  { label: "≤ 50 000", value: 50000, icon: ArrowUpRight, color: "text-orange-600" },
+  { label: "≤ 50 000", value: 50000, icon: Coins, color: "text-orange-600" },
   { label: "≤ 100 000", value: 100000, icon: Coins, color: "text-red-600" },
 ];
 
-/** Filtres visuels tri */
 const SORT_OPTIONS = [
   { label: "À proximité", value: "distance", icon: MapPin },
   { label: "Prix ↑", value: "price_asc", icon: TrendingDown },
   { label: "Prix ↓", value: "price_desc", icon: TrendingUp },
   { label: "Récent", value: "name", icon: ArrowDownWideNarrow },
 ];
-
-function ArrowUpRight(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M7 17 17 7" /><path d="M7 7h10v10" />
-    </svg>
-  );
-}
 
 /** Catégories avec icônes visuelles */
 const CATEGORY_ICONS: Record<string, string> = {
@@ -196,7 +186,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-      {/* Header */}
+      {/* Header — titre seul, pas de sous-titre */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -209,16 +199,15 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         <h1 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
           {config.title}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{config.subtitle}</p>
       </motion.div>
 
-      {/* Bannière contextuelle catégorie — pub partenaire */}
+      {/* Bannière contextuelle catégorie */}
       <div className="mt-4">
         <CategoryBanner categorySlug={config.categories[0] ?? ""} />
       </div>
 
-      {/* Search bar */}
-      <div className="mt-6 rounded-2xl border border-border bg-card p-3 shadow-sm">
+      {/* Search bar + category toggles + filtre drawer */}
+      <div className="mt-5 rounded-2xl border border-border bg-card p-3 shadow-sm">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -233,100 +222,64 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
           />
         </div>
 
-        {/* Category toggles — icônes visuelles */}
-        {config.typeFilters && config.typeFilters.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {config.typeFilters.map((type) => {
-              const active = types.includes(type);
-              const emoji = CATEGORY_ICONS[type] ?? "📋";
-              return (
-                <button
-                  key={type}
-                  onClick={() => toggleType(type)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
-                    active
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border bg-white text-foreground hover:border-primary/50 hover:bg-primary/5"
-                  )}
-                >
-                  <span className="text-base">{emoji}</span>
-                  {getCategoryLabel(type)}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+        {/* Category toggles + Filtres button — même ligne */}
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          {config.typeFilters && config.typeFilters.length > 0 && (
+            <>
+              {config.typeFilters.map((type) => {
+                const active = types.includes(type);
+                const emoji = CATEGORY_ICONS[type] ?? "📋";
+                return (
+                  <button
+                    key={type}
+                    onClick={() => toggleType(type)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
+                      active
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-white text-foreground hover:border-primary/50 hover:bg-primary/5"
+                    )}
+                  >
+                    <span className="text-base">{emoji}</span>
+                    {getCategoryLabel(type)}
+                  </button>
+                );
+              })}
+              <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
+            </>
+          )}
 
-      {/* Filtres visuels — Budget chips */}
-      <div className="mt-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Coins className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Budget</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {BUDGET_OPTIONS.map((opt) => {
-            const active = budget === opt.value;
-            const Icon = opt.icon;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => { setLoading(true); setBudget(opt.value); setLimit(PAGE_SIZE); }}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
-                  active
-                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
-                    : "border-border bg-white text-muted-foreground hover:border-primary/50"
-                )}
-              >
-                <Icon className={cn("h-3.5 w-3.5", active ? "text-primary" : opt.color)} />
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
+          {/* Filtres drawer trigger */}
+          <FilterDrawer
+            budgetOptions={BUDGET_OPTIONS}
+            sortOptions={SORT_OPTIONS}
+            activeBudget={budget}
+            activeSort={sort}
+            onBudgetChange={(v) => { setLoading(true); setBudget(v); setLimit(PAGE_SIZE); }}
+            onSortChange={(v) => { setLoading(true); setSort(v); setLimit(PAGE_SIZE); }}
+            onReset={() => { setLoading(true); setBudget(0); setSort("price_asc"); setLimit(PAGE_SIZE); }}
+          />
         </div>
       </div>
 
-      {/* Filtres visuels — Tri chips */}
-      <div className="mt-3">
-        <div className="flex items-center gap-2 mb-2">
-          <ArrowDownWideNarrow className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Trier par</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {SORT_OPTIONS.map((opt) => {
-            const active = sort === opt.value;
-            const Icon = opt.icon;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => { setLoading(true); setSort(opt.value); setLimit(PAGE_SIZE); }}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
-                  active
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                    : "border-border bg-white text-muted-foreground hover:border-primary/50"
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Active filters bar */}
+      {/* Active filter chips — résumé compact */}
       {hasActiveFilters && (
-        <div className="mt-3 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            {types.length > 0 && `${types.length} catégorie(s)`}
-            {budget > 0 && ` · Budget ≤ ${budget.toLocaleString("fr-FR")} F`}
-          </p>
-          <Button variant="ghost" size="sm" onClick={resetFilters} className="text-xs h-7">
-            ✕ Tout effacer
-          </Button>
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          {budget > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              💰 ≤ {budget.toLocaleString("fr-FR")} F
+              <button onClick={() => { setLoading(true); setBudget(0); setLimit(PAGE_SIZE); }} className="ml-0.5 hover:text-primary/70">×</button>
+            </span>
+          )}
+          {sort !== "price_asc" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              📊 {SORT_OPTIONS.find(o => o.value === sort)?.label}
+              <button onClick={() => { setLoading(true); setSort("price_asc"); setLimit(PAGE_SIZE); }} className="ml-0.5 hover:text-primary/70">×</button>
+            </span>
+          )}
+          <button onClick={resetFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Tout effacer
+          </button>
         </div>
       )}
 
@@ -351,12 +304,11 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         </div>
       )}
 
-      {/* Results / Loading / Error / Empty */}
+      {/* Results */}
       <div className="mt-4">
         {effectiveLoading ? (
           <RoomCardSkeletonGrid count={6} />
         ) : effectiveError ? (
-          /* Error state — intelligent */
           <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-destructive">
               <CircleAlert className="h-7 w-7" />
@@ -365,16 +317,12 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
               📡 Problème de connexion
             </h3>
             <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              Impossible de charger les annonces. Vérifiez votre connexion internet et réessayez.
+              Impossible de charger les annonces. Vérifiez votre connexion et réessayez.
             </p>
             <div className="mt-5 flex gap-3">
-              <Button onClick={retry}>
-                🔄 Réessayer
-              </Button>
+              <Button onClick={retry}>🔄 Réessayer</Button>
               {hasActiveFilters && (
-                <Button variant="outline" onClick={resetFilters}>
-                  ✕ Effacer les filtres
-                </Button>
+                <Button variant="outline" onClick={resetFilters}>✕ Effacer les filtres</Button>
               )}
             </div>
           </div>
@@ -387,19 +335,14 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
               Vous cherchez {suggestion.matchedKeyword} ?
             </h3>
             <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              « {query} » n&apos;a rien donné sur {config.breadcrumbLabel}. Essayez sur {suggestion.targetLabel}.
+              « {query} » n&apos;a rien donné ici. Essayez sur {suggestion.targetLabel}.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Button onClick={handleSwitchPortal}>
-                → Voir sur {suggestion.targetLabel}
-              </Button>
-              <Button variant="ghost" onClick={resetFilters}>
-                Voir tout ici
-              </Button>
+              <Button onClick={handleSwitchPortal}>→ Voir sur {suggestion.targetLabel}</Button>
+              <Button variant="ghost" onClick={resetFilters}>Voir tout ici</Button>
             </div>
           </div>
         ) : effectiveRooms.length === 0 ? (
-          /* Empty state — intelligent avec suggestions */
           <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
               <Search className="h-7 w-7" />
@@ -411,21 +354,14 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
               {budget > 0
                 ? "Aucune annonce dans cette plage de prix. Essayez un budget plus élevé."
                 : types.length > 0
-                ? "Aucune annonce dans cette catégorie. Essayez une autre catégorie."
+                ? "Aucune annonce dans cette catégorie."
                 : "Aucune annonce ne correspond à votre recherche."}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
-              <Button onClick={resetFilters}>
-                🔄 Tout afficher
-              </Button>
+              <Button onClick={resetFilters}>🔄 Tout afficher</Button>
               {budget > 0 && (
                 <Button variant="outline" onClick={() => { setLoading(true); setBudget(0); setLimit(PAGE_SIZE); }}>
                   💰 Supprimer le budget
-                </Button>
-              )}
-              {types.length > 0 && (
-                <Button variant="outline" onClick={() => { setLoading(true); setTypes([]); setLimit(PAGE_SIZE); }}>
-                  📂 Toutes catégories
                 </Button>
               )}
             </div>

@@ -17,8 +17,8 @@ export interface CatalogContentConfig {
   title: string;
   /** Libellé affiché dans le fil d'Ariane. */
   breadcrumbLabel: string;
-  /** Sous-titre sous le H1. */
-  subtitle: string;
+  /** Sous-titre sous le H1 (optionnel). */
+  subtitle?: string;
   /** Placeholder de la barre de recherche. */
   searchPlaceholder: string;
   /** Libellé du prix (ex. "par nuit", "par consultation", "par scolarité"). */
@@ -34,8 +34,7 @@ export const HOTELS_CONFIG: CatalogContentConfig = {
   categories: ["hotel", "residence"],
   title: "Hôtels & Résidences Meublées",
   breadcrumbLabel: "Hôtels & Résidences",
-  subtitle:
-    "Chambres et appartements publiés en direct par nos établissements partenaires.",
+
   searchPlaceholder: "Rechercher une ville, une résidence, une chambre…",
   priceSuffix: "par nuit",
   typeFilters: ["hotel", "residence"],
@@ -48,8 +47,7 @@ export const ECOLES_CONFIG: CatalogContentConfig = {
   categories: ["school"],
   title: "Écoles & Établissements Privés",
   breadcrumbLabel: "Écoles & Établissements",
-  subtitle:
-    "Écoles, campus et centres de formation publiés en direct par nos établissements partenaires.",
+
   searchPlaceholder: "Rechercher une école, un niveau, une ville…",
   priceSuffix: "par scolarité",
   footerNote:
@@ -61,8 +59,7 @@ export const RESTAURANTS_CONFIG: CatalogContentConfig = {
   categories: ["restaurant"],
   title: "Restaurants & Gastronomie",
   breadcrumbLabel: "Restaurants",
-  subtitle:
-    "Restaurants, brasseries et bars partenaires : carte, spécialités et ambiance.",
+
   searchPlaceholder: "Rechercher un restaurant, une cuisine, une ville…",
   priceSuffix: "par plat",
   footerNote:
@@ -74,8 +71,7 @@ export const CLINIQUES_CONFIG: CatalogContentConfig = {
   categories: ["clinic"],
   title: "Cliniques & Santé",
   breadcrumbLabel: "Cliniques & Santé",
-  subtitle:
-    "Cliniques, cabinets médicaux et centres de santé partenaires vérifiés.",
+
   searchPlaceholder: "Rechercher une clinique, une spécialité, une ville…",
   priceSuffix: "par consultation",
   footerNote:
