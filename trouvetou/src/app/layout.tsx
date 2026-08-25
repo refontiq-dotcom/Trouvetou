@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Header } from "@/components/layout/header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { LocationBar } from "@/components/location/location-bar";
@@ -60,7 +59,6 @@ export default function RootLayout({
         <LocationProvider>
           <FavoritesProvider>
             <CompareProvider>
-              <Header />
               {/* Barre de position — desktop uniquement (le mobile passe par la bottom-nav) */}
               <div className="hidden md:block">
                 <LocationBar />
