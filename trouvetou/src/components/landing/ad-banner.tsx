@@ -64,7 +64,7 @@ export function AdBanner() {
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
       {/* Fixed-size rectangular container */}
-      <div className="relative w-full h-[200px] sm:h-[240px] rounded-2xl overflow-hidden shadow-sm">
+      <div className="relative w-full h-[200px] sm:h-[240px] rounded-2xl overflow-hidden shadow-lg">
         <AnimatePresence mode="wait">
           <motion.div
             key={current}

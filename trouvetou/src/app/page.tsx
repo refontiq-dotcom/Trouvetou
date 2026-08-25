@@ -11,9 +11,16 @@ export const revalidate = 60;
 export default function HomePage() {
   return (
     <>
+      {/* Hero pleine largeur — fond bleu edge-to-edge */}
       <Hero />
-      <AdBanner />
-      <CategoryTabs />
+
+      {/* Pub + Onglets qui chevauchent le bas du hero */}
+      <div className="relative z-10 -mt-8 sm:-mt-10">
+        <AdBanner />
+        <CategoryTabs />
+      </div>
+
+      {/* Contenu normal */}
       <CategoryShowcase />
       <HowItWorks />
       <AlertSubscribe />

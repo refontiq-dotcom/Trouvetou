@@ -14,22 +14,20 @@ export function Hero() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const q = query.trim();
-    // Routage intelligent : on envoie l'utilisateur vers le portail qui
-    // correspond à son intention (clinique → /cliniques, école → /ecoles…).
     const target = q ? detectTargetPortal(q)?.targetHref ?? "/ecoles" : "/ecoles";
     router.push(q ? `${target}?q=${encodeURIComponent(q)}` : target);
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
-      {/* Rectangular container — smaller than ad banner */}
-      <div className="relative w-full h-[160px] sm:h-[180px] rounded-2xl overflow-hidden bg-[#0d47a1]">
-        {/* Decorative blobs */}
-        <div className="hero-blob h-64 w-64 bg-[#1976d2] top-0 -left-16 opacity-60" />
-        <div className="hero-blob h-48 w-48 bg-[#42a5f5] top-4 right-0 opacity-30" />
+    <section className="relative w-full bg-[#0d47a1]">
+      {/* Hauteur augmentée — pleine largeur edge-to-edge */}
+      <div className="relative w-full h-[220px] sm:h-[260px] md:h-[280px] overflow-hidden">
+        {/* Blobs décoratifs */}
+        <div className="hero-blob h-72 w-72 bg-[#1976d2] top-0 -left-20 opacity-60" />
+        <div className="hero-blob h-56 w-56 bg-[#42a5f5] top-4 right-0 opacity-30" />
 
-        <div className="relative z-10 h-full flex flex-col items-center justify-center px-4">
-          {/* Title — one line */}
+        <div className="relative z-10 h-full flex flex-col items-center justify-center px-5 sm:px-8">
+          {/* Titre */}
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -41,7 +39,7 @@ export function Hero() {
             Réservez.
           </motion.h1>
 
-          {/* Subtitle */}
+          {/* Sous-titre */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -51,13 +49,13 @@ export function Hero() {
             Tout simplement.
           </motion.p>
 
-          {/* Search bar + Filtre */}
+          {/* Barre de recherche — plus large */}
           <motion.form
             onSubmit={handleSubmit}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.16 }}
-            className="mt-3 sm:mt-4 flex w-full max-w-[480px] items-stretch gap-0"
+            className="mt-4 sm:mt-5 flex w-full max-w-[520px] items-stretch gap-0"
           >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -66,7 +64,7 @@ export function Hero() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Ville, établissement, spécialité…"
-                className="h-[42px] sm:h-[46px] w-full border-0 bg-white pl-10 pr-12 text-xs sm:text-sm outline-none placeholder:text-slate-400"
+                className="h-[44px] sm:h-[48px] w-full border-0 bg-white pl-10 pr-12 text-xs sm:text-sm outline-none placeholder:text-slate-400"
               />
               <VoiceButton
                 onResult={(text) => setQuery(text)}
@@ -76,7 +74,7 @@ export function Hero() {
             </div>
             <button
               type="submit"
-              className="inline-flex h-[42px] sm:h-[46px] items-center gap-1.5 rounded-r-lg bg-[#0a3a7d] border-2 border-white/30 px-4 sm:px-5 text-xs sm:text-sm font-semibold text-white hover:bg-[#1565c0] transition-colors"
+              className="inline-flex h-[44px] sm:h-[48px] items-center gap-1.5 rounded-r-lg bg-[#0a3a7d] border-2 border-white/30 px-4 sm:px-5 text-xs sm:text-sm font-semibold text-white hover:bg-[#1565c0] transition-colors"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Filtre
