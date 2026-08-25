@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SlidersHorizontal, X, Coins, TrendingDown, TrendingUp, MapPin, ArrowDownWideNarrow } from "lucide-react";
+import { SlidersHorizontal, X, Coins, ArrowDownWideNarrow } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FilterOption {
@@ -69,16 +69,16 @@ export function FilterDrawer({
               className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
             />
 
-            {/* Bottom sheet */}
+            {/* Bottom sheet (mobile) / Modal (desktop) */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl md:bottom-auto md:top-1/2 md:left-1/2 md:right-auto md:w-full md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:max-h-[85vh]"
             >
-              {/* Handle */}
-              <div className="flex justify-center pt-3 pb-1">
+              {/* Handle (mobile uniquement) */}
+              <div className="flex justify-center pt-3 pb-1 md:hidden">
                 <div className="h-1 w-10 rounded-full bg-slate-300" />
               </div>
 

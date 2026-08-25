@@ -47,7 +47,7 @@ const CATEGORIES = [
 
 export async function CategoryShowcase() {
   const supabase = getSupabase();
-  let counts: Record<string, number> = {};
+  const counts: Record<string, number> = {};
 
   if (supabase) {
     try {

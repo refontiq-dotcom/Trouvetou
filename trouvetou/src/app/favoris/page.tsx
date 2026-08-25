@@ -14,16 +14,19 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 export default function FavorisPage() {
   const { favorites, count } = useFavorites();
   const [rooms, setRooms] = useState<ListingView[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Signature des favoris pour laquelle les annonces ont déjà été chargées.
+  const [loadedSignature, setLoadedSignature] = useState("");
+
+  const currentSignature = Array.from(favorites).sort().join("|");
+  // Le chargement est « vrai » tant que la liste affichée ne correspond pas aux favoris courants.
+  const loading = count > 0 && loadedSignature !== currentSignature;
 
   useEffect(() => {
     if (count === 0) {
-      setLoading(false);
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
 
     // On charge toutes les annonces (sans filtre) puis on filtre côté client
     // pour ne garder que celles en favori. Pour un gros catalogue, on pourrait
@@ -32,17 +35,17 @@ export default function FavorisPage() {
       .then(({ data }) => {
         if (!cancelled) {
           setRooms(data.filter((r) => favorites.has(r.id)));
-          setLoading(false);
+          setLoadedSignature(currentSignature);
         }
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadedSignature(currentSignature);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [favorites, count]);
+  }, [favorites, count, currentSignature]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
@@ -89,7 +92,7 @@ export default function FavorisPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {rooms.map((room, i) => (
             <RoomCard key={room.id} room={room} index={i} />
           ))}

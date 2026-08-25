@@ -33,7 +33,7 @@ export function Hero() {
 
   return (
     <section className="relative w-full bg-[#0d47a1]">
-      <div className="relative w-full h-[220px] sm:h-[260px] md:h-[280px] overflow-hidden">
+      <div className="relative w-full h-[220px] sm:h-[260px] md:h-[320px] lg:h-[360px] overflow-hidden">
         {/* Blobs */}
         <div className="hero-blob h-72 w-72 bg-[#1976d2] top-0 -left-20 opacity-60" />
         <div className="hero-blob h-56 w-56 bg-[#42a5f5] top-4 right-0 opacity-30" />
@@ -66,7 +66,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.16 }}
-            className="mt-4 sm:mt-5 flex w-full max-w-[520px] items-stretch gap-0"
+            className="mt-4 sm:mt-5 flex w-full max-w-[520px] items-stretch gap-0 sm:max-w-xl lg:max-w-2xl"
           >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

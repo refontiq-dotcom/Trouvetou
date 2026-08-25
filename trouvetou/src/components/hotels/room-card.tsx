@@ -11,8 +11,6 @@ import {
   Navigation,
   Phone,
   Wallet,
-  Sparkles,
-  Star,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
 import { useLocation } from "@/contexts/location-context";
@@ -95,7 +93,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.4, delay: Math.min(index, 4) * 0.06 }}
         className={cn(
-          "group flex cursor-pointer flex-row overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md",
+          "group flex h-full cursor-pointer flex-row overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md",
           room.is_boosted
             ? "border-accent/60 shadow-accent/20 ring-1 ring-accent/40"
             : "border-border hover:shadow-primary/10"

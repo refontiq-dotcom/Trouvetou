@@ -24,41 +24,95 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-white/95 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Hamburger */}
-          <button
-            onClick={() => setMobileOpen((v) => !v)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted"
-            aria-label="Menu"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+        <div className="relative flex h-16 items-center justify-between gap-4">
+          {/* Groupe gauche : hamburger (mobile) + logo (desktop) */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileOpen((v) => !v)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted md:hidden"
+              aria-label="Menu"
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
 
-          {/* Logo — centered */}
+            {/* Logo — desktop (gauche) */}
+            <Link href="/" className="hidden md:flex items-center gap-2 group">
+              <Logo variant="dark" size="sm" className="transition-transform group-hover:scale-105" />
+            </Link>
+          </div>
+
+          {/* Logo — mobile (centré absolu, comportement actuel) */}
           <Link
             href="/"
-            className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 group"
+            className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 group"
           >
             <Logo variant="dark" size="sm" className="transition-transform group-hover:scale-105" />
           </Link>
 
-          {/* Favoris — bouton coeur avec compteur */}
-          <Link
-            href="/favoris"
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted"
-            aria-label="Mes favoris"
-          >
-            <Heart className="h-5 w-5" />
-            {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                {count > 99 ? "99+" : count}
-              </span>
-            )}
-          </Link>
+          {/* Navigation desktop */}
+          <nav className="hidden md:flex items-center gap-1 mx-auto flex-1 justify-center">
+            {NAV_LINKS.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`relative rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {link.label}
+                  {isActive && (
+                    <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-primary" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Actions droite */}
+          <div className="flex items-center gap-2">
+            {/* Favoris — chip desktop */}
+            <Link
+              href="/favoris"
+              className="relative hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-white px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/5"
+              aria-label="Mes favoris"
+            >
+              <Heart className="h-4 w-4" />
+              <span className="hidden lg:inline">Favoris</span>
+              {count > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </Link>
+
+            {/* Favoris — mobile (icône seule) */}
+            <Link
+              href="/favoris"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted sm:hidden"
+              aria-label="Mes favoris"
+            >
+              <Heart className="h-5 w-5" />
+              {count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </Link>
+
+            {/* Profil */}
+            <Link
+              href="/profil"
+              className="hidden md:inline-flex items-center rounded-full bg-gradient-to-r from-[#0d47a1] to-[#1565c0] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
+            >
+              Mon espace
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Menu (mobile + desktop) */}
+      {/* Menu mobile */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.nav
@@ -66,7 +120,7 @@ export function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="overflow-hidden border-t border-border bg-white"
+            className="overflow-hidden border-t border-border bg-white md:hidden"
           >
             <div className="mx-auto max-w-7xl px-4 py-3 space-y-1 sm:px-6 lg:px-8">
               {NAV_LINKS.map((link) => {
