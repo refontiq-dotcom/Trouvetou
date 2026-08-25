@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { LocationProvider } from "@/contexts/location-context";
 import { FavoritesProvider } from "@/contexts/favorites-context";
@@ -57,7 +56,6 @@ export default function RootLayout({
             <CompareProvider>
               <Header />
               <main className="flex-1 pb-20 md:pb-0">{children}</main>
-              <div className="hidden md:block"><Footer /></div>
               <BottomNav />
               <CompareBar />
               <PwaRegister />
