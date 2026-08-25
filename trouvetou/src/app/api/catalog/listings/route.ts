@@ -72,11 +72,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   let query = admin.from("listings").select(LISTINGS_SELECT).eq("is_available", true);
 
   if (search.length > 0) {
-    // Recherche sur le titre, la ville et le nom du provider.
+    // Recherche sur le titre et la ville (colonnes de la table listings).
     // Les caractères `%` et `,` sont neutralisés (syntaxe PostgREST .or()).
+    // Note : `providers.name` ne peut PAS être filtré ici car c'est une table
+    // JOIN — PostgREST rejette les colonnes étrangères dans .or().
     const needle = search.replace(/[%,]/g, " ");
     query = query.or(
-      `title.ilike.%${needle}%,city.ilike.%${needle}%,providers.name.ilike.%${needle}%`
+      `title.ilike.%${needle}%,city.ilike.%${needle}%`
     );
   }
 
