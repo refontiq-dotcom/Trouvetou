@@ -2,7 +2,6 @@ import { Hero } from "@/components/landing/hero";
 import { AdBanner } from "@/components/landing/ad-banner";
 import { CategoryShowcase } from "@/components/landing/category-showcase";
 import { HowItWorks } from "@/components/landing/steps";
-import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
 import { CtaBand } from "@/components/landing/cta-band";
 
 export const revalidate = 60;
@@ -21,7 +20,6 @@ export default function HomePage() {
       {/* Contenu normal */}
       <CategoryShowcase />
       <HowItWorks />
-      <AlertSubscribe />
       <CtaBand />
     </>
   );

@@ -5,6 +5,7 @@ import { User, MapPin, Heart, Bell, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
+import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
 
 const MENU_ITEMS = [
   { href: "/favoris", label: "Mes favoris", icon: Heart, color: "text-red-500" },
@@ -80,6 +81,9 @@ export default function ProfilPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Alertes */}
+      <AlertSubscribe />
     </div>
   );
 }
