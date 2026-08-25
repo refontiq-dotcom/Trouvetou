@@ -1,4 +1,4 @@
-const CACHE_NAME = "trouvetou-v1";
+const CACHE_NAME = "trouvetou-v2";
 const STATIC_ASSETS = ["/", "/ecoles", "/cliniques", "/hotels", "/restaurants"];
 
 self.addEventListener("install", (event) => {
@@ -20,13 +20,14 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // On ne cache que les navigations (HTML) et les assets statiques.
-  // Les API Supabase ne sont pas mises en cache (données fraîches).
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
 
-  // Mise en cache stale-while-revalidate pour les pages
+  // Skip chrome-extension and other non-http(s) requests
+  if (!url.protocol.startsWith("http")) return;
+
+  // Stale-while-revalidate for navigation (HTML pages)
   if (event.request.mode === "navigate") {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
@@ -44,11 +45,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first pour les assets statiques (images, CSS, JS)
+  // Cache-first for Next.js static assets, JS, CSS, fonts, images
   if (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.endsWith(".js") ||
     url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".woff2") ||
+    url.pathname.endsWith(".woff") ||
+    url.pathname.endsWith(".ttf") ||
+    url.pathname.startsWith("/icon-") ||
+    url.pathname.startsWith("/apple-touch-icon") ||
     url.hostname === "images.unsplash.com"
   ) {
     event.respondWith(

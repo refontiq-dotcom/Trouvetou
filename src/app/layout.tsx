@@ -7,6 +7,7 @@ import { FavoritesProvider } from "@/contexts/favorites-context";
 import { CompareProvider } from "@/contexts/compare-context";
 import { CompareBar } from "@/components/compare/compare-bar";
 import { PwaRegister } from "@/components/pwa-register";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 
 export const metadata: Metadata = {
   title: {
@@ -47,8 +48,11 @@ export default function RootLayout({
     <html lang="fr" className="h-full antialiased">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Trouvetou" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground font-[family-name:var(--font-poppins)]">
         <LocationProvider>
@@ -59,6 +63,7 @@ export default function RootLayout({
               <BottomNav />
               <CompareBar />
               <PwaRegister />
+              <PwaInstallBanner />
             </CompareProvider>
           </FavoritesProvider>
         </LocationProvider>
