@@ -32,8 +32,8 @@ import { FilterDrawer } from "@/components/catalog/filter-drawer";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
 
-const PAGE_SIZE = 30;
-const MAX_CLIENT_LIMIT = 100;
+const PAGE_SIZE = 15;
+const MAX_CLIENT_LIMIT = 60;
 
 const BUDGET_OPTIONS = [
   { label: "Tous", value: 0, icon: Coins, color: "text-muted-foreground" },
