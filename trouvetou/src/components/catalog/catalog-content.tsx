@@ -47,7 +47,7 @@ const SORT_OPTIONS = [
   { label: "À proximité", value: "distance", icon: MapPin },
   { label: "Prix ↑", value: "price_asc", icon: TrendingDown },
   { label: "Prix ↓", value: "price_desc", icon: TrendingUp },
-  { label: "Récent", value: "name", icon: ArrowDownWideNarrow },
+  { label: "Récent", value: "recent", icon: ArrowDownWideNarrow },
 ];
 
 /** Catégories avec icônes visuelles */
@@ -224,7 +224,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         <button
           type="button"
           onClick={() => { setLoading(true); setLimit(PAGE_SIZE); }}
-          className="inline-flex h-12 items-center gap-1.5 rounded-r-xl bg-[#0a3a7d] px-4 text-xs font-semibold text-white hover:bg-[#1565c0] transition-colors"
+          className="inline-flex h-12 items-center gap-1.5 rounded-r-xl bg-[#102a72] px-4 text-xs font-semibold text-white hover:bg-[#1769e8] transition-colors"
         >
           <Search className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Rechercher</span>

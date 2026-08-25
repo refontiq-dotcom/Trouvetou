@@ -49,23 +49,6 @@ export async function fetchListedListings(
   return { data: toListingViews(data), error: null };
 }
 
-export interface FetchListedRoomsParams {
-  search?: string;
-  establishmentTypes?: string[];
-  maxPrice?: number;
-}
-
-/** Alias de compatibilité (ancien nom). */
-export async function fetchListedRooms(
-  params: FetchListedRoomsParams = {}
-): Promise<{ data: ListingView[]; error: Error | null }> {
-  return fetchListedListings({
-    search: params.search,
-    categorySlugs: params.establishmentTypes,
-    maxPrice: params.maxPrice,
-  });
-}
-
 /**
  * Récupère les annonces boostées pour le carrousel sponsorisé.
  * Le filtre `is_boosted` est appliqué en SQL AVANT la limite, afin que les
@@ -95,6 +78,10 @@ export function sortRooms(
     }
     if (sort === "price_asc") return (a.price ?? 0) - (b.price ?? 0);
     if (sort === "price_desc") return (b.price ?? 0) - (a.price ?? 0);
+    // « Récent » : tri par date de mise à jour décroissante.
+    if (sort === "recent") {
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    }
     return a.name.localeCompare(b.name, "fr");
   };
 

@@ -38,6 +38,24 @@ export function formatNumber(amount: number): string {
   }).format(amount);
 }
 
+/**
+ * Libellé de prix selon la catégorie d'une annonce.
+ * Utilisé quand une carte est affichée hors de son portail dédié
+ * (ex. page Favoris qui mélange toutes les catégories).
+ */
+export function getPriceSuffix(categorySlug: string): string {
+  switch (categorySlug) {
+    case "school":
+      return "par scolarité";
+    case "restaurant":
+      return "par plat";
+    case "clinic":
+      return "par consultation";
+    default:
+      return "par nuit";
+  }
+}
+
 /** Indicatifs téléphoniques des pays couverts (Afrique de l'Ouest). */
 const COUNTRY_DIAL_CODES: Record<string, string> = {
   BF: "226",

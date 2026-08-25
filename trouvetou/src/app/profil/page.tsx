@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { User, MapPin, Heart, Bell, LogOut } from "lucide-react";
+import { User, MapPin, Heart, Compass } from "lucide-react";
 import Link from "next/link";
 import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
@@ -9,8 +9,7 @@ import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
 
 const MENU_ITEMS = [
   { href: "/favoris", label: "Mes favoris", icon: Heart, color: "text-red-500" },
-  { href: "/reservations", label: "Mes réservations", icon: Bell, color: "text-primary" },
-  { href: "/messages", label: "Messages", icon: User, color: "text-[#25D366]" },
+  { href: "/ecoles", label: "Parcourir les annonces", icon: Compass, color: "text-primary" },
 ];
 
 export default function ProfilPage() {

@@ -20,6 +20,7 @@ import { haversineDistance, formatDistance } from "@/lib/geo";
 import { buildWhatsAppShareUrl } from "@/lib/whatsapp";
 import {
   buildGoogleMapsUrl,
+  buildWhatsAppUrl,
   cn,
   formatFCFA,
   getAmenitiesInfo,
@@ -30,11 +31,11 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 
 /** Couleurs par catégorie pour les badges */
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
-  clinic: { bg: "bg-emerald-500", text: "text-emerald-500", ring: "ring-emerald-500/20" },
-  school: { bg: "bg-primary", text: "text-primary", ring: "ring-primary/20" },
-  restaurant: { bg: "bg-orange-500", text: "text-orange-500", ring: "ring-orange-500/20" },
-  hotel: { bg: "bg-amber-500", text: "text-amber-500", ring: "ring-amber-500/20" },
-  residence: { bg: "bg-amber-500", text: "text-amber-500", ring: "ring-amber-500/20" },
+  clinic: { bg: "bg-[#0ea5e9]", text: "text-[#0284c7]", ring: "ring-sky-500/20" },
+  school: { bg: "bg-[#1769e8]", text: "text-[#1769e8]", ring: "ring-[#1769e8]/20" },
+  restaurant: { bg: "bg-[#f97316]", text: "text-orange-600", ring: "ring-orange-500/20" },
+  hotel: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
+  residence: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
 };
 
 interface RoomCardProps {
@@ -62,6 +63,19 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
   const compared = isCompared(room.id);
   const catSlug = establishment?.type ?? room.category_slug ?? "";
   const catColor = CATEGORY_COLORS[catSlug] ?? CATEGORY_COLORS.hotel;
+
+  // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
+  // Les autres catégories proposent un simple contact WhatsApp.
+  const isBookable = catSlug === "hotel" || catSlug === "residence";
+  const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
+  const contactUrl =
+    contactPhone && !isBookable
+      ? buildWhatsAppUrl(
+          contactPhone,
+          `Bonjour, je vous contacte depuis Trouvetou à propos de « ${room.name} ».`,
+          establishment?.country
+        )
+      : null;
 
   const location = [establishment?.city, establishment?.address]
     .filter(Boolean)
@@ -219,10 +233,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               </div>
               <div>
                 <p className="text-sm sm:text-base lg:text-lg font-bold text-foreground leading-tight">
-                  {formatFCFA(room.price ?? 0)}{" "}
-                  <span className="text-[10px] sm:text-xs font-normal text-muted-foreground">
-                    F CFA
-                  </span>
+                  {formatFCFA(room.price ?? 0)}
                 </p>
                 <p className="text-[9px] sm:text-[10px] text-muted-foreground">{priceSuffix}</p>
               </div>
@@ -249,14 +260,27 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 <Navigation className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Itinéraire</span>
               </button>
-              {/* Réserver */}
-              <button
-                onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 sm:px-3 h-8 text-[10px] sm:text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
-              >
-                <Phone className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Réserver</span>
-              </button>
+              {/* Réserver (hôtels/résidences) ou Contacter (autres catégories) */}
+              {isBookable ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 sm:px-3 h-8 text-[10px] sm:text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Réserver</span>
+                </button>
+              ) : contactUrl ? (
+                <a
+                  href={contactUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 sm:px-3 h-8 text-[10px] sm:text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Contacter</span>
+                </a>
+              ) : null}
             </div>
           </div>
 

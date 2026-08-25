@@ -45,7 +45,7 @@ export function BookingModal({
   room,
   open,
   onClose,
-  priceSuffix = "/ nuit",
+  priceSuffix = "par nuit",
 }: BookingModalProps) {
   const establishment = room.establishment;
   const maxGuests = room.capacity && room.capacity > 0 ? room.capacity : 10;
@@ -65,6 +65,11 @@ export function BookingModal({
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [booking, setBooking] = useState<BookingResult | null>(null);
+
+  // Garde-fou : la réservation « par nuit » n'a de sens que pour l'hôtellerie.
+  if (room.category_slug !== "hotel" && room.category_slug !== "residence") {
+    return null;
+  }
 
   const reset = () => {
     setStep("dates");

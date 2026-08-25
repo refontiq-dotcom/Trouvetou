@@ -9,7 +9,7 @@ const CATEGORIES = [
     href: "/cliniques",
     image:
       "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=500&h=500&fit=crop&q=80",
-    color: "from-emerald-600/80 to-emerald-900/90",
+    color: "from-[#0ea5e9]/80 to-[#0369a1]/90",
     icon: Stethoscope,
     emoji: "🏥",
   },
@@ -19,7 +19,7 @@ const CATEGORIES = [
     href: "/ecoles",
     image:
       "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=500&h=500&fit=crop&q=80",
-    color: "from-[#1565c0]/80 to-[#0d47a1]/90",
+    color: "from-[#1769e8]/80 to-[#102a72]/90",
     icon: GraduationCap,
     emoji: "🏫",
   },
@@ -29,7 +29,7 @@ const CATEGORIES = [
     href: "/restaurants",
     image:
       "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=500&fit=crop&q=80",
-    color: "from-orange-600/80 to-red-900/90",
+    color: "from-[#f97316]/80 to-[#c2410c]/90",
     icon: UtensilsCrossed,
     emoji: "🍽️",
   },
@@ -39,7 +39,7 @@ const CATEGORIES = [
     href: "/hotels",
     image:
       "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=500&fit=crop&q=80",
-    color: "from-amber-600/80 to-amber-900/90",
+    color: "from-[#f5a400]/80 to-[#b45309]/90",
     icon: Building2,
     emoji: "🏨",
   },

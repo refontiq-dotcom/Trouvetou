@@ -1,5 +1,6 @@
+import { formatFCFA } from "@/lib/utils";
+
 /**
- * Génère une URL de partage WhatsApp avec un message pré-rempli.
  * Fonctionne sur mobile (ouvre l'app) et desktop (ouvre web.whatsapp.com).
  */
 export function buildWhatsAppShareUrl(params: {
@@ -13,7 +14,7 @@ export function buildWhatsAppShareUrl(params: {
   if (params.city) parts.push(`📍 ${params.city}`);
   if (params.price != null) {
     parts.push(
-      `💰 ${params.price.toLocaleString("fr-FR")} F CFA ${params.priceSuffix ?? ""}`
+      `💰 ${formatFCFA(params.price)} ${params.priceSuffix ?? ""}`
     );
   }
   parts.push("");

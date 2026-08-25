@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
+import { LocationBar } from "@/components/location/location-bar";
 import { LocationProvider } from "@/contexts/location-context";
 import { FavoritesProvider } from "@/contexts/favorites-context";
 import { CompareProvider } from "@/contexts/compare-context";
@@ -36,7 +37,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#1565c0",
+  themeColor: "#102A72",
   viewportFit: "cover",
 };
 
@@ -55,11 +56,15 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Trouvetou" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground font-[family-name:var(--font-poppins)]">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <LocationProvider>
           <FavoritesProvider>
             <CompareProvider>
               <Header />
+              {/* Barre de position — desktop uniquement (le mobile passe par la bottom-nav) */}
+              <div className="hidden md:block">
+                <LocationBar />
+              </div>
               <main className="flex-1 pb-20 md:pb-0">{children}</main>
               <BottomNav />
               {/* Footer — uniquement sur desktop pour ne pas gêner la nav mobile */}

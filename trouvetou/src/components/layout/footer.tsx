@@ -6,6 +6,7 @@ const CATEGORIES = [
   { href: "/hotels", label: "Hôtels & Résidences meublées" },
   { href: "/ecoles", label: "Écoles & Établissements privés" },
   { href: "/cliniques", label: "Cliniques & Santé" },
+  { href: "/restaurants", label: "Restaurants & Gastronomie" },
 ];
 
 const NAV_LINKS = [
@@ -13,6 +14,7 @@ const NAV_LINKS = [
   { href: "/hotels", label: "Hôtels & Résidences" },
   { href: "/ecoles", label: "Écoles & Établissements" },
   { href: "/cliniques", label: "Cliniques & Santé" },
+  { href: "/restaurants", label: "Restaurants" },
 ];
 
 export function Footer() {

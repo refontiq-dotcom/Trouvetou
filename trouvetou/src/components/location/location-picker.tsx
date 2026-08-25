@@ -4,11 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Navigation, Search, X } from "lucide-react";
 import { useLocation } from "@/contexts/location-context";
-import {
-  requestBrowserLocation,
-  reverseGeocode,
-  type UserLocation,
-} from "@/lib/geo";
 
 /** Villes populaires de Côte d'Ivoire comme raccourcis rapides. */
 const QUICK_CITIES: { label: string; lat: number; lng: number }[] = [

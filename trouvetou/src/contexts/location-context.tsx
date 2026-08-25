@@ -4,9 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -33,19 +33,44 @@ interface LocationContextValue {
 
 const LocationContext = createContext<LocationContextValue | null>(null);
 
+// ---------------------------------------------------------------------------
+// Mini-store `location` synchronisé avec localStorage (même approche que les
+// favoris) pour éviter les rendus en cascade au montage.
+// ---------------------------------------------------------------------------
+let locationSnapshot: UserLocation | null = loadLocation();
+const locationListeners = new Set<() => void>();
+
+function emitLocation() {
+  locationListeners.forEach((l) => l());
+}
+
+function subscribeLocation(callback: () => void): () => void {
+  locationListeners.add(callback);
+  return () => {
+    locationListeners.delete(callback);
+  };
+}
+
+function getLocationSnapshot(): UserLocation | null {
+  return locationSnapshot;
+}
+
+function getLocationServerSnapshot(): UserLocation | null {
+  return null;
+}
+
 export function LocationProvider({ children }: { children: ReactNode }) {
-  const [location, setLocationState] = useState<UserLocation | null>(null);
+  const location = useSyncExternalStore(
+    subscribeLocation,
+    getLocationSnapshot,
+    getLocationServerSnapshot
+  );
   const [loading, setLoading] = useState(false);
 
-  // Charger la position depuis localStorage au montage
-  useEffect(() => {
-    const saved = loadLocation();
-    if (saved) setLocationState(saved);
-  }, []);
-
   const setLocation = useCallback((loc: UserLocation) => {
-    setLocationState(loc);
+    locationSnapshot = loc;
     saveLocation(loc);
+    emitLocation();
   }, []);
 
   const requestAutoLocation = useCallback(async () => {
@@ -67,8 +92,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, [setLocation]);
 
   const clearSavedLocation = useCallback(() => {
-    setLocationState(null);
+    locationSnapshot = null;
     clearLocation();
+    emitLocation();
   }, []);
 
   const value = useMemo<LocationContextValue>(

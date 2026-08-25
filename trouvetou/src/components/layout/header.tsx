@@ -104,7 +104,7 @@ export function Header() {
             {/* Profil */}
             <Link
               href="/profil"
-              className="hidden md:inline-flex items-center rounded-full bg-gradient-to-r from-[#0d47a1] to-[#1565c0] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
+              className="hidden md:inline-flex items-center rounded-full bg-gradient-to-r from-[#102a72] to-[#1769e8] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
             >
               Mon espace
             </Link>

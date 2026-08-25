@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Loader2, X } from "lucide-react";
 import { useLocation } from "@/contexts/location-context";
 import { LocationPicker } from "@/components/location/location-picker";
@@ -63,11 +62,9 @@ export function LocationBar() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {pickerOpen && (
-          <LocationPicker onClose={() => setPickerOpen(false)} />
-        )}
-      </AnimatePresence>
+      {pickerOpen && (
+        <LocationPicker onClose={() => setPickerOpen(false)} />
+      )}
     </>
   );
 }

@@ -9,6 +9,7 @@ import { RoomCard } from "@/components/hotels/room-card";
 import { RoomCardSkeletonGrid } from "@/components/hotels/room-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { fetchListedListings } from "@/lib/supabase/hotels";
+import { getPriceSuffix } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 export default function FavorisPage() {
@@ -94,7 +95,7 @@ export default function FavorisPage() {
       ) : (
         <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {rooms.map((room, i) => (
-            <RoomCard key={room.id} room={room} index={i} />
+            <RoomCard key={room.id} room={room} index={i} priceSuffix={getPriceSuffix(room.category_slug)} />
           ))}
         </div>
       )}

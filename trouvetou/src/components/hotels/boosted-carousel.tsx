@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MapPin, Phone, Sparkles } from "lucide-react";
+import { MapPin, Phone, MessageCircle, Sparkles } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -11,7 +11,7 @@ import "swiper/css/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookingModal } from "@/components/hotels/booking-modal";
-import { formatFCFA, PLACEHOLDER_IMAGE } from "@/lib/utils";
+import { formatFCFA, buildWhatsAppUrl, PLACEHOLDER_IMAGE } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 interface BoostedCarouselProps {
@@ -32,6 +32,18 @@ function BoostedCard({
   const [bookingOpen, setBookingOpen] = useState(false);
   const establishment = room.establishment;
   const image = room.images[0] ?? PLACEHOLDER_IMAGE;
+
+  // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
+  const isBookable =
+    room.category_slug === "hotel" || room.category_slug === "residence";
+  const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
+  const contactUrl = contactPhone
+    ? buildWhatsAppUrl(
+        contactPhone,
+        `Bonjour, je vous contacte depuis Trouvetou à propos de « ${establishment?.name ?? room.name} ».`,
+        establishment?.country
+      )
+    : null;
 
   return (
     <>
@@ -79,14 +91,26 @@ function BoostedCard({
               </span>
             </p>
 
-            <Button
-              size="sm"
-              className="rounded-full bg-white text-slate-900 shadow hover:bg-yellow-50"
-              onClick={() => setBookingOpen(true)}
-            >
-              <Phone className="h-4 w-4" />
-              Réserver
-            </Button>
+            {isBookable ? (
+              <Button
+                size="sm"
+                className="rounded-full bg-white text-slate-900 shadow hover:bg-yellow-50"
+                onClick={() => setBookingOpen(true)}
+              >
+                <Phone className="h-4 w-4" />
+                Réserver
+              </Button>
+            ) : contactUrl ? (
+              <a
+                href={contactUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow transition-colors hover:bg-yellow-50"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Contacter
+              </a>
+            ) : null}
           </div>
         </div>
       </motion.div>

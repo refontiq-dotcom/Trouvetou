@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { HotelsContent } from "@/components/hotels/hotels-content";
+import { CatalogContent } from "@/components/catalog/catalog-content";
+import { HOTELS_CONFIG } from "@/components/catalog/configs";
 
 export const metadata: Metadata = {
   title: "Hôtels & Résidences Meublées",
@@ -15,5 +16,5 @@ export default async function HotelsPage({ searchParams }: HotelsPageProps) {
   const { q } = await searchParams;
   const initialQuery = typeof q === "string" ? q : "";
 
-  return <HotelsContent initialQuery={initialQuery} />;
+  return <CatalogContent config={HOTELS_CONFIG} initialQuery={initialQuery} />;
 }

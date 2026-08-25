@@ -3,9 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Star, Navigation, Phone } from "lucide-react";
+import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { buildGoogleMapsUrl, formatFCFA, PLACEHOLDER_IMAGE } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
@@ -76,7 +75,7 @@ function CompareContent() {
   const [a, b] = rooms;
 
   const fields = [
-    { label: "Prix", a: a.price ? `${formatFCFA(a.price)} F CFA` : "—", b: b.price ? `${formatFCFA(b.price)} F CFA` : "—" },
+    { label: "Prix", a: a.price ? formatFCFA(a.price) : "—", b: b.price ? formatFCFA(b.price) : "—" },
     { label: "Ville", a: a.establishment?.city ?? "—", b: b.establishment?.city ?? "—" },
     { label: "Adresse", a: a.establishment?.address ?? "—", b: b.establishment?.address ?? "—" },
     { label: "Capacité", a: a.capacity ? `${a.capacity} pers.` : "—", b: b.capacity ? `${b.capacity} pers.` : "—" },

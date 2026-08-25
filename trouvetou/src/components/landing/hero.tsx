@@ -8,8 +8,8 @@ import { detectTargetPortal } from "@/lib/search-intent";
 import { VoiceButton } from "@/components/ui/voice-button";
 
 const QUICK_CHIPS = [
-  { label: "Clinique", icon: Stethoscope, query: "clinique", color: "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100" },
-  { label: "École", icon: GraduationCap, query: "école", color: "bg-white text-[#1565c0] border-white/60 hover:bg-white/90" },
+  { label: "Clinique", icon: Stethoscope, query: "clinique", color: "bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100" },
+  { label: "École", icon: GraduationCap, query: "école", color: "bg-white text-[#1769E8] border-white/60 hover:bg-white/90" },
   { label: "Restaurant", icon: UtensilsCrossed, query: "restaurant", color: "bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100" },
   { label: "Hôtel", icon: Building2, query: "hôtel", color: "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100" },
 ];
@@ -32,11 +32,11 @@ export function Hero() {
   }
 
   return (
-    <section className="relative w-full bg-[#0d47a1]">
+    <section className="relative w-full bg-[#102a72]">
       <div className="relative w-full h-[220px] sm:h-[260px] md:h-[320px] lg:h-[360px] overflow-hidden">
         {/* Blobs */}
-        <div className="hero-blob h-72 w-72 bg-[#1976d2] top-0 -left-20 opacity-60" />
-        <div className="hero-blob h-56 w-56 bg-[#42a5f5] top-4 right-0 opacity-30" />
+        <div className="hero-blob h-72 w-72 bg-[#1769e8] top-0 -left-20 opacity-60" />
+        <div className="hero-blob h-56 w-56 bg-[#4f9bf5] top-4 right-0 opacity-30" />
 
         <div className="relative z-10 h-full flex flex-col items-center justify-center px-5 sm:px-8">
           {/* Titre */}
@@ -84,7 +84,7 @@ export function Hero() {
             </div>
             <button
               type="submit"
-              className="inline-flex h-[44px] sm:h-[48px] items-center gap-1.5 rounded-r-lg bg-[#0a3a7d] border-2 border-white/30 px-4 sm:px-5 text-xs sm:text-sm font-semibold text-white hover:bg-[#1565c0] transition-colors"
+              className="inline-flex h-[44px] sm:h-[48px] items-center gap-1.5 rounded-r-lg bg-[#0b2d6c] border-2 border-white/30 px-4 sm:px-5 text-xs sm:text-sm font-semibold text-white hover:bg-[#1769e8] transition-colors"
             >
               <Search className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Rechercher</span>

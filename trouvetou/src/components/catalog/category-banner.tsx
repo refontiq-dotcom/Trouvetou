@@ -35,7 +35,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "RDV sous 48h · Cardiologie, Dermatologie, Pédiatrie à Marcory",
     cta: "Prendre RDV",
     href: "/cliniques?q=SAINTE-MARIE",
-    accent: "from-emerald-500 to-emerald-600",
+    accent: "from-[#0ea5e9] to-[#0284c7]",
     emoji: "🏥",
   },
   school: {
@@ -46,7 +46,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "-15% sur les frais de scolarité · Inscriptions anticipées ouvertes",
     cta: "Découvrir",
     href: "/ecoles?q=ECA",
-    accent: "from-blue-500 to-blue-600",
+    accent: "from-[#1769e8] to-[#102a72]",
     emoji: "🎓",
   },
   hotel: {
@@ -57,7 +57,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "Dès 15 000 F/nuit · Cocody, Abidjan · WiFi + Clim inclus",
     cta: "Voir l'offre",
     href: "/hotels?q=LES+PALMIERS",
-    accent: "from-amber-500 to-amber-600",
+    accent: "from-[#f5a400] to-[#e8890c]",
     emoji: "🏨",
   },
   residence: {
@@ -68,7 +68,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "Dès 15 000 F/nuit · Cocody · Autonomie totale",
     cta: "Voir l'offre",
     href: "/hotels?q=LES+PALMIERS",
-    accent: "from-amber-500 to-amber-600",
+    accent: "from-[#f5a400] to-[#e8890c]",
     emoji: "🏠",
   },
   restaurant: {
@@ -79,7 +79,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "Attiéké, alloco, braisés · Terrace & soirée live",
     cta: "Voir le menu",
     href: "/restaurants?q=LE+TERROIR",
-    accent: "from-orange-500 to-red-500",
+    accent: "from-[#f97316] to-[#c2410c]",
     emoji: "🍽️",
   },
 };
