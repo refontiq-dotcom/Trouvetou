@@ -1,14 +1,14 @@
 import { Hero } from "@/components/landing/hero";
 import { AdBanner } from "@/components/landing/ad-banner";
-import { CategoryShowcase } from "@/components/landing/category-showcase";
 import { HowItWorks } from "@/components/landing/steps";
+import { CategoryShowcase } from "@/components/landing/category-showcase";
 
 export const revalidate = 60;
 
 export default function HomePage() {
   return (
     <>
-      {/* Hero pleine largeur — fond bleu edge-to-edge */}
+      {/* Hero pleine largeur */}
       <Hero />
 
       {/* Pub qui chevauche le bas du hero */}
@@ -16,9 +16,11 @@ export default function HomePage() {
         <AdBanner />
       </div>
 
-      {/* Contenu normal */}
-      <CategoryShowcase />
+      {/* 3 étapes en colonnes — au-dessus des cards */}
       <HowItWorks />
+
+      {/* Cards catégories */}
+      <CategoryShowcase />
     </>
   );
 }
