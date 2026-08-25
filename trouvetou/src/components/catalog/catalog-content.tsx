@@ -226,8 +226,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
                 setQuery(text);
                 setLimit(PAGE_SIZE);
               }}
-              size="sm"
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="!right-3 !h-9 !w-9"
             />
           </div>
 

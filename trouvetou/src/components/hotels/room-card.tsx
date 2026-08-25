@@ -10,8 +10,9 @@ import {
   MessageCircle,
   Navigation,
   Phone,
-  Share2,
+  Wallet,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
 import { useLocation } from "@/contexts/location-context";
@@ -29,6 +30,15 @@ import {
 } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
+/** Couleurs par catégorie pour les badges */
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
+  clinic: { bg: "bg-emerald-500", text: "text-emerald-500", ring: "ring-emerald-500/20" },
+  school: { bg: "bg-primary", text: "text-primary", ring: "ring-primary/20" },
+  restaurant: { bg: "bg-orange-500", text: "text-orange-500", ring: "ring-orange-500/20" },
+  hotel: { bg: "bg-amber-500", text: "text-amber-500", ring: "ring-amber-500/20" },
+  residence: { bg: "bg-amber-500", text: "text-amber-500", ring: "ring-amber-500/20" },
+};
+
 interface RoomCardProps {
   room: ListingView;
   index?: number;
@@ -40,6 +50,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
   const [expanded, setExpanded] = useState(false);
   const { location: userLocation } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { toggleCompare, isSelected: isCompared } = useCompare();
 
   const establishment = room.establishment;
   const coverImage = room.images[0] ?? PLACEHOLDER_IMAGE;
@@ -50,8 +61,9 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
     establishment?.address ?? establishment?.city
   );
   const liked = isFavorite(room.id);
-  const { toggleCompare, isSelected: isCompared } = useCompare();
   const compared = isCompared(room.id);
+  const catSlug = establishment?.type ?? room.category_slug ?? "";
+  const catColor = CATEGORY_COLORS[catSlug] ?? CATEGORY_COLORS.hotel;
 
   const location = [establishment?.city, establishment?.address]
     .filter(Boolean)
@@ -62,10 +74,9 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
       ? haversineDistance(userLocation, { lat: establishment.latitude, lng: establishment.longitude })
       : null;
 
-  // URL de la page d'annonce (pour le partage)
   const listingUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/${establishment?.type === "school" ? "ecoles" : establishment?.type === "clinic" ? "cliniques" : establishment?.type === "restaurant" ? "restaurants" : "hotels"}?q=${encodeURIComponent(room.name)}`
+      ? `${window.location.origin}/${catSlug === "school" ? "ecoles" : catSlug === "clinic" ? "cliniques" : catSlug === "restaurant" ? "restaurants" : "hotels"}?q=${encodeURIComponent(room.name)}`
       : "";
 
   const whatsappUrl = buildWhatsAppShareUrl({
@@ -102,45 +113,31 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             loading={index < 3 ? "eager" : "lazy"}
           />
 
-          {/* Badge catégorie */}
-          {room.is_boosted ? (
-            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-accent to-yellow-500 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-accent-foreground shadow-sm">
-              <Sparkles className="h-2.5 w-2.5" />
-              Sponsorisé
-            </span>
-          ) : (
-            <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-accent-foreground shadow-sm">
-              {establishment?.type ? getCategoryLabel(establishment.type) : "Établissement"}
-            </span>
-          )}
+          {/* Badge catégorie coloré */}
+          <span className={cn(
+            "absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-sm",
+            catColor.bg
+          )}>
+            {getCategoryLabel(catSlug)}
+          </span>
 
-          {/* Boutons haut droit : favori + comparer */}
+          {/* Boutons favori + comparer */}
           <div className="absolute right-2 top-2 flex flex-col gap-1.5">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFavorite(room.id);
-              }}
+              onClick={(e) => { e.stopPropagation(); toggleFavorite(room.id); }}
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all",
                 liked
                   ? "bg-red-500/90 text-white shadow-md"
                   : "bg-black/30 text-white/80 hover:bg-black/50 hover:text-white"
               )}
-              aria-label={liked ? "Retirer des favoris" : "Ajouter aux favoris"}
             >
               <Heart className={cn("h-4 w-4", liked && "fill-current")} />
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                toggleCompare({
-                  id: room.id,
-                  name: room.name,
-                  city: establishment?.city,
-                  price: room.price,
-                  image: coverImage,
-                });
+                toggleCompare({ id: room.id, name: room.name, city: establishment?.city, price: room.price, image: coverImage });
               }}
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all text-[10px] font-bold",
@@ -148,7 +145,6 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   ? "bg-primary/90 text-white shadow-md"
                   : "bg-black/30 text-white/80 hover:bg-black/50 hover:text-white"
               )}
-              aria-label={compared ? "Retirer de la comparaison" : "Comparer"}
             >
               ↔
             </button>
@@ -162,11 +158,6 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               <h3 className="truncate font-semibold text-foreground text-sm sm:text-base lg:text-lg leading-tight">
                 {room.name}
               </h3>
-              {establishment?.name && (
-                <span className="hidden lg:inline flex-shrink-0 truncate max-w-[40%] text-[10px] font-medium text-muted-foreground">
-                  {establishment.name}
-                </span>
-              )}
             </div>
 
             {location && (
@@ -175,7 +166,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 <span className="truncate">{location}</span>
                 {distance != null && (
                   <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-primary">
-                    {formatDistance(distance)}
+                    📍 {formatDistance(distance)}
                   </span>
                 )}
               </p>
@@ -214,18 +205,25 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             </AnimatePresence>
           </div>
 
-          {/* Bas : prix + actions */}
+          {/* Bas : prix visuel + actions avec icônes */}
           <div className="mt-2 flex items-end justify-between gap-2 border-t border-slate-100 pt-2">
-            <div className="min-w-0">
-              <p className="text-sm sm:text-base lg:text-lg font-bold text-foreground leading-tight">
-                {formatFCFA(room.price ?? 0)}{" "}
-                <span className="text-[10px] sm:text-xs font-normal text-muted-foreground">
-                  F CFA
-                </span>
-              </p>
-              <p className="text-[9px] sm:text-[10px] text-muted-foreground">{priceSuffix}</p>
+            {/* Prix avec icône wallet */}
+            <div className="min-w-0 flex items-center gap-1.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10">
+                <Wallet className="h-3.5 w-3.5 text-accent" />
+              </div>
+              <div>
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-foreground leading-tight">
+                  {formatFCFA(room.price ?? 0)}{" "}
+                  <span className="text-[10px] sm:text-xs font-normal text-muted-foreground">
+                    F CFA
+                  </span>
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground">{priceSuffix}</p>
+              </div>
             </div>
 
+            {/* Boutons avec icônes */}
             <div className="flex flex-shrink-0 items-center gap-1 sm:gap-1.5">
               {/* WhatsApp */}
               <a
@@ -233,41 +231,33 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 h-8 w-8 text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                 aria-label="Partager sur WhatsApp"
               >
-                <MessageCircle className="h-3 w-3" />
+                <MessageCircle className="h-4 w-4" />
               </a>
               {/* Itinéraire */}
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(mapsUrl, "_blank", "noopener,noreferrer");
-                }}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-slate-600 transition-colors hover:text-foreground"
+                onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 sm:px-2.5 h-8 text-[10px] sm:text-xs font-medium text-slate-600 transition-colors hover:text-foreground"
               >
-                <Navigation className="h-3 w-3" />
+                <Navigation className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Itinéraire</span>
               </button>
               {/* Réserver */}
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setBookingOpen(true);
-                }}
-                className="inline-flex items-center gap-1 rounded-lg bg-[#1565c0] px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white shadow-sm transition-colors hover:bg-[#0d47a1]"
+                onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
+                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 sm:px-3 h-8 text-[10px] sm:text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
               >
-                <Phone className="h-3 w-3" />
-                Réserver
+                <Phone className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Réserver</span>
               </button>
             </div>
           </div>
 
-          {/* Expand indicator mobile */}
+          {/* Expand indicator */}
           <div className="mt-1 flex justify-center sm:hidden">
-            <ChevronDown
-              className={cn("h-4 w-4 text-slate-400 transition-transform", expanded && "rotate-180")}
-            />
+            <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform", expanded && "rotate-180")} />
           </div>
         </div>
       </motion.article>
