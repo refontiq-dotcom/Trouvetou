@@ -7,7 +7,6 @@ import { LocationProvider } from "@/contexts/location-context";
 import { FavoritesProvider } from "@/contexts/favorites-context";
 import { CompareProvider } from "@/contexts/compare-context";
 import { CompareBar } from "@/components/compare/compare-bar";
-import { LocationBar } from "@/components/location/location-bar";
 import { PwaRegister } from "@/components/pwa-register";
 
 export const metadata: Metadata = {
@@ -57,7 +56,6 @@ export default function RootLayout({
           <FavoritesProvider>
             <CompareProvider>
               <Header />
-              <LocationBar />
               <main className="flex-1 pb-20 md:pb-0">{children}</main>
               <div className="hidden md:block"><Footer /></div>
               <BottomNav />
