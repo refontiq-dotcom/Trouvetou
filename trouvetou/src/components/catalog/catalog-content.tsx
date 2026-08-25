@@ -205,6 +205,9 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         <CategoryBanner categorySlug={config.categories[0] ?? ""} />
       </div>
 
+      {/* Zone sticky : barre de recherche + filtres restent visibles au scroll */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 bg-white/95 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-3 border-b border-slate-100">
+
       {/* Search bar — style identique à la home */}
       <div className="mt-5 flex w-full items-stretch gap-0 rounded-xl bg-white shadow-sm border border-slate-200">
         <div className="relative flex-1">
@@ -290,6 +293,8 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
           </button>
         </div>
       )}
+
+      </div> {/* fin sticky */}
 
       <BoostedCarousel rooms={boostedRooms} priceSuffix={config.priceSuffix} />
 
