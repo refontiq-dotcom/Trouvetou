@@ -1,6 +1,0 @@
-{
-  "framework": "nextjs",
-  "buildCommand": "cd troubetou && npm run build",
-  "installCommand": "cd troubetou && npm install",
-  "outputDirectory": "trouvetou/.next"
-}
