@@ -135,45 +135,43 @@ export function CategoryBanner({ categorySlug }: CategoryBannerProps) {
           {/* Subtle pattern overlay */}
           <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDE0em0wLTRWMjhIMjR2MmgxNHoiLz48L2c+PC9nPjwvc3ZnPg==')]" />
 
-          <div className="relative flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              {/* Emoji icon */}
-              <span className="flex-shrink-0 text-2xl sm:text-3xl">{ad.emoji}</span>
-
-              {/* Text content */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
-                    {ad.logoText}
-                  </span>
-                  <span className="hidden sm:inline text-[8px] text-white/50 uppercase tracking-wider">
-                    {ad.logoSubtext}
-                  </span>
-                </div>
-                <h4 className="text-sm sm:text-base font-bold text-white leading-tight truncate">
-                  {ad.title}
-                </h4>
-                <p className="text-[11px] sm:text-xs text-white/80 truncate">
-                  {ad.description}
-                </p>
-              </div>
+          <div className="relative flex items-stretch gap-0 sm:items-center sm:gap-4 min-h-[120px] sm:min-h-[130px]">
+            {/* Zone image placeholder — à remplacer par une vraie <img> */}
+            <div className="hidden sm:flex w-[120px] lg:w-[140px] shrink-0 items-center justify-center bg-white/10">
+              <span className="text-4xl">{ad.emoji}</span>
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <a
-                href={ad.href}
-                className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold text-white hover:bg-white/30 transition-colors whitespace-nowrap"
-              >
-                {ad.cta}
-                <span>→</span>
-              </a>
-              <button
-                onClick={handleDismiss}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
-                aria-label="Fermer"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+            <div className="relative flex flex-col justify-center gap-1 px-4 py-4 sm:px-0 sm:py-5 min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                  {ad.logoText}
+                </span>
+                <span className="hidden sm:inline text-[8px] text-white/50 uppercase tracking-wider">
+                  {ad.logoSubtext}
+                </span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-white leading-tight">
+                {ad.title}
+              </h4>
+              <p className="text-[11px] sm:text-xs text-white/80 line-clamp-2">
+                {ad.description}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <a
+                  href={ad.href}
+                  className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold text-white hover:bg-white/30 transition-colors whitespace-nowrap"
+                >
+                  {ad.cta}
+                  <span>→</span>
+                </a>
+                <button
+                  onClick={handleDismiss}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
+                  aria-label="Fermer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
