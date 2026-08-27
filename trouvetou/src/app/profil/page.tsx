@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { User, MapPin, Heart, Compass } from "lucide-react";
+import { User, MapPin, Heart, Compass, CalendarCheck } from "lucide-react";
 import Link from "next/link";
 import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
+import { useBookings } from "@/contexts/bookings-context";
 import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
 
 const MENU_ITEMS = [
@@ -15,6 +16,7 @@ const MENU_ITEMS = [
 export default function ProfilPage() {
   const { count: favCount } = useFavorites();
   const { location } = useLocation();
+  const { bookings, count: bookingCount } = useBookings();
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
@@ -43,7 +45,7 @@ export default function ProfilPage() {
             <p className="text-xs text-muted-foreground mt-1">Favoris</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">0</p>
+            <p className="text-2xl font-bold text-foreground">{bookingCount}</p>
             <p className="text-xs text-muted-foreground mt-1">Réservations</p>
           </div>
         </div>
@@ -64,6 +66,37 @@ export default function ProfilPage() {
             );
           })}
         </div>
+
+        {/* Historique réservations */}
+        {bookingCount > 0 && (
+          <div className="mt-6">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Dernières réservations
+            </h2>
+            <div className="space-y-2">
+              {bookings.slice(-3).reverse().map((b, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <CalendarCheck className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {b.listing_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {b.check_in_date} → {b.check_out_date} · {b.number_of_guests} pers.
+                    </p>
+                  </div>
+                  {b.booking_code && (
+                    <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      {b.booking_code}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Position */}
         <div className="mt-6 rounded-xl border border-border bg-card p-4">

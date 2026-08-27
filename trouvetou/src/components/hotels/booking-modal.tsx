@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useBookings } from "@/contexts/bookings-context";
 import {
   Building2,
   CalendarCheck,
@@ -65,6 +66,7 @@ export function BookingModal({
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [booking, setBooking] = useState<BookingResult | null>(null);
+  const { addBooking } = useBookings();
 
   // Garde-fou : la réservation « par nuit » n'a de sens que pour l'hôtellerie.
   if (room.category_slug !== "hotel" && room.category_slug !== "residence") {
@@ -182,6 +184,15 @@ export function BookingModal({
         return;
       }
       setBooking(body.booking ?? {});
+      addBooking({
+        booking_code: body.booking?.booking_code,
+        listing_name: room.name,
+        check_in_date: checkIn,
+        check_out_date: checkOut,
+        number_of_guests: guests,
+        total_amount: body.booking?.total_amount,
+        created_at: new Date().toISOString(),
+      });
       setStep("success");
     } catch {
       setCreateError("Erreur réseau. Veuillez réessayer.");

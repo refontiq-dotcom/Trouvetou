@@ -21,13 +21,13 @@ export function Hero() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const q = query.trim();
-    const target = q ? detectTargetPortal(q)?.targetHref ?? "/ecoles" : "/ecoles";
+    const target = q ? detectTargetPortal(q)?.targetHref ?? "/hotels" : "/hotels";
     router.push(q ? `${target}?q=${encodeURIComponent(q)}` : target);
   }
 
   function handleChipClick(chipQuery: string) {
     setQuery(chipQuery);
-    const target = detectTargetPortal(chipQuery)?.targetHref ?? "/ecoles";
+    const target = detectTargetPortal(chipQuery)?.targetHref ?? "/hotels";
     router.push(`${target}?q=${encodeURIComponent(chipQuery)}`);
   }
 

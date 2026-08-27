@@ -171,6 +171,7 @@ export function getEstablishmentTypeLabel(type: EstablishmentType | null): strin
 const CATEGORY_LABELS: Record<string, string> = {
   hotel: "Hôtel",
   residence: "Résidence",
+  restaurant: "Restaurant",
   clinic: "Clinique",
   school: "École",
   other: "Établissement",

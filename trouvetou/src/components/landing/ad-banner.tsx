@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -74,6 +75,7 @@ function trackAdClick(adId: number) {
 }
 
 export function AdBanner() {
+  const router = useRouter();
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
   const [direction, setDirection] = useState(0); // -1 = prev, 1 = next
@@ -124,7 +126,7 @@ export function AdBanner() {
   function handleCtaClick(ad: Ad) {
     trackAdClick(ad.id);
     if (ad.href) {
-      window.location.href = ad.href;
+      router.push(ad.href);
     }
   }
 

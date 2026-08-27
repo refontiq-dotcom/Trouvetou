@@ -27,19 +27,22 @@ self.addEventListener("fetch", (event) => {
   // Skip chrome-extension and other non-http(s) requests
   if (!url.protocol.startsWith("http")) return;
 
-  // Stale-while-revalidate for navigation (HTML pages)
+  // Network-first for navigation (HTML pages) — ensures fresh content
+  // Falls back to cache only when offline
   if (event.request.mode === "navigate") {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(event.request);
-        const fetched = fetch(event.request)
-          .then((response) => {
-            if (response.ok) cache.put(event.request, response.clone());
-            return response;
-          })
-          .catch(() => cached);
-
-        return cached ?? fetched;
+        try {
+          const response = await fetch(event.request);
+          if (response.ok) {
+            cache.put(event.request, response.clone());
+          }
+          return response;
+        } catch {
+          // Offline fallback: serve from cache
+          const cached = await cache.match(event.request);
+          return cached ?? new Response("Offline", { status: 503, statusText: "Service Unavailable" });
+        }
       })
     );
     return;
