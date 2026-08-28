@@ -11,102 +11,110 @@ interface LogoProps {
   className?: string;
 }
 
+/**
+ * Couleurs officielles — Charte graphique Trouvetou
+ */
+const BRAND = {
+  blue: "#0066FF",
+  navy: "#00215E",
+  orange: "#FFA726",
+  white: "#FFFFFF",
+} as const;
+
+/** Hauteur du logo complet (mot + icône) par taille, en pixels. */
 const SIZE_CONFIG = {
-  sm: { height: 28, text: "text-xl", pinSize: 18 },
-  md: { height: 36, text: "text-2xl", pinSize: 24 },
-  lg: { height: 48, text: "text-4xl", pinSize: 32 },
+  sm: { height: 28 },
+  md: { height: 36 },
+  lg: { height: 48 },
 } as const;
 
 /**
- * Pin SVG réutilisable — remplace le "o" dans "trouvetou".
- * Pin bleu avec point blanc et chevron orange en dessous,
- * fidèle à la charte graphique officielle.
+ * Icône Trouvetou — anneau bleu, point marine central, ruban orange.
+ * Remplace le premier "o" du mot "trouvetou". Dessinée dans un viewBox
+ * dédié (40 x 56) puis composée avec le texte dans un unique SVG pour
+ * garantir un alignement pixel-perfect avec la typographie.
  */
-function Pin({ size, className }: { size: number; className?: string }) {
+function BrandMark({
+  x = 0,
+  y = 0,
+  scale = 1,
+}: {
+  x?: number;
+  y?: number;
+  scale?: number;
+}) {
   return (
-    <svg
-      viewBox="0 0 31 52"
-      width={size}
-      height={size * (52 / 31)}
-      fill="none"
-      className={cn("inline-block align-baseline", className)}
-      aria-hidden="true"
-    >
-      {/* Pin bleu */}
-      <path
-        d="M15.5 0C6.94 0 0 6.94 0 15.5C0 27.1 15.5 44 15.5 44S31 27.1 31 15.5C31 6.94 24.06 0 15.5 0Z"
-        fill="#1769E8"
-      />
-      {/* Point blanc */}
-      <circle cx="15.5" cy="13.5" r="5.5" fill="white" />
-      {/* Chevron orange sous le pin */}
-      <path
-        d="M10 47L15.5 52L21 47"
-        stroke="#F5A400"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+    <g transform={`translate(${x}, ${y}) scale(${scale})`}>
+      <circle
+        cx="20"
+        cy="18"
+        r="14"
         fill="none"
+        stroke={BRAND.blue}
+        strokeWidth="7.5"
       />
-    </svg>
+      <circle cx="20" cy="18" r="5.5" fill={BRAND.navy} />
+      <path
+        d="M13.5 32 L26.5 32 L26.5 47 L20 41.5 L13.5 47 Z"
+        fill={BRAND.orange}
+      />
+    </g>
   );
 }
 
 /**
- * Logo Trouvetou — rendu en HTML/CSS pour garantir la dispo de Poppins.
- * Le premier "o" est remplacé par le pin bleu avec chevron orange.
+ * Logo Trouvetou — wordmark officiel.
+ * Rendu en un unique SVG (texte "tr" / icône / texte "uvetou") pour un
+ * alignement fidèle à la charte, quelle que soit la police chargée.
  */
 export function Logo({ variant = "dark", size = "md", className }: LogoProps) {
-  const { height, text, pinSize } = SIZE_CONFIG[size];
+  const { height } = SIZE_CONFIG[size];
 
-  // ── Variante icône seule (app icon) ──
+  // ── Variante icône seule (favicon, app icon, avatar) ──
   if (variant === "icon") {
     return (
       <svg
-        viewBox="0 0 48 56"
-        fill="none"
+        viewBox="0 0 40 56"
         className={cn("shrink-0", className)}
-        style={{ height: height * (56 / 48), width: height * (48 / 48) }}
+        style={{ height, width: height * (40 / 56) }}
         aria-label="Trouvetou"
       >
-        <rect width="48" height="48" rx="12" fill="#102A72" />
-        <g transform="translate(10, 5)">
-          <path
-            d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.268 21.732 0 14 0z"
-            fill="#1769E8"
-          />
-          <circle cx="14" cy="12" r="5.5" fill="white" />
-        </g>
-        {/* Chevron orange sous le pin */}
-        <path
-          d="M18.5 49L24 54L29.5 49"
-          stroke="#F5A400"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
+        <BrandMark />
       </svg>
     );
   }
 
-  // ── Variante texte intégré (header / landing) ──
-  const textColor = variant === "light" ? "text-white" : "text-foreground";
+  const textColor = variant === "light" ? BRAND.white : BRAND.navy;
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-baseline font-bold tracking-tight select-none leading-none",
-        textColor,
-        text,
-        className
-      )}
-      style={{ height: height * 1.15 }}
+    <svg
+      viewBox="0 0 340 90"
+      className={cn("shrink-0 select-none", className)}
+      style={{ height, width: height * (340 / 90) }}
       aria-label="Trouvetou"
+      role="img"
     >
-      <span className="font-[family-name:var(--font-poppins)]">tr</span>
-      <Pin size={pinSize} className="relative -top-[1px]" />
-      <span className="font-[family-name:var(--font-poppins)]">uvetou</span>
-    </span>
+      <text
+        x="0"
+        y="60"
+        fontFamily="Poppins, sans-serif"
+        fontWeight="700"
+        fontSize="64"
+        fill={textColor}
+      >
+        tr
+      </text>
+      <BrandMark x={49} y={15.5} scale={1.236} />
+      <text
+        x="98"
+        y="60"
+        fontFamily="Poppins, sans-serif"
+        fontWeight="700"
+        fontSize="64"
+        fill={textColor}
+      >
+        uvetou
+      </text>
+    </svg>
   );
 }
