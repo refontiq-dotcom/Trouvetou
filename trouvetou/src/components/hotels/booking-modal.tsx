@@ -95,6 +95,32 @@ export function BookingModal({
     onClose();
   };
 
+  // Formulaire intelligent : garantit au moins une nuitée entre l'arrivée
+  // et le départ, quel que soit le champ modifié en premier. L'utilisateur
+  // reste libre de modifier l'autre date ensuite.
+  const shiftDate = (dateStr: string, days: number) => {
+    const d = new Date(`${dateStr}T00:00:00`);
+    d.setDate(d.getDate() + days);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const handleCheckInChange = (dateStr: string) => {
+    setCheckIn(dateStr);
+    if (dateStr && (!checkOut || checkOut <= dateStr)) {
+      setCheckOut(shiftDate(dateStr, 1));
+    }
+  };
+
+  const handleCheckOutChange = (dateStr: string) => {
+    setCheckOut(dateStr);
+    if (dateStr && (!checkIn || checkIn >= dateStr)) {
+      setCheckIn(shiftDate(dateStr, -1));
+    }
+  };
+
   const checkAvailability = async () => {
     if (!checkIn || !checkOut) {
       setCheckError("Sélectionnez les dates d'arrivée et de départ.");
@@ -251,7 +277,7 @@ export function BookingModal({
                 type="date"
                 value={checkIn}
                 min={new Date().toISOString().split("T")[0]}
-                onChange={(e) => setCheckIn(e.target.value)}
+                onChange={(e) => handleCheckInChange(e.target.value)}
               />
             </label>
             <label className="grid gap-1.5">
@@ -260,7 +286,7 @@ export function BookingModal({
                 type="date"
                 value={checkOut}
                 min={checkIn || new Date().toISOString().split("T")[0]}
-                onChange={(e) => setCheckOut(e.target.value)}
+                onChange={(e) => handleCheckOutChange(e.target.value)}
               />
             </label>
           </div>
