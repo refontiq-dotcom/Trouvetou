@@ -155,7 +155,10 @@ CREATE TRIGGER trigger_listings_updated BEFORE UPDATE ON listings
 --                  et le strict nécessaire de providers pour le JOIN !inner).
 --   providers    : lecture publique limitée (identité du fournisseur) — la
 --                  politique EXISTS évite de laisser passer le désactivé.
---   listings     : lecture publique, aucune mutation côté client.
+--   listings     : lecture publique, aucune mutation côté client. La colonne
+--                  `attributes` (contient des secrets fournisseur, ex :
+--                  sejoura_api_key) est masquée des rôles anon/authenticated
+--                  via privilèges de colonne, comme pour `providers`.
 --   L'ingestion passe par la clé service (service_role) qui contourne RLS.
 -- ----------------------------------------------------------------------------
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
@@ -178,6 +181,25 @@ CREATE POLICY "providers_select_public" ON providers
   FOR SELECT USING (is_active = TRUE);
 
 -- listings : catalogue public en lecture seule
+-- `attributes` masqué des rôles anon/authenticated (peut contenir des
+-- secrets fournisseur, ex : sejoura_api_key, en clair). Sans ce privilège
+-- de colonne, n'importe qui muni de la clé anon publique pourrait lire
+-- `attributes` directement via l'API REST Supabase, hors de l'app.
+REVOKE ALL ON listings FROM anon, authenticated;
+GRANT SELECT (
+  id,
+  provider_id,
+  category_id,
+  external_id,
+  title,
+  description,
+  city,
+  base_price,
+  images,
+  is_available,
+  created_at,
+  updated_at
+) ON listings TO anon, authenticated;
 CREATE POLICY "listings_select_public" ON listings
   FOR SELECT USING (is_available = TRUE);
 
