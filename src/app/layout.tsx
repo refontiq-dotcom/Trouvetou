@@ -11,6 +11,7 @@ import { BookingsProvider } from "@/contexts/bookings-context";
 import { CompareBar } from "@/components/compare/compare-bar";
 import { PwaRegister } from "@/components/pwa-register";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
+import { TrafficTracker } from "@/components/traffic-tracker";
 
 export const metadata: Metadata = {
   title: {
@@ -79,6 +80,7 @@ export default function RootLayout({
               <CompareBar />
               <PwaRegister />
               <PwaInstallBanner />
+              <TrafficTracker />
               </BookingsProvider>
             </CompareProvider>
           </FavoritesProvider>
