@@ -35,31 +35,21 @@ export async function POST(req: Request) {
     const day = todayUtc();
     const db = admin as any;
 
-    const { data: current, error: readError } = await db
-      .from("trouvetou_traffic_daily")
-      .select("day,visits,unique_visitors")
-      .eq("day", day)
-      .maybeSingle();
+    const { data, error } = await db.rpc("increment_trouvetou_traffic", {
+      p_day: day,
+      p_unique_visitors: uniqueVisitors,
+    });
 
-    if (readError) {
-      console.error("Trouvetou traffic read error:", readError);
+    if (error || !data?.[0]) {
+      console.error("Trouvetou traffic increment error:", error);
       return NextResponse.json({ error: "Erreur base de données" }, { status: 500 });
     }
 
     const next = {
-      day,
-      visits: Number(current?.visits ?? 0) + 1,
-      unique_visitors: Number(current?.unique_visitors ?? 0) + uniqueVisitors,
+      day: data[0].day,
+      visits: Number(data[0].visits),
+      unique_visitors: Number(data[0].unique_visitors),
     };
-
-    const { error: upsertError } = await db
-      .from("trouvetou_traffic_daily")
-      .upsert(next, { onConflict: "day" });
-
-    if (upsertError) {
-      console.error("Trouvetou traffic upsert error:", upsertError);
-      return NextResponse.json({ error: "Erreur base de données" }, { status: 500 });
-    }
 
     if (CONTROL_CENTER_URL && METRICS_PUSH_SECRET) {
       const response = await fetch(
@@ -71,7 +61,7 @@ export async function POST(req: Request) {
             authorization: `Bearer ${METRICS_PUSH_SECRET}`,
           },
           body: JSON.stringify({
-            date: day,
+            date: next.day,
             visits: next.visits,
             unique_visitors: next.unique_visitors,
           }),
@@ -89,7 +79,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      date: day,
+      date: next.day,
       visits: next.visits,
       unique_visitors: next.unique_visitors,
     });
