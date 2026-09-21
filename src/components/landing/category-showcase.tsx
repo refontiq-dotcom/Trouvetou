@@ -75,10 +75,14 @@ export async function CategoryShowcase() {
     restaurant: counts.restaurant ?? 0,
   };
 
+  const visibleCategories = CATEGORIES.filter(
+    (cat) => (displayCounts[cat.slug] ?? 0) > 0,
+  );
+
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
       <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-sm mx-auto">
-        {CATEGORIES.map((cat) => {
+        {visibleCategories.map((cat) => {
           const count = displayCounts[cat.slug] ?? 0;
           const Icon = cat.icon;
           return (
@@ -99,14 +103,10 @@ export async function CategoryShowcase() {
                 {cat.label}
               </span>
 
-              {/* Compteur ou "Bientôt" */}
-              {count > 0 ? (
-                <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500 tabular-nums">
-                  {count.toLocaleString("fr-FR")}
-                </span>
-              ) : (
-                <span className="text-[10px] text-neutral-400">Bientôt</span>
-              )}
+              {/* Compteur */}
+              <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500 tabular-nums">
+                {count.toLocaleString("fr-FR")}
+              </span>
             </Link>
           );
         })}
