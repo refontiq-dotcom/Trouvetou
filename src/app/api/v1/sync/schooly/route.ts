@@ -200,7 +200,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         description: school.description_publique ?? null,
         city: school.ville ?? null,
         base_price: null,
-        images: Array.isArray(school.photos_360) ? school.photos_360 : [],
+        images: Array.isArray(school.photos_360)\n          ? school.photos_360.filter((photo): photo is string => typeof photo === "string")\n          : [],
         attributes: {
           school_id: school.id,
           latitude: school.latitude ?? null,
