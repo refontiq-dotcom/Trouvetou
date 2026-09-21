@@ -170,10 +170,71 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Synchronisation refusée par la base.", 502, "SYNC_RPC_FAILED");
   }
 
+  // 5. Le catalogue public de Trouvetou repose sur la table polymorphe
+  // listings. Le RPC Schooly synchronise les données dédiées schooly_*,
+  // mais ne crée pas automatiquement la fiche catalogue. On maintient donc
+  // ici une fiche idempotente, liée au provider + school.id.
+  const { data: schoolCategory, error: categoryError } = await admin
+    .from("categories")
+    .select("id")
+    .eq("slug", "school")
+    .maybeSingle();
+
+  if (categoryError) {
+    console.error("[schooly-sync] category school:", categoryError.message);
+    return jsonError("Impossible de résoudre la catégorie école.", 502, "SCHOOL_CATEGORY_LOOKUP");
+  }
+
+  if (!schoolCategory) {
+    return jsonError("La catégorie 'school' est introuvable dans Trouvetou.", 502, "SCHOOL_CATEGORY_MISSING");
+  }
+
+  const { data: listing, error: listingError } = await admin
+    .from("listings")
+    .upsert(
+      {
+        provider_id: provider.id,
+        category_id: schoolCategory.id,
+        external_id: school.id,
+        title: school.nom,
+        description: school.description_publique ?? null,
+        city: school.ville ?? null,
+        base_price: null,
+        images: Array.isArray(school.photos_360) ? school.photos_360 : [],
+        attributes: {
+          school_id: school.id,
+          latitude: school.latitude ?? null,
+          longitude: school.longitude ?? null,
+          itineraire: school.itineraire ?? null,
+          video_url: school.video_url ?? null,
+          grille_tarifaire_publique: school.grille_tarifaire_publique ?? null,
+          levels: levels.map((level) => ({
+            id: level.id,
+            label: level.label,
+            capacity: level.capacity ?? null,
+            prix_min: level.prix_min ?? null,
+            prix_max: level.prix_max ?? null,
+            places_disponibles: level.places_disponibles ?? null,
+          })),
+        },
+        is_available: school.published !== false,
+      },
+      { onConflict: "provider_id,external_id" }
+    )
+    .select("id, external_id, is_available")
+    .single();
+
+  if (listingError || !listing) {
+    console.error("[schooly-sync] listing upsert:", listingError?.message ?? "listing introuvable après upsert");
+    return jsonError("La fiche école n'a pas pu être publiée dans le catalogue Trouvetou.", 502, "LISTING_UPSERT_FAILED");
+  }
+
   return NextResponse.json({
     ok: true,
     provider: provider.name,
     school_id: school.id,
+    listing_id: listing.id,
+    listing_available: listing.is_available,
     levels_count: levels.length,
     result: data,
   });
