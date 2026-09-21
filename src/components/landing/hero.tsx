@@ -89,30 +89,7 @@ export function Hero() {
               <Search className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Rechercher</span>
             </button>
-          </motion.form>
-
-          {/* Suggestions rapides — cliquables, avec icônes */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            className="mt-3 flex items-center gap-2 flex-wrap justify-center"
-          >
-            {QUICK_CHIPS.map((chip) => {
-              const Icon = chip.icon;
-              return (
-                <button
-                  key={chip.query}
-                  onClick={() => handleChipClick(chip.query)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] sm:text-xs font-medium transition-colors ${chip.color}`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {chip.label}
-                </button>
-              );
-            })}
-          </motion.div>
-        </div>
+          </motion.form>        </div>
       </div>
     </section>
   );
