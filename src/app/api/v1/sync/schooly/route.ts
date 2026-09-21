@@ -25,6 +25,13 @@ import {
 
 export const runtime = "nodejs";
 
+interface SchoolContactPayload {
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+}
+
 interface SchoolPayload {
   id: string;
   schooly_instance_url: string;
@@ -34,9 +41,19 @@ interface SchoolPayload {
   longitude?: number | null;
   description_publique?: string | null;
   itineraire?: string | null;
+  // Schooly envoie la photo de couverture et la galerie sous ces deux clés
+  // (distinctes de `photos_360`, qui ne sert qu'aux visites virtuelles).
+  // Historiquement seul `photos_360` était lu ici, donc une école qui n'a
+  // qu'une photo de couverture (cas courant, ex. ITES) se retrouvait sans
+  // aucune image dans le catalogue public malgré une fiche "publiée".
+  cover_photo?: string | null;
+  gallery?: unknown[] | null;
   photos_360?: unknown[] | null;
   video_url?: string | null;
   grille_tarifaire_publique?: unknown[] | null;
+  contact?: SchoolContactPayload | null;
+  highlights?: unknown[] | null;
+  admission_notes?: string | null;
   published?: boolean | null;
 }
 
@@ -189,6 +206,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("La catégorie 'school' est introuvable dans Trouvetou.", 502, "SCHOOL_CATEGORY_MISSING");
   }
 
+  // Une école peut n'avoir qu'une photo de couverture (pas de galerie ni de
+  // visite 360°) — c'est le cas le plus courant. On agrège les 3 sources
+  // possibles, couverture en premier, dédupliquées, filtrées aux chaînes
+  // non vides. Auparavant seul `photos_360` alimentait `images`, donc une
+  // école avec uniquement `cover_photo` n'affichait aucune photo.
+  const rawImageSources = [
+    school.cover_photo,
+    ...(Array.isArray(school.gallery) ? school.gallery : []),
+    ...(Array.isArray(school.photos_360) ? school.photos_360 : []),
+  ];
+  const images = Array.from(
+    new Set(
+      rawImageSources
+        .filter((photo): photo is string => typeof photo === "string" && photo.trim().length > 0)
+    )
+  );
+
+  const contact = school.contact ?? {};
+
   const { data: listing, error: listingError } = await admin
     .from("listings")
     .upsert(
@@ -200,9 +236,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         description: school.description_publique ?? null,
         city: school.ville ?? null,
         base_price: null,
-        images: Array.isArray(school.photos_360)
-          ? school.photos_360.filter((photo) => typeof photo === "string").map((photo) => String(photo))
-          : [],
+        images,
         attributes: {
           school_id: school.id,
           latitude: school.latitude ?? null,
@@ -210,6 +244,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           itineraire: school.itineraire ?? null,
           video_url: school.video_url ?? null,
           grille_tarifaire_publique: school.grille_tarifaire_publique ?? null,
+          // Ces 3 clés sont celles lues par l'adaptateur d'affichage
+          // (src/lib/supabase/listing-view.ts) : attrs.address,
+          // attrs.contact_phone, attrs.contact_email. Elles n'étaient
+          // jamais écrites ici, donc la fiche catalogue n'affichait jamais
+          // l'adresse ni le contact, même quand Schooly les envoyait.
+          address: contact.address ?? null,
+          contact_phone: contact.phone ?? null,
+          contact_email: contact.email ?? null,
+          contact_website: contact.website ?? null,
+          highlights: Array.isArray(school.highlights) ? school.highlights : [],
+          admission_notes: school.admission_notes ?? null,
           levels: levels.map((level) => ({
             id: level.id,
             label: level.label,
