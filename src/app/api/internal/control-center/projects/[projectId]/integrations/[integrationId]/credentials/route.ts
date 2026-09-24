@@ -84,19 +84,25 @@ export async function POST(
     );
   }
 
-  const { data: category, error: categoryError } = await admin
+  const { data: providerCategory, error: providerCategoryError } = await admin
     .from("providers")
-    .select("category_id, categories!inner(slug)")
+    .select("category_id")
     .eq("id", provider.id)
     .maybeSingle();
 
-  if (categoryError || !category) {
-    console.error("[control-center key rotation] category lookup failed", categoryError);
+  if (providerCategoryError || !providerCategory) {
+    console.error("[control-center key rotation] provider category lookup failed", providerCategoryError);
     return NextResponse.json({ error: "Impossible de vérifier le secteur du fournisseur." }, { status: 500 });
   }
 
-  const categorySlug = Array.isArray(category.categories) ? category.categories[0]?.slug : category.categories?.slug;
-  if (categorySlug !== integration.category) {
+  const { data: category, error: categoryError } = await admin
+    .from("categories")
+    .select("slug")
+    .eq("id", providerCategory.category_id)
+    .maybeSingle();
+
+  if (categoryError || category?.slug !== integration.category) {
+    console.error("[control-center key rotation] category lookup failed", categoryError);
     return NextResponse.json({ error: "Le fournisseur ne correspond pas au secteur attendu pour cette intégration." }, { status: 409 });
   }
 
