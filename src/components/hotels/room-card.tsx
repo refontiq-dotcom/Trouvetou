@@ -288,10 +288,27 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               </motion.div>
               <motion.div initial={{ y: 28, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} transition={{ delay: 0.08, duration: 0.28 }} className="relative -mt-1 flex min-h-[58dvh] flex-1 flex-col rounded-t-3xl bg-white px-5 pb-8 pt-5 shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
                 <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
-                <div className="flex items-start justify-between gap-4"><div className="min-w-0"><h2 className="text-2xl font-bold leading-tight text-foreground">{room.name}</h2>{location && <p className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>{location}</span></p>}</div><div className="shrink-0 text-right"><p className="text-lg font-extrabold text-foreground">{formatFCFA(room.price ?? 0)}</p><p className="text-xs text-muted-foreground">{priceSuffix}</p></div></div>
+                <div className="mb-5 w-fit rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+                  <p className="text-lg font-extrabold leading-tight text-foreground">{formatFCFA(room.price ?? 0)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{priceSuffix}</p>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="min-w-0">
+                    <h2 className="text-2xl font-bold leading-tight text-foreground">{room.name}</h2>
+                    {location && <p className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>{location}</span></p>}
+                  </div>
+                </div>
                 {amenities.length > 0 && <div className="mt-5 flex flex-wrap gap-2">{getAmenitiesInfo(room.amenities ?? []).map(({ label, icon: Icon }) => <span key={label} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700"><Icon className="h-3.5 w-3.5 text-slate-400" />{label}</span>)}</div>}
                 {room.description && <div className="mt-6"><h3 className="text-sm font-bold text-foreground">À propos de cette annonce</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{room.description}</p></div>}
-                <div className="mt-auto grid grid-cols-2 gap-3 pt-7"><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-[#25D366]"><MessageCircle className="h-5 w-5" />WhatsApp</a>{isBookable ? <button type="button" onClick={() => setBookingOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />Contacter</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm">Fermer</button>}</div>
+                <div className="mt-auto grid grid-cols-3 gap-2 pt-7">
+                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#25D366]">
+                    <MessageCircle className="h-5 w-5" />WhatsApp
+                  </a>
+                  <button type="button" onClick={() => window.open(mapsUrl, "_blank", "noopener,noreferrer")} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
+                    <Navigation className="h-5 w-5" />Itinéraire
+                  </button>
+                  {isBookable ? <button type="button" onClick={() => setBookingOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />Contacter</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">Fermer</button>}
+                </div>
               </motion.div>
             </div>
           </motion.div>
