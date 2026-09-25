@@ -13,28 +13,39 @@ interface FavoritesContextValue {
 }
 
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
-const STORAGE_KEY = "trouvetou_favorites";
+const GUEST_STORAGE_KEY = "trouvetou_favorites_guest";
+let activeStorageKey = GUEST_STORAGE_KEY;
 let snapshot: string[] = readStored();
 const listeners = new Set<() => void>();
 
 function readStored(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as unknown;
-    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
-  } catch { return []; }
+    const parsed = JSON.parse(localStorage.getItem(activeStorageKey) ?? "[]") as unknown;
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : [];
+  } catch {
+    return [];
+  }
 }
-function emit() { snapshot = readStored(); listeners.forEach((listener) => listener()); }
+function emit() {
+  snapshot = readStored();
+  listeners.forEach((listener) => listener());
+}
 function subscribe(callback: () => void) {
   listeners.add(callback);
-  const onStorage = (event: StorageEvent) => { if (event.key === STORAGE_KEY) emit(); };
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === activeStorageKey) emit();
+  };
   window.addEventListener("storage", onStorage);
-  return () => { listeners.delete(callback); window.removeEventListener("storage", onStorage); };
+  return () => {
+    listeners.delete(callback);
+    window.removeEventListener("storage", onStorage);
+  };
 }
 function getSnapshot() { return snapshot; }
 function getServerSnapshot() { return []; }
 function persist(ids: Set<string>) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids])); } catch {}
+  try { localStorage.setItem(activeStorageKey, JSON.stringify([...ids])); } catch {}
   emit();
 }
 
@@ -44,24 +55,36 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [authListingId, setAuthListingId] = useState<string | null>(null);
   const favorites = useMemo(() => new Set(ids), [ids]);
 
-  const syncFromSupabase = useCallback(async () => {
-    if (!user) return;
+  useEffect(() => {
+    const guestFavorites = readStored();
+    activeStorageKey = user ? `trouvetou_favorites_user_${user.id}` : GUEST_STORAGE_KEY;
+    snapshot = [];
+    emit();
+
+    if (!user) {
+      snapshot = guestFavorites;
+      emit();
+      return;
+    }
+
     const supabase = getSupabase();
     if (!supabase) return;
-    const { data } = await supabase.from("favorites").select("listing_id");
-    if (!data) return;
-    const merged = new Set(snapshot);
-    for (const row of data) merged.add(row.listing_id);
-    persist(merged);
-    if (merged.size) {
-      await supabase.from("favorites").upsert(
-        [...merged].map((listing_id) => ({ user_id: user.id, listing_id })),
-        { onConflict: "user_id,listing_id", ignoreDuplicates: true }
-      );
-    }
-  }, [user]);
 
-  useEffect(() => { void syncFromSupabase(); }, [syncFromSupabase]);
+    void (async () => {
+      const { data } = await supabase.from("favorites").select("listing_id");
+      const merged = new Set<string>((data ?? []).map((row) => row.listing_id));
+      for (const id of guestFavorites) merged.add(id);
+      persist(merged);
+
+      if (guestFavorites.length) {
+        await supabase.from("favorites").upsert(
+          guestFavorites.map((listing_id) => ({ user_id: user.id, listing_id })),
+          { onConflict: "user_id,listing_id", ignoreDuplicates: true }
+        );
+        try { localStorage.removeItem(GUEST_STORAGE_KEY); } catch {}
+      }
+    })();
+  }, [user]);
 
   const saveAuthenticatedFavorite = useCallback(async (listingId: string) => {
     if (!user) return;
@@ -89,6 +112,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       }
       return;
     }
+
     const next = new Set(snapshot);
     if (next.has(id)) {
       next.delete(id);
@@ -112,7 +136,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   return (
     <FavoritesContext.Provider value={value}>
       {children}
-      <FavoriteAuthModal open={authListingId !== null} listingId={authListingId} onClose={() => setAuthListingId(null)} onAuthenticated={saveAuthenticatedFavorite} />
+      <FavoriteAuthModal
+        open={authListingId !== null}
+        listingId={authListingId}
+        onClose={() => setAuthListingId(null)}
+        onAuthenticated={saveAuthenticatedFavorite}
+      />
     </FavoritesContext.Provider>
   );
 }
