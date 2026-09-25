@@ -1,8 +1,15 @@
 -- TROUVETOU security regression checks.
 -- Run with: supabase test db
+-- Prérequis : supabase/schema.sql + supabase/migrations/ dans l'ordre.
+--
+-- Le test 12 (« only the canonical Séjoura source ») dépend de DONNÉES : il
+-- vérifie l'état réel des providers Séjoura. Sur une base vierge il échoue
+-- faute de lignes ; sur la base de production il valide la fusion de
+-- 20260925_merge_sejoura_duplicate_provider.sql. Les 12 autres tests sont
+-- purement structurels.
 begin;
 
-select plan(9);
+select plan(13);
 
 select ok(
   exists (
@@ -27,6 +34,21 @@ select ok(
 select ok(
   not has_table_privilege('anon', 'public.trouvetou_traffic_daily', 'select'),
   'anon cannot read traffic aggregates'
+);
+
+select ok(
+  not has_table_privilege('anon', 'public.schooly_sync_log', 'select'),
+  'anon cannot read schooly sync logs'
+);
+
+select ok(
+  not has_table_privilege('anon', 'public.favorites', 'select'),
+  'anon cannot read favorites'
+);
+
+select ok(
+  not has_table_privilege('anon', 'public.profiles', 'select'),
+  'anon cannot read profiles'
 );
 
 select ok(

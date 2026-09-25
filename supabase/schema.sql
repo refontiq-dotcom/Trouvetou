@@ -7,6 +7,14 @@
 -- un logiciel de gestion d'écoles, ...) pousse ses annonces via l'API
 -- d'ingestion /api/v1/sync avec sa clé API.
 --
+-- INSTALLATION :
+--   1. Appliquer CE fichier (schéma de base + instantané des objets
+--      reconstitués en section 11).
+--   2. Appliquer les migrations de supabase/migrations/ dans l'ordre
+--      lexicographique (ls -1 | sort) : c'est l'ordre d'application et il est
+--      significatif. 20260924_reconstitute_missing_schema.sql DOIT précéder
+--      les migrations 20260925_* qui dépendent de ses objets.
+--
 -- Devise : FCFA (XOF)
 -- ============================================================================
 
@@ -340,3 +348,144 @@ BEGIN
   RETURN QUERY SELECT v_inserted, v_updated;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- 11. OBJETS COMPLÉMENTAIRES (reconstitués le 2026-09-24)
+--
+--     Ces objets existaient en production sans aucune définition versionnée
+--     (créés « à la main » dans le SQL Editor). La DÉFINITION DE RÉFÉRENCE
+--     EST LA MIGRATION supabase/migrations/20260924_reconstitute_missing_schema.sql
+--     (rejouable, idempotente, avec les grants/policies complète) — source du
+--     connecteur Schooly : schooly/trouvetou-migrations/
+--     20260913000000_schooly_connector.sql, et usage applicatif des
+--     favoris/profils.
+--
+--     Ce bloc est un instantané de référence pour l'installation vierge, dans
+--     la continuité de ce fichier. Il n'inclut pas les objets purement
+--     incrémentaux (traffic, provider_api_key_aliases) ni le RPC
+--     schooly_sync_school : ceux-ci restent définis par leur seule migration.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 11.1 Connecteur Schooly : écoles synchronisées, niveaux, journal
+-- ----------------------------------------------------------------------------
+CREATE TABLE schooly_schools (
+  id                   UUID PRIMARY KEY,             -- ID original Schooly (immutable)
+  schooly_instance_url TEXT NOT NULL,                 -- URL de l'instance Schooly
+  nom                  TEXT NOT NULL,
+  ville                TEXT,
+  latitude             DOUBLE PRECISION,
+  longitude            DOUBLE PRECISION,
+  description_publique TEXT,
+  itineraire           TEXT,
+  photos_360           JSONB DEFAULT '[]'::jsonb,
+  video_url            TEXT,
+  grille_tarifaire_publique JSONB DEFAULT '[]'::jsonb,
+  published            BOOLEAN NOT NULL DEFAULT TRUE,
+  last_sync_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (schooly_instance_url, id)
+);
+
+CREATE INDEX idx_schooly_schools_published ON schooly_schools (published) WHERE published = TRUE;
+CREATE INDEX idx_schooly_schools_location ON schooly_schools (latitude, longitude)
+  WHERE published = TRUE AND latitude IS NOT NULL;
+
+CREATE TABLE schooly_grade_levels (
+  id                 UUID PRIMARY KEY,                 -- ID original Schooly
+  schooly_school_id  UUID NOT NULL REFERENCES schooly_schools(id) ON DELETE CASCADE,
+  label              TEXT NOT NULL,
+  capacity           INTEGER NOT NULL DEFAULT 0,
+  prix_min           BIGINT,
+  prix_max           BIGINT,
+  places_disponibles INTEGER NOT NULL DEFAULT 0,
+  last_sync_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (schooly_school_id, id)
+);
+
+CREATE INDEX idx_schooly_grade_school ON schooly_grade_levels (schooly_school_id);
+
+CREATE TABLE schooly_sync_log (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  schooly_school_id UUID REFERENCES schooly_schools(id) ON DELETE SET NULL,
+  action           TEXT NOT NULL CHECK (action IN
+                     ('sync', 'unsync', 'availability_update', 'reservation_created', 'reservation_confirmed')),
+  payload          JSONB,
+  status           TEXT NOT NULL DEFAULT 'ok' CHECK (status IN ('ok', 'error', 'warning')),
+  message          TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_schooly_sync_log_school ON schooly_sync_log (schooly_school_id);
+CREATE INDEX idx_schooly_sync_log_created ON schooly_sync_log (created_at DESC);
+
+CREATE TRIGGER trg_schooly_schools_updated BEFORE UPDATE ON schooly_schools
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER trg_schooly_grade_levels_updated BEFORE UPDATE ON schooly_grade_levels
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Lecture publique limitée aux écoles publiées ; le journal reste interne.
+ALTER TABLE schooly_schools ENABLE ROW LEVEL SECURITY;
+ALTER TABLE schooly_grade_levels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE schooly_sync_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "schooly_schools_public_read" ON schooly_schools
+  FOR SELECT USING (published = TRUE);
+
+CREATE POLICY "schooly_grade_levels_public_read" ON schooly_grade_levels
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM schooly_schools s WHERE s.id = schooly_school_id AND s.published = TRUE)
+  );
+
+-- Le rôle service_role bypasse RLS : aucune policy d'écriture nécessaire.
+REVOKE ALL ON schooly_sync_log FROM anon, authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 11.2 Favoris et profils (authentifiés)
+-- ----------------------------------------------------------------------------
+CREATE TABLE favorites (
+  user_id    UUID NOT NULL,
+  listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, listing_id)
+);
+
+CREATE INDEX idx_favorites_listing ON favorites (listing_id);
+
+ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON favorites FROM anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON favorites TO authenticated;
+
+CREATE POLICY favorites_select_own ON favorites
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY favorites_insert_own ON favorites
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY favorites_delete_own ON favorites
+  FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+CREATE TABLE profiles (
+  id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  first_name TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER trigger_profiles_updated BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON profiles FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE ON profiles TO authenticated;
+
+CREATE POLICY profiles_select_own ON profiles
+  FOR SELECT TO authenticated USING (auth.uid() = id);
+CREATE POLICY profiles_insert_own ON profiles
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+CREATE POLICY profiles_update_own ON profiles
+  FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
