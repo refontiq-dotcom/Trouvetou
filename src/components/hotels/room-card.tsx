@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState } from "react";\nimport { useHeroTransition } from "@/contexts/hero-transition-context";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -46,10 +46,10 @@ interface RoomCardProps {
 
 export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCardProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+
   const { location: userLocation } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { toggleCompare, isSelected: isCompared } = useCompare();
+  const { toggleCompare, isSelected: isCompared } = useCompare();\n  const { openListing } = useHeroTransition();
 
   const establishment = room.establishment;
   const coverImage = room.images[0] ?? PLACEHOLDER_IMAGE;
@@ -112,7 +112,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             ? "border-accent/60 shadow-accent/20 ring-1 ring-accent/40"
             : "border-border hover:shadow-primary/10"
         )}
-        onClick={() => setExpanded((prev) => !prev)}
+        data-listing-id={room.id}\n        onClick={(event) => openListing(room, event.currentTarget)}
       >
         {/* Image */}
         <div className="relative w-[130px] sm:w-[200px] lg:w-[240px] flex-shrink-0 overflow-hidden">
@@ -121,7 +121,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             alt={room.name}
             fill
             sizes="(min-width: 1024px) 240px, (min-width: 640px) 200px, 130px"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            data-hero-source-image\n            className="object-cover transition-transform duration-500 group-hover:scale-105"
             loading={index < 3 ? "eager" : "lazy"}
           />
 
@@ -193,7 +193,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
 
             {/* Tags */}
             {amenities.length > 0 && (
-              <div className={cn("flex-wrap gap-1 mt-1.5", expanded ? "flex" : "hidden sm:flex")}>
+              <div className="flex flex-wrap gap-1 mt-1.5">
                 {amenities.map(({ label, icon: Icon }) => (
                   <span
                     key={label}
