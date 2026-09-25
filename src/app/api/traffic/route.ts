@@ -33,9 +33,8 @@ export async function POST(req: Request) {
     }
 
     const day = todayUtc();
-    const db = admin as any;
 
-    const { data, error } = await db.rpc("increment_trouvetou_traffic", {
+    const { data, error } = await admin.rpc("increment_trouvetou_traffic", {
       p_day: day,
       p_unique_visitors: uniqueVisitors,
     });

@@ -326,6 +326,17 @@ export type Database = {
         };
         Returns: Array<{ inserted: number; updated: number }>;
       };
+      increment_trouvetou_traffic: {
+        Args: {
+          p_day: string;
+          p_unique_visitors: number;
+        };
+        Returns: Array<{
+          day: string;
+          visits: number;
+          unique_visitors: number;
+        }>;
+      };
     };
   };
 };

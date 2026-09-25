@@ -3,16 +3,9 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, Stethoscope, GraduationCap, Building2, UtensilsCrossed } from "lucide-react";
+import { Search } from "lucide-react";
 import { detectTargetPortal } from "@/lib/search-intent";
 import { VoiceButton } from "@/components/ui/voice-button";
-
-const QUICK_CHIPS = [
-  { label: "Clinique", icon: Stethoscope, query: "clinique", color: "bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100" },
-  { label: "École", icon: GraduationCap, query: "école", color: "bg-white text-[#1769E8] border-white/60 hover:bg-white/90" },
-  { label: "Restaurant", icon: UtensilsCrossed, query: "restaurant", color: "bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100" },
-  { label: "Hôtel", icon: Building2, query: "hôtel", color: "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100" },
-];
 
 export function Hero() {
   const router = useRouter();
@@ -23,12 +16,6 @@ export function Hero() {
     const q = query.trim();
     const target = q ? detectTargetPortal(q)?.targetHref ?? "/hotels" : "/hotels";
     router.push(q ? `${target}?q=${encodeURIComponent(q)}` : target);
-  }
-
-  function handleChipClick(chipQuery: string) {
-    setQuery(chipQuery);
-    const target = detectTargetPortal(chipQuery)?.targetHref ?? "/hotels";
-    router.push(`${target}?q=${encodeURIComponent(chipQuery)}`);
   }
 
   return (
@@ -89,7 +76,8 @@ export function Hero() {
               <Search className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Rechercher</span>
             </button>
-          </motion.form>        </div>
+          </motion.form>
+        </div>
       </div>
     </section>
   );
