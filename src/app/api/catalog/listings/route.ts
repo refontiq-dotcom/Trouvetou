@@ -59,7 +59,34 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (search.length > 0) {
     const needle = search.replace(/[%,]/g, " ");
-    query = query.or("title.ilike.%" + needle + "%,city.ilike.%" + needle + "%");
+
+    // Foreign-table columns cannot be mixed directly into PostgREST's .or()
+    // expression. Resolve matching active providers first, then include their
+    // ids in the same local-column OR filter.
+    const { data: matchingProviders, error: providerSearchError } = await admin
+      .from("providers")
+      .select("id")
+      .eq("is_active", true)
+      .ilike("name", "%" + needle + "%");
+
+    if (providerSearchError) {
+      return NextResponse.json(
+        { data: [], error: "Erreur lors de la recherche des établissements." },
+        { status: 500 }
+      );
+    }
+
+    const providerIds = (matchingProviders ?? []).map((provider) => provider.id);
+    const filters = [
+      "title.ilike.%" + needle + "%",
+      "city.ilike.%" + needle + "%",
+    ];
+
+    if (providerIds.length > 0) {
+      filters.push("provider_id.in.(" + providerIds.join(",") + ")");
+    }
+
+    query = query.or(filters.join(","));
   }
 
   if (categorySlugs.length > 0) {
