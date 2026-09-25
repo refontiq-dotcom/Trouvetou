@@ -194,6 +194,18 @@ export type Database = {
         };
         Relationships: [];
       };
+      profiles: {
+        Row: { id: string; first_name: string | null; created_at: string; updated_at: string };
+        Insert: { id: string; first_name?: string | null; created_at?: string; updated_at?: string };
+        Update: { first_name?: string | null; updated_at?: string };
+        Relationships: [];
+      };
+      favorites: {
+        Row: { user_id: string; listing_id: string; created_at: string };
+        Insert: { user_id: string; listing_id: string; created_at?: string };
+        Update: {};
+        Relationships: [];
+      };
       listings: {
         Row: Listing;
         Insert: ListingInsert & { id?: string; created_at?: string };

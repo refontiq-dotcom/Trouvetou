@@ -12,26 +12,14 @@ import { CompareBar } from "@/components/compare/compare-bar";
 import { PwaRegister } from "@/components/pwa-register";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { TrafficTracker } from "@/components/traffic-tracker";
+import { HeroTransitionProvider } from "@/contexts/hero-transition-context";
+import { PageTransition } from "@/components/layout/page-transition";
+import { AuthProvider } from "@/contexts/auth-context";
 
 export const metadata: Metadata = {
-  title: {
-    default: "Trouvetou — Trouvez tout, tout simplement.",
-    template: "%s — Trouvetou",
-  },
-  description:
-    "Trouvetou, le comparateur multi-secteur qui référence hôtels, résidences meublées, écoles, cliniques et restaurants partout en Afrique de l'Ouest.",
-  keywords: [
-    "trouvetou",
-    "hôtels",
-    "résidences meublées",
-    "annonces",
-    "écoles",
-    "cliniques",
-    "restaurants",
-    "Côte d'Ivoire",
-    "comparateur",
-    "proximité",
-  ],
+  title: { default: "Trouvetou — Trouvez tout, tout simplement.", template: "%s — Trouvetou" },
+  description: "Trouvetou, le comparateur multi-secteur qui référence hôtels, résidences meublées, écoles, cliniques et restaurants partout en Afrique de l'Ouest.",
+  keywords: ["trouvetou", "hôtels", "résidences meublées", "annonces", "écoles", "cliniques", "restaurants", "Côte d'Ivoire", "comparateur", "proximité"],
 };
 
 export const viewport: Viewport = {
@@ -43,11 +31,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr" className="h-full antialiased">
       <head>
@@ -59,32 +43,29 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <LocationProvider>
-          <FavoritesProvider>
-            <CompareProvider>
-              <BookingsProvider>
-        {/* Header desktop — navigation complète */}
-        <div className="hidden md:block">
-          <Header />
-        </div>
-        {/* Barre de position — desktop uniquement (le mobile passe par la bottom-nav) */}
-        <div className="hidden md:block">
-          <LocationBar />
-        </div>
-              <main className="flex-1 pb-20 md:pb-0">{children}</main>
-              <BottomNav />
-              {/* Footer — uniquement sur desktop pour ne pas gêner la nav mobile */}
-              <div className="hidden md:block">
-                <Footer />
-              </div>
-              <CompareBar />
-              <PwaRegister />
-              <PwaInstallBanner />
-              <TrafficTracker />
-              </BookingsProvider>
-            </CompareProvider>
-          </FavoritesProvider>
-        </LocationProvider>
+        <HeroTransitionProvider>
+          <AuthProvider>
+          <LocationProvider>
+            <FavoritesProvider>
+              <CompareProvider>
+                <BookingsProvider>
+                  <div className="hidden md:block"><Header /></div>
+                  <div className="hidden md:block"><LocationBar /></div>
+                  <main className="flex-1 pb-20 md:pb-0">
+                    <PageTransition>{children}</PageTransition>
+                  </main>
+                  <BottomNav />
+                  <div className="hidden md:block"><Footer /></div>
+                  <CompareBar />
+                  <PwaRegister />
+                  <PwaInstallBanner />
+                  <TrafficTracker />
+                </BookingsProvider>
+              </CompareProvider>
+            </FavoritesProvider>
+          </LocationProvider>
+        </AuthProvider>
+        </HeroTransitionProvider>
       </body>
     </html>
   );

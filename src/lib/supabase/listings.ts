@@ -1,4 +1,35 @@
+/** Récupère une annonce publique par son identifiant, pour la page détail. */
+export async function fetchListingById(id: string): Promise<ListedListing | null> {
+  if (!id.trim()) return null;
+
+  if (typeof window === "undefined") {
+    const admin = getAdminClient();
+    if (!admin) return null;
+    const { data, error } = await admin
+      .from("listings")
+      .select(LISTINGS_SELECT)
+      .eq("id", id)
+      .eq("is_available", true)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapRows([data])[0] ?? null;
+  }
+
+  const base = window.location.origin;
+  const url = new URL("/api/catalog/listings", base);
+  url.searchParams.set("id", id);
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    const body = (await res.json()) as { data?: ListingRow[]; error?: string | null };
+    if (!res.ok || body.error) return null;
+    return mapRows(body.data ?? [])[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 import type { Listing } from "./database.types";
+import { getAdminClient } from "./admin";
 
 // ============================================================================
 // TROUVETOU — Lecture du catalogue public (base autonome Trouvetou)

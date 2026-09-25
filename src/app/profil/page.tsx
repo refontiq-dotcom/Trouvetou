@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
 import { useBookings } from "@/contexts/bookings-context";
+import { useAuth } from "@/contexts/auth-context";
 import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
 
 const MENU_ITEMS = [
@@ -38,7 +39,7 @@ export default function ProfilPage() {
           </div>
         </div>
 
-        {/* Stats */}
+        {user && (\n          <div className="mb-6 flex items-center justify-between rounded-xl border border-border bg-card p-4">\n            <div>\n              <p className="text-sm font-semibold">Mon espace</p>\n              <p className="text-xs text-muted-foreground">Vos favoris sont synchronisés sur votre compte.</p>\n            </div>\n            <button type="button" onClick={() => void signOut()} className="rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted">Déconnexion</button>\n          </div>\n        )}\n\n        {!user && (\n          <div className="mb-6 rounded-xl border border-dashed border-border bg-card p-4">\n            <p className="text-sm font-semibold">Vous pouvez parcourir Trouvetou sans compte.</p>\n            <p className="mt-1 text-xs text-muted-foreground">Un numéro de téléphone vous sera demandé uniquement lorsque vous voudrez conserver une nouvelle annonce dans vos favoris.</p>\n          </div>\n        )}\n\n        {/* Stats */}
         <div className="grid grid-cols-2 gap-3 mb-8">
           <div className="rounded-xl border border-border bg-card p-4 text-center">
             <p className="text-2xl font-bold text-foreground">{favCount}</p>

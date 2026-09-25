@@ -57,6 +57,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const sp = req.nextUrl.searchParams;
   const search = (sp.get("q") ?? "").trim();
+  const id = (sp.get("id") ?? "").trim();
   const categorySlugs = (sp.get("categories") ?? "")
     .split(",")
     .map((slug) => slug.trim())
@@ -70,6 +71,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const maxPrice = Number(sp.get("maxPrice") ?? 0);
 
   let query = admin.from("listings").select(LISTINGS_SELECT).eq("is_available", true);
+
+  if (id.length > 0) {
+    query = query.eq("id", id);
+  }
 
   if (search.length > 0) {
     // Recherche sur le titre et la ville (colonnes de la table listings).
