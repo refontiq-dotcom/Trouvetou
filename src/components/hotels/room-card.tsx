@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronDown,
   Heart,
   X,
   ArrowLeft,
@@ -117,14 +116,17 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         onClick={() => setDetailOpen(true)}
       >
         {/* Image */}
-        <div className="relative w-[130px] sm:w-[200px] lg:w-[240px] flex-shrink-0 overflow-hidden">
+        <motion.div
+          layoutId={"listing-image-" + room.id}
+          className="relative w-[130px] sm:w-[200px] lg:w-[240px] flex-shrink-0 overflow-hidden"
+          transition={{ type: "spring", stiffness: 320, damping: 34 }}
+        >
           <Image
             src={coverImage}
             alt={room.name}
             fill
             sizes="(min-width: 1024px) 240px, (min-width: 640px) 200px, 130px"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
-            layoutId={"listing-image-" + room.id}
             loading={index < 3 ? "eager" : "lazy"}
           />
 
@@ -267,7 +269,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 </a>
               ) : null}
             </div>
-          </div>
+          </motion.div>
       </motion.article>
 
       <AnimatePresence>
