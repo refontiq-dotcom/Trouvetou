@@ -97,7 +97,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const { data } = await client
+      const { data } = await supabaseClient
         .from("favorites")
         .select("listing_id")
         .eq("user_id", user.id);
