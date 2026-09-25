@@ -80,12 +80,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     }
 
     const localIds = readLocal();
-    const client = supabase;
+    const supabaseClient = supabase;
 
     async function loadAndMerge() {
       if (localIds.length > 0) {
         await Promise.all(localIds.map(async (listingId) => {
-          await client.from("favorites").upsert(
+          await supabaseClient.from("favorites").upsert(
             { user_id: user.id, listing_id: listingId },
             { onConflict: "user_id,listing_id", ignoreDuplicates: true }
           );
