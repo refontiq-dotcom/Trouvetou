@@ -191,6 +191,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!booking_id || typeof booking_id !== "string") {
       return jsonError("booking_id est requis pour annuler.", 400, "MISSING_BOOKING_ID");
     }
+    if (booking_id.length > 100) {
+      return jsonError("booking_id est invalide.", 400, "INVALID_BOOKING_ID");
+    }
+    if (reason && String(reason).length > 500) {
+      return jsonError("Le motif d'annulation est trop long.", 400, "INVALID_CANCEL_REASON");
+    }
 
     const cancelRes = await fetch(
       `${SEJOURA_API_URL}/api/v1/external/bookings/cancel`,
