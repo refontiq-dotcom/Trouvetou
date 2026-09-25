@@ -173,7 +173,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               ↔
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Contenu */}
         <div className="flex flex-1 flex-col justify-between min-w-0 p-3 sm:p-4">
