@@ -30,7 +30,7 @@ export function HeroTransitionProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<HeroPhase>("source");
   const [selectedListing, setSelectedListing] = useState<ListingView | null>(null);
   const [sourceRect, setSourceRect] = useState<RectLike | null>(null);
-  const [sourceScrollY, setSourceScrollY] = useState(0);
+  const [sourceScrollY, setSourceScrollY] = useState(0);\n  const [overlayVisible, setOverlayVisible] = useState(true);
   const openedFromCatalog = useRef(false);
 
   const openListing = useCallback((listing: ListingView, source: HTMLElement) => {
@@ -65,7 +65,7 @@ export function HeroTransitionProvider({ children }: { children: ReactNode }) {
     const detailPath = "/annonces/" + selectedListing.id;
 
     if (status === "opening" && pathname === detailPath) {
-      const timer = window.setTimeout(() => setStatus("open"), 80);
+      const timer = window.setTimeout(() => {\n        setStatus("open");\n        window.setTimeout(() => setOverlayVisible(false), 180);\n      }, 80);
       return () => window.clearTimeout(timer);
     }
 
@@ -90,7 +90,7 @@ export function HeroTransitionProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname, selectedListing, sourceScrollY, status]);
 
-  const showOverlay = selectedListing && status !== "idle";
+  const showOverlay = selectedListing && status !== "idle" && overlayVisible;
   const target = phase === "target";
 
   return (
