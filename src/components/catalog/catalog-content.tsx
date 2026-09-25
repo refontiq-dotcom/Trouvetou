@@ -72,13 +72,14 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 interface CatalogContentProps {
   config: CatalogContentConfig;
   initialQuery?: string;
+  initialTypes?: string[];
 }
 
-export function CatalogContent({ config, initialQuery = "" }: CatalogContentProps) {
+export function CatalogContent({ config, initialQuery = "", initialTypes = [] }: CatalogContentProps) {
   const router = useRouter();
   const { location: userLocation } = useLocation();
   const [query, setQuery] = useState(initialQuery);
-  const [types, setTypes] = useState<string[]>([]);
+  const [types, setTypes] = useState<string[]>(initialTypes);
   const [budget, setBudget] = useState(0);
   const [sort, setSort] = useState<string>(userLocation ? "distance" : "price_asc");
 
