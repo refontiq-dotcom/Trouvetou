@@ -7,6 +7,7 @@ import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
 import { useBookings } from "@/contexts/bookings-context";
 import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
+import { useAuth } from "@/contexts/auth-context";
 
 const MENU_ITEMS = [
   { href: "/favoris", label: "Mes favoris", icon: Heart, color: "text-red-500" },
@@ -17,6 +18,7 @@ export default function ProfilPage() {
   const { count: favCount } = useFavorites();
   const { location } = useLocation();
   const { bookings, count: bookingCount } = useBookings();
+  const { user, loading: authLoading, openAuth, signOut } = useAuth();
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
@@ -36,6 +38,35 @@ export default function ProfilPage() {
               {location ? location.label : "Position non définie"}
             </p>
           </div>
+        </div>
+
+        {/* Compte */}
+        <div className="mb-6 rounded-xl border border-border bg-card p-4">
+          {authLoading ? (
+            <p className="text-sm text-muted-foreground">Chargement du compte…</p>
+          ) : user ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">Compte connecté</p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                  {user.phone ?? "Numéro vérifié"}
+                </p>
+              </div>
+              <button type="button" onClick={() => void signOut()} className="shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted">
+                Se déconnecter
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Pas encore connecté</p>
+                <p className="mt-1 text-xs text-muted-foreground">La connexion est demandée seulement pour enregistrer vos favoris.</p>
+              </div>
+              <button type="button" onClick={openAuth} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white">
+                Se connecter
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats */}
