@@ -2,7 +2,7 @@
 -- Run with: supabase test db
 begin;
 
-select plan(8);
+select plan(9);
 
 select ok(
   exists (
@@ -49,6 +49,11 @@ select ok(
       and p.proconfig @> array['search_path=public']
   ),
   'traffic increment RPC has a pinned search_path'
+);
+
+select ok(
+  (select count(*) from public.increment_trouvetou_traffic('2000-01-01'::date, 0)) = 1,
+  'traffic increment RPC executes without ambiguous day errors'
 );
 
 select ok(
