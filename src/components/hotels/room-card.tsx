@@ -54,7 +54,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
 
   const establishment = room.establishment;
   const coverImage = room.images[0] ?? PLACEHOLDER_IMAGE;
-  const amenities = getAmenitiesInfo(room.amenities ?? []).slice(0, 6);
+  const amenities = getAmenitiesInfo(room.amenities ?? []).slice(0, 3);
   const mapsUrl = buildGoogleMapsUrl(
     establishment?.latitude,
     establishment?.longitude,
@@ -108,7 +108,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.4, delay: Math.min(index, 4) * 0.06 }}
         className={cn(
-          "group flex h-full cursor-pointer flex-row overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md",
+          "group flex h-[176px] sm:h-[190px] cursor-pointer flex-row overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md",
           room.is_boosted
             ? "border-accent/60 shadow-accent/20 ring-1 ring-accent/40"
             : "border-border hover:shadow-primary/10"
@@ -176,7 +176,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         </motion.div>
 
         {/* Contenu */}
-        <div className="flex flex-1 flex-col justify-between min-w-0 p-3 sm:p-4">
+        <div className="flex min-w-0 flex-1 flex-col justify-between overflow-hidden p-3 sm:p-4">
           <div>
             <div className="flex items-start justify-between gap-2">
               <h3 className="truncate font-semibold text-foreground text-sm sm:text-base leading-snug">
@@ -227,14 +227,14 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             </div>
 
             {/* Boutons avec icônes */}
-            <div className="flex flex-shrink-0 items-center gap-0.5">
+            <div className="grid min-w-0 flex-shrink-0 grid-cols-3 items-center gap-1">
               {/* WhatsApp */}
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 h-7 w-7 text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                 aria-label="Partager sur WhatsApp"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
@@ -242,7 +242,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               {/* Itinéraire */}
               <button
                 onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 h-7 text-[10px] font-medium text-slate-600 transition-colors hover:text-foreground"
+                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-slate-600 transition-colors hover:text-foreground"
               >
                 <Navigation className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Itinéraire</span>
@@ -251,7 +251,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               {isBookable ? (
                 <button
                   onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
+                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bg-primary px-1 text-[9px] font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Réserver</span>
