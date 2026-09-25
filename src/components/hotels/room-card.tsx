@@ -270,6 +270,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               ) : null}
             </div>
           </div>
+        </div>
       </motion.article>
 
       <AnimatePresence>
