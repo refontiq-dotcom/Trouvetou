@@ -36,7 +36,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const sp = req.nextUrl.searchParams;
-  const search = (sp.get("q") ?? "").trim();
+  const search = (sp.get("q") ?? "").trim().slice(0, 100);
   const categorySlugs = (sp.get("categories") ?? "")
     .split(",")
     .map((slug) => slug.trim())
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .eq("providers.is_active", true);
 
   if (search.length > 0) {
-    const needle = search.replace(/[%,]/g, " ");
+    const needle = search.replace(/[%,().:]/g, " ");
 
     // Foreign-table columns cannot be mixed directly into PostgREST's .or()
     // expression. Resolve matching active providers first, then include their
