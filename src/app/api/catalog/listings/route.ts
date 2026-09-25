@@ -56,7 +56,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const sp = req.nextUrl.searchParams;
-  const search = (sp.get("q") ?? "").trim();\n  const id = (sp.get("id") ?? "").trim();
+  const search = (sp.get("q") ?? "").trim();
+  const id = (sp.get("id") ?? "").trim();
   const categorySlugs = (sp.get("categories") ?? "")
     .split(",")
     .map((slug) => slug.trim())
@@ -69,7 +70,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const boosted = sp.get("boosted") === "1";
   const maxPrice = Number(sp.get("maxPrice") ?? 0);
 
-  let query = admin.from("listings").select(LISTINGS_SELECT).eq("is_available", true);\n\n  if (id.length > 0) {\n    query = query.eq("id", id);\n  }
+  let query = admin.from("listings").select(LISTINGS_SELECT).eq("is_available", true);
+
+  if (id.length > 0) {
+    query = query.eq("id", id);
+  }
 
   if (search.length > 0) {
     // Recherche sur le titre et la ville (colonnes de la table listings).
