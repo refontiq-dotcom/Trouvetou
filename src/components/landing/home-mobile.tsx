@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Bell, ChevronDown, MapPin, Search, SlidersHorizontal, Stethoscope, GraduationCap, House, Hotel } from "lucide-react";
 import { useLocation } from "@/contexts/location-context";
+import { detectTargetPortal } from "@/lib/search-intent";
 import { LocationPicker } from "@/components/location/location-picker";
 import { HomeRecentListings } from "@/components/landing/home-recent-listings";
 
@@ -15,6 +17,7 @@ const CATEGORIES = [
 ] as const;
 
 export function HomeMobile() {
+  const router = useRouter();
   const { location } = useLocation();
   const [locationOpen, setLocationOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -24,7 +27,8 @@ export function HomeMobile() {
   function submitSearch() {
     const q = query.trim();
     if (!q) return;
-    window.location.href = `/hotels?q=${encodeURIComponent(q)}`;
+    const target = detectTargetPortal(q)?.targetHref ?? "/hotels";
+    router.push(`${target}?q=${encodeURIComponent(q)}`);
   }
 
   return (
@@ -77,14 +81,13 @@ export function HomeMobile() {
                 className="h-12 w-full rounded-xl border-0 bg-white pl-11 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 shadow-sm"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => setLocationOpen(true)}
+            <Link
+              href="/hotels"
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#079b97] shadow-sm"
               aria-label="Filtres"
             >
               <SlidersHorizontal className="h-5 w-5" />
-            </button>
+            </Link>
           </form>
         </div>
       </section>
