@@ -20,6 +20,7 @@ export function HomeMobile() {
   const router = useRouter();
   const { location } = useLocation();
   const [locationOpen, setLocationOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   const locationLabel = location?.label ?? "Abidjan, Côte d'Ivoire";
@@ -55,7 +56,7 @@ export function HomeMobile() {
 
             <button
               type="button"
-              onClick={() => window.dispatchEvent(new Event("trouvetou:open-notifications"))}
+              onClick={() => setNotificationOpen(true)}
               className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm"
               aria-label="Notifications"
             >
@@ -82,7 +83,7 @@ export function HomeMobile() {
               />
             </div>
             <Link
-              href="/hotels"
+              href="/annonces"
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#079b97] shadow-sm"
               aria-label="Filtres"
             >
@@ -131,6 +132,19 @@ export function HomeMobile() {
       </main>
 
       {locationOpen && <LocationPicker onClose={() => setLocationOpen(false)} />}
+      {notificationOpen && (
+        <div className="fixed inset-0 z-[200] flex items-end bg-black/35 md:hidden" role="dialog" aria-modal="true" aria-label="Notifications">
+          <button type="button" className="absolute inset-0" aria-label="Fermer les notifications" onClick={() => setNotificationOpen(false)} />
+          <div className="relative z-10 w-full rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl">
+            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-200" />
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Notifications</h2>
+              <button type="button" onClick={() => setNotificationOpen(false)} className="text-sm font-semibold text-[#079b97]">Fermer</button>
+            </div>
+            <p className="mt-5 rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Aucune notification pour le moment.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
