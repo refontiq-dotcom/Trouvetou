@@ -11,7 +11,8 @@ import { BookingsProvider } from "@/contexts/bookings-context";
 import { CompareBar } from "@/components/compare/compare-bar";
 import { PwaRegister } from "@/components/pwa-register";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
-import { TrafficTracker } from "@/components/traffic-tracker";\nimport { HeroTransitionProvider } from "@/contexts/hero-transition-context";
+import { TrafficTracker } from "@/components/traffic-tracker";
+import { HeroTransitionProvider } from "@/contexts/hero-transition-context";
 
 export const metadata: Metadata = {
   title: {
@@ -59,7 +60,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <HeroTransitionProvider>\n        <LocationProvider>
+        <HeroTransitionProvider>
+        <LocationProvider>
           <FavoritesProvider>
             <CompareProvider>
               <BookingsProvider>
