@@ -10,7 +10,7 @@ import { toListingViews, type ListingView } from "@/lib/supabase/listing-view";
 const RADIUS_KM = 25;
 
 export default function NearbyPage() {
-  const { location, loading, requestAutoLocation } = useLocation();
+  const { location, loading, requestAutoLocation, clearSavedLocation } = useLocation();
   const [rooms, setRooms] = useState<ListingView[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "permission" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
