@@ -136,7 +136,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!check_in_date || !check_out_date) {
       return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
     }
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(check_in_date) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(check_out_date)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(check_in_date) || !/^\d{4}-\d{2}-\d{2}$/.test(check_out_date)) {
       return jsonError("Les dates doivent respecter le format YYYY-MM-DD.", 400, "INVALID_DATE_FORMAT");
     }
     const checkIn = new Date(check_in_date + "T00:00:00Z");
@@ -242,7 +242,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!check_in_date || !check_out_date) {
     return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
   }
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(check_in_date) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(check_out_date)) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(check_in_date) || !/^\d{4}-\d{2}-\d{2}$/.test(check_out_date)) {
     return jsonError("Les dates doivent respecter le format YYYY-MM-DD.", 400, "INVALID_DATE_FORMAT");
   }
   const checkIn = new Date(check_in_date + "T00:00:00Z");
