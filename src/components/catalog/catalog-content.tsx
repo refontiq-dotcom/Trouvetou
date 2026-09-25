@@ -30,7 +30,8 @@ import { VoiceButton } from "@/components/ui/voice-button";
 import { CategoryBanner } from "@/components/catalog/category-banner";
 import { FilterDrawer } from "@/components/catalog/filter-drawer";
 import type { ListingView } from "@/lib/supabase/listing-view";
-import type { CatalogContentConfig } from "@/components/catalog/configs";\nimport { useHeroTransition } from "@/contexts/hero-transition-context";
+import type { CatalogContentConfig } from "@/components/catalog/configs";
+import { useHeroTransition } from "@/contexts/hero-transition-context";
 
 const PAGE_SIZE = 15;
 const MAX_CLIENT_LIMIT = 60;
@@ -75,7 +76,8 @@ interface CatalogContentProps {
 }
 
 export function CatalogContent({ config, initialQuery = "" }: CatalogContentProps) {
-  const router = useRouter();\n  const { status: heroStatus } = useHeroTransition();
+  const router = useRouter();
+  const { status: heroStatus } = useHeroTransition();
   const { location: userLocation } = useLocation();
   const [query, setQuery] = useState(initialQuery);
   const [types, setTypes] = useState<string[]>([]);
@@ -184,7 +186,12 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
   const canLoadMore = !effectiveLoading && !effectiveError && effectiveRooms.length >= limit && limit < MAX_CLIENT_LIMIT;
 
   return (
-    <div className={cn(\n      "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 transition-[transform,filter,opacity] duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)] origin-top",\n      heroStatus === "opening" ? "scale-[0.975] brightness-[0.78] blur-[1px]" :\n      heroStatus === "closing" ? "scale-[0.975] brightness-[0.78] blur-[1px]" :\n      "scale-100 brightness-100 blur-0"\n    )}>
+    <div className={cn(
+      "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 transition-[transform,filter,opacity] duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)] origin-top",
+      heroStatus === "opening" ? "scale-[0.975] brightness-[0.78] blur-[1px]" :
+      heroStatus === "closing" ? "scale-[0.975] brightness-[0.78] blur-[1px]" :
+      "scale-100 brightness-100 blur-0"
+    )}>
       {/* Header — titre seul, pas de sous-titre */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
