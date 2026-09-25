@@ -96,7 +96,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Format de clé API invalide.", 401, "INVALID_API_KEY_FORMAT");
   }
 
-  const { data: provider, error: providerError } = await admin
+  const { data: directProvider, error: providerError } = await admin
     .from("providers")
     .select("id, name, category_id, api_key_hash, is_active")
     .eq("id", providerId)
@@ -105,6 +105,40 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (providerError) {
     return jsonError("Erreur interne lors de la validation du provider.", 500, "PROVIDER_LOOKUP");
   }
+
+  const candidateHash = hashApiKey(apiKey);
+  let provider = directProvider;
+  let expectedHash = directProvider?.api_key_hash ?? null;
+
+  // Une clé d'un ancien provider peut rester valide après fusion.
+  // Elle authentifie le provider canonique et ne recrée donc pas de doublons.
+  if (!directProvider) {
+    const { data: alias, error: aliasError } = await admin
+      .from("provider_api_key_aliases")
+      .select("canonical_provider_id, api_key_hash, is_active")
+      .eq("legacy_provider_id", providerId)
+      .maybeSingle();
+
+    if (aliasError) {
+      return jsonError("Erreur interne lors de la validation de la clé API.", 500, "PROVIDER_ALIAS_LOOKUP");
+    }
+
+    if (alias?.is_active) {
+      const { data: canonicalProvider, error: canonicalError } = await admin
+        .from("providers")
+        .select("id, name, category_id, api_key_hash, is_active")
+        .eq("id", alias.canonical_provider_id)
+        .maybeSingle();
+
+      if (canonicalError) {
+        return jsonError("Erreur interne lors de la validation du provider canonique.", 500, "CANONICAL_PROVIDER_LOOKUP");
+      }
+
+      provider = canonicalProvider;
+      expectedHash = alias.api_key_hash;
+    }
+  }
+
   if (!provider) {
     return jsonError("Provider inconnu.", 401, "UNKNOWN_PROVIDER");
   }
@@ -113,8 +147,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // 2. Vérification de l'empreinte HMAC (comparaison en temps constant)
-  const candidateHash = hashApiKey(apiKey);
-  if (!secureCompare(provider.api_key_hash, candidateHash)) {
+  if (!expectedHash || !secureCompare(expectedHash, candidateHash)) {
     return jsonError("Clé API invalide.", 401, "INVALID_API_KEY");
   }
 
