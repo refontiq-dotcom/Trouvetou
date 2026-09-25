@@ -106,7 +106,7 @@ export function requestBrowserLocation(): Promise<LatLng | null> {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => resolve(null),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 }
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 }
     );
   });
 }
