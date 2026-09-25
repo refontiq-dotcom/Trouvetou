@@ -211,67 +211,40 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               </div>
             )}
 
-          {/* Bas : prix visuel + actions avec icônes */}
-          <div className="mt-1.5 flex items-end justify-between gap-1.5 border-t border-slate-100 pt-1.5">
-            {/* Prix avec icône wallet */}
-            <div className="min-w-0 flex items-center gap-1">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10">
+          {/* Prix puis actions : sur mobile, chaque action reste lisible avec son libellé */}
+          <div className="mt-1.5 border-t border-slate-100 pt-1.5">
+            <div className="flex min-w-0 items-center gap-1">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/10">
                 <Wallet className="h-3 w-3 text-accent" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-foreground leading-tight">
-                  {formatFCFA(room.price ?? 0)}
-                </p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-tight text-foreground">{formatFCFA(room.price ?? 0)}</p>
                 <p className="text-[8px] text-muted-foreground">{priceSuffix}</p>
               </div>
             </div>
-
-            {/* Boutons avec icônes */}
-            <div className="grid min-w-0 flex-shrink-0 grid-cols-3 items-center gap-1">
-              {/* WhatsApp */}
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
-                aria-label="Partager sur WhatsApp"
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Partager sur WhatsApp" aria-label="Partager sur WhatsApp" className="inline-flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[8px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10 sm:h-9 sm:px-2 sm:text-[10px]">
+                <MessageCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" /><span>WhatsApp</span>
               </a>
-              {/* Itinéraire */}
-              <button
-                onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-slate-600 transition-colors hover:text-foreground"
-              >
-                <Navigation className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Itinéraire</span>
+              <button type="button" onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }} title="Voir l'itinéraire" aria-label="Voir l'itinéraire" className="inline-flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[8px] font-semibold text-slate-600 transition-colors hover:text-foreground sm:h-9 sm:px-2 sm:text-[10px]">
+                <Navigation className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" /><span>Carte</span>
               </button>
-              {/* Réserver (hôtels/résidences) ou Contacter (autres catégories) */}
               {isBookable ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bg-primary px-1 text-[9px] font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Réserver</span>
+                <button type="button" onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }} title="Réserver" aria-label="Réserver" className="inline-flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-primary px-1 text-[8px] font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 sm:h-9 sm:px-2 sm:text-[10px]">
+                  <Phone className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" /><span>Réserver</span>
                 </button>
               ) : contactUrl ? (
-                <a
-                  href={contactUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
-                >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Contacter</span>
+                <a href={contactUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Contacter l'établissement" aria-label="Contacter l'établissement" className="inline-flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-primary px-1 text-[8px] font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 sm:h-9 sm:px-2 sm:text-[10px]">
+                  <MessageCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" /><span>Contacter</span>
                 </a>
-              ) : null}
+              ) : (
+                <button type="button" onClick={(e) => e.stopPropagation()} title="Voir les détails" aria-label="Voir les détails" className="inline-flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[8px] font-semibold text-slate-600 sm:h-9 sm:px-2 sm:text-[10px]">
+                  <span>Détails</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
-          </div>
       </motion.article>
 
       <AnimatePresence>
