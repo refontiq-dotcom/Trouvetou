@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import {
+  bookingsRateLimiter,
+  getClientKey,
+  safeSecretEqual,
+  verifySameOrigin,
+} from "@/lib/http/request-guard";
 
 /**
  * TROUVETOU — Réservation en ligne (création d'une réservation Séjour@)
@@ -35,6 +41,13 @@ export const runtime = "nodejs";
 const SEJOURA_API_URL =
   process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app";
 
+/** Limites de débit par action et par IP (fenêtre de 1 minute). */
+const RATE_LIMITS = {
+  check: { limit: 20, windowMs: 60_000 },
+  create: { limit: 5, windowMs: 60_000 },
+  cancel: { limit: 10, windowMs: 60_000 },
+} as const;
+
 interface BookingRequestBody {
   action?: string;
   listing_id?: string;
@@ -66,14 +79,20 @@ function parseRoomTypeId(externalId: string): string | null {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const admin = getAdminClient();
-  if (!admin) {
+  // ── Garde 1 : même origine (CSRF) ──────────────────────────────────────────
+  // Avant toute autre chose : une requête cross-site ne doit jamais atteindre
+  // la logique métier, quel que soit l'état de la configuration serveur.
+  const origin = verifySameOrigin(req.headers);
+  if (!origin.ok) {
     return jsonError(
-      "Configuration serveur incomplète (TROUVETOU_SUPABASE_URL / TROUVETOU_SUPABASE_SERVICE_ROLE_KEY).",
-      500,
-      "SERVER_CONFIG"
+      "Requête refusée : origine non autorisée.",
+      403,
+      origin.reason === "origin_missing" ? "ORIGIN_MISSING" : "ORIGIN_FORBIDDEN"
     );
   }
+
+  // ── Garde 2 : débit par IP et par action ──────────────────────────────────
+  const client = getClientKey(req.headers);
 
   let body: BookingRequestBody;
   try {
@@ -87,6 +106,48 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("action doit être check, create ou cancel.", 400, "INVALID_ACTION");
   }
 
+  const quota = RATE_LIMITS[action];
+  const decision = bookingsRateLimiter(`${action}:${client}`, quota.limit, quota.windowMs);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Trop de requêtes. Merci de réessayer dans un instant.",
+        code: "RATE_LIMITED",
+      },
+      { status: 429, headers: { "Retry-After": String(decision.retryAfterSeconds) } }
+    );
+  }
+
+  // ── Garde 3 : l'annulation exige un secret serveur ─────────────────────────
+  // `cancel` n'est appelé par aucune interface : l'exposer publiquement
+  // permettait à un tiers d'annuler des réservations réelles en devinant un
+  // booking_id. Elle reste disponible pour l'outillage (scripts, support),
+  // via un secret dédié.
+  if (action === "cancel") {
+    const expectedSecret = process.env.BOOKING_MANAGEMENT_SECRET;
+    const providedSecret = req.headers.get("x-booking-management-secret") ?? "";
+    if (!expectedSecret) {
+      return jsonError(
+        "L'annulation n'est pas configurée sur ce déploiement.",
+        503,
+        "CANCEL_DISABLED"
+      );
+    }
+    if (!safeSecretEqual(expectedSecret, providedSecret)) {
+      return jsonError("Action non autorisée.", 403, "FORBIDDEN");
+    }
+  }
+
+  const admin = getAdminClient();
+  if (!admin) {
+    return jsonError(
+      "Configuration serveur incomplète (TROUVETOU_SUPABASE_URL / TROUVETOU_SUPABASE_SERVICE_ROLE_KEY).",
+      500,
+      "SERVER_CONFIG"
+    );
+  }
+
   const { listing_id, check_in_date, check_out_date, number_of_guests } = body;
 
   if (!listing_id) {
@@ -96,7 +157,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Lire l'annonce en base (service_role) pour récupérer la clé API Séjour@
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, attributes, providers!inner(id, is_active)")
+    .select("id, external_id, base_price, attributes, providers!inner(id, is_active)")
     .eq("id", listing_id)
     .eq("is_available", true)
     .eq("providers.is_active", true)
@@ -161,6 +222,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const data = (await res.json().catch(() => ({}))) as {
       available?: boolean;
       available_rooms?: number;
+      /** Montant proposé par Séjour@ s'il l'expose (prioritaire). */
+      estimated_total?: number;
+      total_amount?: number;
       error?: string;
     };
 
@@ -175,12 +239,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Prix calculé côté SERVEUR à partir de la base : le client ne peut plus
+    // altérer le montant affiché avant confirmation. Si Séjour@ renvoie son
+    // propre montant, il gagne (c'est la source de vérité du PMS).
+    const upstreamTotal = data.estimated_total ?? data.total_amount;
+    const nightPrice = Number(listing.base_price ?? 0);
+    const estimatedTotal =
+      typeof upstreamTotal === "number" && Number.isFinite(upstreamTotal)
+        ? Math.round(upstreamTotal)
+        : Number.isFinite(nightPrice)
+          ? Math.round(nightPrice * nights)
+          : null;
+
     const available = data.available === true;
     return NextResponse.json({
       success: true,
       available,
       available_rooms: data.available_rooms ?? 0,
       nights,
+      estimated_total: estimatedTotal,
       room_type_id: roomTypeId,
     });
   }
