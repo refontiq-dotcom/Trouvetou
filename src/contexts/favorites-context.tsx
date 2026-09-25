@@ -111,26 +111,35 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [user]);
 
+  const { requestAuth } = useAuth();
+
   const toggleFavorite = useCallback((id: string) => {
-    if (!user) return;
+    const performToggle = async () => {
+      const currentUser = user;
+      const supabase = getSupabase();
+      if (!currentUser || !supabase) return;
 
-    const supabase = getSupabase();
-    if (!supabase) return;
+      const currentlyLiked = snapshot.includes(id);
+      const previous = [...snapshot];
+      const next = currentlyLiked ? snapshot.filter((item) => item !== id) : [...snapshot, id];
+      persistLocal(next);
 
-    const currentlyLiked = snapshot.includes(id);
-    const next = currentlyLiked ? snapshot.filter((item) => item !== id) : [...snapshot, id];
-    persistLocal(next);
-
-    void (async () => {
       if (currentlyLiked) {
-        const { error } = await supabase.from("favorites").delete().eq("user_id", user.id).eq("listing_id", id);
-        if (error) persistLocal(snapshot);
+        const { error } = await supabase.from("favorites").delete().eq("user_id", currentUser.id).eq("listing_id", id);
+        if (error) persistLocal(previous);
       } else {
-        const { error } = await supabase.from("favorites").insert({ user_id: user.id, listing_id: id });
-        if (error) persistLocal(snapshot.filter((item) => item !== id));
+        const { error } = await supabase.from("favorites").insert({ user_id: currentUser.id, listing_id: id });
+        if (error) persistLocal(previous);
       }
-    })();
-  }, [user]);
+    };
+
+    if (!user) {
+      requestAuth(() => { void performToggle(); });
+      return;
+    }
+
+    void performToggle();
+  }, [user, requestAuth]);
 
   const isFavorite = useCallback((id: string) => favorites.has(id), [favorites]);
 
