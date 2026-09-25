@@ -14,6 +14,7 @@ import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { TrafficTracker } from "@/components/traffic-tracker";
 import { HeroTransitionProvider } from "@/contexts/hero-transition-context";
 import { PageTransition } from "@/components/layout/page-transition";
+import { AuthProvider } from "@/contexts/auth-context";
 
 export const metadata: Metadata = {
   title: { default: "Trouvetou — Trouvez tout, tout simplement.", template: "%s — Trouvetou" },
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <HeroTransitionProvider>
+          <AuthProvider>
           <LocationProvider>
             <FavoritesProvider>
               <CompareProvider>
@@ -62,6 +64,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               </CompareProvider>
             </FavoritesProvider>
           </LocationProvider>
+        </AuthProvider>
         </HeroTransitionProvider>
       </body>
     </html>
