@@ -260,6 +260,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("guest.full_name est requis.", 400, "MISSING_GUEST_NAME");
   }
 
+  const guestName = guest.full_name.trim();
+  const guestPhone = guest.phone ? String(guest.phone).trim() : null;
+  const guestEmail = guest.email ? String(guest.email).trim().toLowerCase() : null;
+  const specialRequests = special_requests ? String(special_requests).trim() : null;
+
+  if (guestName.length > 120) {
+    return jsonError("Le nom du client est trop long.", 400, "INVALID_GUEST_NAME");
+  }
+  if (guestPhone && guestPhone.length > 30) {
+    return jsonError("Le numéro de téléphone est trop long.", 400, "INVALID_PHONE");
+  }
+  if (guestEmail && (guestEmail.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(guestEmail))) {
+    return jsonError("L'adresse e-mail est invalide.", 400, "INVALID_EMAIL");
+  }
+  if (specialRequests && specialRequests.length > 2000) {
+    return jsonError("La demande spéciale est trop longue.", 400, "INVALID_SPECIAL_REQUEST");
+  }
+
   const createRes = await fetch(
     `${SEJOURA_API_URL}/api/v1/external/bookings`,
     {
