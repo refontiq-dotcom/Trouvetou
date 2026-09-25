@@ -82,8 +82,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Le corps de la requête doit être un JSON valide.", 400, "INVALID_JSON");
   }
 
-  const action =
-    body.action === "create" ? "create" : body.action === "cancel" ? "cancel" : "check";
+  const action = body.action;
+  if (action !== "check" && action !== "create" && action !== "cancel") {
+    return jsonError("action doit être check, create ou cancel.", 400, "INVALID_ACTION");
+  }
+
   const { listing_id, check_in_date, check_out_date, number_of_guests } = body;
 
   if (!listing_id) {
@@ -93,8 +96,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Lire l'annonce en base (service_role) pour récupérer la clé API Séjour@
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, attributes")
+    .select("id, external_id, attributes, providers!inner(id, is_active)")
     .eq("id", listing_id)
+    .eq("is_available", true)
+    .eq("providers.is_active", true)
     .maybeSingle();
 
   if (listingError) {
@@ -131,7 +136,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!check_in_date || !check_out_date) {
       return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
     }
-    if (check_in_date >= check_out_date) {
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(check_in_date) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(check_out_date)) {
+      return jsonError("Les dates doivent respecter le format YYYY-MM-DD.", 400, "INVALID_DATE_FORMAT");
+    }
+    const checkIn = new Date(check_in_date + "T00:00:00Z");
+    const checkOut = new Date(check_out_date + "T00:00:00Z");
+    if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime()) || check_in_date >= check_out_date) {
       return jsonError("check_out_date doit être postérieur à check_in_date.", 400, "INVALID_DATES");
     }
 
@@ -232,8 +242,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!check_in_date || !check_out_date) {
     return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
   }
-  if (check_in_date >= check_out_date) {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(check_in_date) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(check_out_date)) {
+    return jsonError("Les dates doivent respecter le format YYYY-MM-DD.", 400, "INVALID_DATE_FORMAT");
+  }
+  const checkIn = new Date(check_in_date + "T00:00:00Z");
+  const checkOut = new Date(check_out_date + "T00:00:00Z");
+  if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime()) || check_in_date >= check_out_date) {
     return jsonError("check_out_date doit être postérieur à check_in_date.", 400, "INVALID_DATES");
+  }
+  if (number_of_guests !== undefined) {
+    const guests = Number(number_of_guests);
+    if (!Number.isInteger(guests) || guests < 1 || guests > 50) {
+      return jsonError("number_of_guests doit être compris entre 1 et 50.", 400, "INVALID_GUEST_COUNT");
+    }
   }
   if (!guest?.full_name || typeof guest.full_name !== "string" || !guest.full_name.trim()) {
     return jsonError("guest.full_name est requis.", 400, "MISSING_GUEST_NAME");
