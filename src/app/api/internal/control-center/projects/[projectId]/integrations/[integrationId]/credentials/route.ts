@@ -5,7 +5,7 @@ import { generateApiKey, hashApiKey } from "@/lib/sync/api-key";
 const INTEGRATIONS = {
   sejoura: {
     trouvetou: {
-      providerId: "7a358385-6a88-4c8e-8e93-ef743a5ff218",
+      providerId: "a5101284-2d97-46e0-a0f2-fa6a008588f2",
       providerName: "Séjoura",
       category: "hotel",
     },

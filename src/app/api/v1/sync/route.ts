@@ -110,33 +110,41 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let provider = directProvider;
   let expectedHash = directProvider?.api_key_hash ?? null;
 
-  // Une clé d'un ancien provider peut rester valide après fusion.
-  // Elle authentifie le provider canonique et ne recrée donc pas de doublons.
-  if (!directProvider) {
-    const { data: alias, error: aliasError } = await admin
-      .from("provider_api_key_aliases")
-      .select("canonical_provider_id, api_key_hash, is_active")
-      .eq("legacy_provider_id", providerId)
+  // A legacy provider may still exist as an inactive database record after a
+  // migration. In that case its active alias must be checked BEFORE returning
+  // PROVIDER_INACTIVE so the legacy key can continue ingesting into the
+  // canonical provider without recreating duplicate listings.
+  const { data: alias, error: aliasError } = await admin
+    .from("provider_api_key_aliases")
+    .select("canonical_provider_id, api_key_hash, is_active")
+    .eq("legacy_provider_id", providerId)
+    .maybeSingle();
+
+  if (aliasError) {
+    return jsonError(
+      "Erreur interne lors de la validation de la clé API.",
+      500,
+      "PROVIDER_ALIAS_LOOKUP"
+    );
+  }
+
+  if (alias?.is_active && (!directProvider || directProvider.is_active === false)) {
+    const { data: canonicalProvider, error: canonicalError } = await admin
+      .from("providers")
+      .select("id, name, category_id, api_key_hash, is_active")
+      .eq("id", alias.canonical_provider_id)
       .maybeSingle();
 
-    if (aliasError) {
-      return jsonError("Erreur interne lors de la validation de la clé API.", 500, "PROVIDER_ALIAS_LOOKUP");
+    if (canonicalError) {
+      return jsonError(
+        "Erreur interne lors de la validation du provider canonique.",
+        500,
+        "CANONICAL_PROVIDER_LOOKUP"
+      );
     }
 
-    if (alias?.is_active) {
-      const { data: canonicalProvider, error: canonicalError } = await admin
-        .from("providers")
-        .select("id, name, category_id, api_key_hash, is_active")
-        .eq("id", alias.canonical_provider_id)
-        .maybeSingle();
-
-      if (canonicalError) {
-        return jsonError("Erreur interne lors de la validation du provider canonique.", 500, "CANONICAL_PROVIDER_LOOKUP");
-      }
-
-      provider = canonicalProvider;
-      expectedHash = alias.api_key_hash;
-    }
+    provider = canonicalProvider;
+    expectedHash = alias.api_key_hash;
   }
 
   if (!provider) {

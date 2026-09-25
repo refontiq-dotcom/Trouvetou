@@ -1,0 +1,2 @@
+create index if not exists idx_provider_api_key_aliases_canonical
+on public.provider_api_key_aliases(canonical_provider_id);

@@ -226,6 +226,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      provider_api_key_aliases: {
+        Row: {
+          id: string;
+          legacy_provider_id: string;
+          canonical_provider_id: string;
+          api_key_hash: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          legacy_provider_id: string;
+          canonical_provider_id: string;
+          api_key_hash: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          canonical_provider_id?: string;
+          api_key_hash?: string;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
       // --- Tables héritées Séjoura (compatibilité section Hôtels) ---
       rooms: {
         Row: Room;
