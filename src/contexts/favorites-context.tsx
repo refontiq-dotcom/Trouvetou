@@ -80,11 +80,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     }
 
     const localIds = readLocal();
+    const client = supabase;
 
     async function loadAndMerge() {
       if (localIds.length > 0) {
         await Promise.all(localIds.map(async (listingId) => {
-          await supabase.from("favorites").upsert(
+          await client.from("favorites").upsert(
             { user_id: user.id, listing_id: listingId },
             { onConflict: "user_id,listing_id", ignoreDuplicates: true }
           );
@@ -96,7 +97,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const { data } = await supabase
+      const { data } = await client
         .from("favorites")
         .select("listing_id")
         .eq("user_id", user.id);
