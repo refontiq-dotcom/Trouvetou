@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookingModal } from "@/components/hotels/booking-modal";
 import { formatFCFA, buildWhatsAppUrl, PLACEHOLDER_IMAGE } from "@/lib/utils";
+import { isListingBookable } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 interface BoostedCarouselProps {
@@ -34,8 +35,8 @@ function BoostedCard({
   const image = room.images[0] ?? PLACEHOLDER_IMAGE;
 
   // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
-  const isBookable =
-    room.category_slug === "hotel" || room.category_slug === "residence";
+  // Même source de vérité que le bouton du catalogue et le BookingModal.
+  const isBookable = isListingBookable(room);
   const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
   const contactUrl = contactPhone
     ? buildWhatsAppUrl(

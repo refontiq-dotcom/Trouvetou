@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { buildWhatsAppUrl, formatFCFA } from "@/lib/utils";
+import { isListingBookable } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 interface BookingModalProps {
@@ -29,6 +30,8 @@ type CheckResult = {
   available: boolean;
   available_rooms: number;
   nights: number;
+  /** Montant calculé par le serveur (jamais par le client). */
+  estimated_total: number | null;
 };
 
 type BookingResult = {
@@ -69,7 +72,9 @@ export function BookingModal({
   const { addBooking } = useBookings();
 
   // Garde-fou : la réservation « par nuit » n'a de sens que pour l'hôtellerie.
-  if (room.category_slug !== "hotel" && room.category_slug !== "residence") {
+  // Même source de vérité que le bouton « Réserver » (room-card, carousel) :
+  // avant, un clic pouvait n'afficher aucun modal, sans message.
+  if (!isListingBookable(room)) {
     return null;
   }
 
@@ -122,6 +127,9 @@ export function BookingModal({
   };
 
   const checkAvailability = async () => {
+    // Garde-fou synchrone : `Button` se désactive au re-render, mais deux
+    // clics dans la même frame déclencheraient deux appels au PMS.
+    if (checking) return;
     if (!checkIn || !checkOut) {
       setCheckError("Sélectionnez les dates d'arrivée et de départ.");
       return;
@@ -145,22 +153,25 @@ export function BookingModal({
           number_of_guests: guests,
         }),
       });
-      const body = (await res.json()) as {
+      const body = (await res.json().catch(() => null)) as {
         success?: boolean;
         available?: boolean;
         available_rooms?: number;
         nights?: number;
+        estimated_total?: number | null;
         error?: string;
         code?: string;
-      };
-      if (!res.ok || body.success !== true) {
-        setCheckError(body.error ?? "Impossible de vérifier la disponibilité.");
+      } | null;
+      if (!res.ok || body?.success !== true) {
+        setCheckError(body?.error ?? "Impossible de vérifier la disponibilité.");
         return;
       }
       setCheckResult({
         available: body.available === true,
         available_rooms: body.available_rooms ?? 0,
         nights: body.nights ?? 1,
+        estimated_total:
+          typeof body.estimated_total === "number" ? body.estimated_total : null,
       });
       if (body.available === true) {
         setStep("guest");
@@ -175,6 +186,7 @@ export function BookingModal({
   };
 
   const createBooking = async () => {
+    if (creating) return;
     if (!fullName.trim()) {
       setCreateError("Le nom complet est requis.");
       return;
@@ -199,14 +211,14 @@ export function BookingModal({
           },
         }),
       });
-      const body = (await res.json()) as {
+      const body = (await res.json().catch(() => null)) as {
         success?: boolean;
         booking?: BookingResult;
         error?: string;
         code?: string;
-      };
-      if (!res.ok || body.success !== true) {
-        setCreateError(body.error ?? "La réservation a échoué.");
+      } | null;
+      if (!res.ok || body?.success !== true) {
+        setCreateError(body?.error ?? "La réservation a échoué.");
         return;
       }
       setBooking(body.booking ?? {});
@@ -226,6 +238,13 @@ export function BookingModal({
       setCreating(false);
     }
   };
+
+  // Le montant final peut différer de l'estimation (tarifs côté PMS). On
+  // l'affiche explicitement pour éviter tout litige à la confirmation.
+  const estimatedTotal = checkResult?.estimated_total ?? null;
+  const confirmedTotal = booking?.total_amount ?? null;
+  const hasTotalDrift =
+    estimatedTotal !== null && confirmedTotal !== null && confirmedTotal !== estimatedTotal;
 
   const whatsappMessage = `Bonjour, je vous contacte depuis Trouvetou. Je suis intéressé(e) par « ${room.name} » à ${formatFCFA(
     room.price ?? 0
@@ -329,9 +348,13 @@ export function BookingModal({
             <span>
               Disponible : {checkResult.available_rooms} chambre
               {checkResult.available_rooms > 1 ? "s" : ""} sur{" "}
-              {checkResult.nights} nuit{checkResult.nights > 1 ? "s" : ""} ·
-              Total estimé :{" "}
-              <strong>{formatFCFA((room.price ?? 0) * checkResult.nights)}</strong>
+              {checkResult.nights} nuit{checkResult.nights > 1 ? "s" : ""}
+              {estimatedTotal !== null && (
+                <>
+                  {" · "}
+                  Total estimé : <strong>{formatFCFA(estimatedTotal)}</strong>
+                </>
+              )}
             </span>
           </div>
 
@@ -421,9 +444,15 @@ export function BookingModal({
                 {booking.number_of_guests ?? guests} voyageur
                 {(booking.number_of_guests ?? guests) > 1 ? "s" : ""}
               </p>
-              {booking.total_amount != null && (
+              {confirmedTotal != null && (
                 <p className="font-bold">
-                  Total : {formatFCFA(booking.total_amount)}
+                  Montant confirmé : {formatFCFA(confirmedTotal)}
+                </p>
+              )}
+              {hasTotalDrift && (
+                <p className="text-xs text-emerald-700/80">
+                  L&apos;estimation initiale était de {formatFCFA(estimatedTotal)} ; le
+                  montant ci-dessus fait foi.
                 </p>
               )}
             </div>
