@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { LocationBar } from "@/components/location/location-bar";
 import { LocationProvider } from "@/contexts/location-context";
+import { AuthProvider } from "@/contexts/auth-context";
 import { FavoritesProvider } from "@/contexts/favorites-context";
 import { CompareProvider } from "@/contexts/compare-context";
 import { BookingsProvider } from "@/contexts/bookings-context";
@@ -59,7 +60,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <LocationProvider>
+        <AuthProvider>
+          <LocationProvider>
           <FavoritesProvider>
             <CompareProvider>
               <BookingsProvider>
@@ -85,6 +87,7 @@ export default function RootLayout({
             </CompareProvider>
           </FavoritesProvider>
         </LocationProvider>
+        </AuthProvider>
       </body>
     </html>
   );

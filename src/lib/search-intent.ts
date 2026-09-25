@@ -10,7 +10,7 @@
 // aucun mot-clé de l'univers courant (évite les faux positifs).
 // ============================================================================
 
-export type UniverseSlug = "hotels" | "ecoles" | "cliniques" | "restaurants";
+export type UniverseSlug = "hotels" | "ecoles" | "cliniques" | "restaurants" | "autres";
 
 export interface UniverseSuggestion {
   targetSlug: UniverseSlug;
