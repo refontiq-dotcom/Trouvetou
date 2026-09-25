@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -91,30 +91,70 @@ interface CategoryBannerProps {
   categorySlug: string;
 }
 
+interface DismissedState {
+  [categorySlug: string]: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Store localStorage lu via useSyncExternalStore.
+// Lire `dismissed` dans un useEffect (ou dans l'initialiseur de useState)
+// produirait un premier rendu client différent du HTML serveur — donc une
+// erreur d'hydratation — ainsi qu'un setState en cascade. Ici getServerSnapshot
+// renvoie un objet vide STABLE : serveur et premier rendu client affichent la
+// même bannière, qui disparaît juste après l'hydratation si elle a été masquée.
+// ---------------------------------------------------------------------------
+const EMPTY_DISMISSED_STATE: DismissedState = {};
+let dismissedState: DismissedState = readDismissedState();
+const dismissedListeners = new Set<() => void>();
+
+function readDismissedState(): DismissedState {
+  if (typeof window === "undefined") return EMPTY_DISMISSED_STATE;
+  try {
+    const raw = localStorage.getItem(DISMISS_KEY);
+    return raw ? (JSON.parse(raw) as DismissedState) : EMPTY_DISMISSED_STATE;
+  } catch {
+    return EMPTY_DISMISSED_STATE;
+  }
+}
+
+function subscribeToDismissedState(onStoreChange: () => void) {
+  dismissedListeners.add(onStoreChange);
+  return () => {
+    dismissedListeners.delete(onStoreChange);
+  };
+}
+
+function getDismissedSnapshot(): DismissedState {
+  return dismissedState;
+}
+
+function getDismissedServerSnapshot(): DismissedState {
+  return EMPTY_DISMISSED_STATE;
+}
+
+function writeDismissed(categorySlug: string) {
+  const next: DismissedState = { ...readDismissedState(), [categorySlug]: true };
+  try {
+    localStorage.setItem(DISMISS_KEY, JSON.stringify(next));
+  } catch {
+    // stockage indisponible : l'état reste en mémoire pour la session
+  }
+  dismissedState = next;
+  dismissedListeners.forEach((listener) => listener());
+}
+
 export function CategoryBanner({ categorySlug }: CategoryBannerProps) {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const raw = localStorage.getItem(DISMISS_KEY);
-      const dismissedMap: Record<string, boolean> = raw ? JSON.parse(raw) : {};
-      return !!dismissedMap[categorySlug];
-    } catch {
-      return false;
-    }
-  });
+  const dismissedMap = useSyncExternalStore(
+    subscribeToDismissedState,
+    getDismissedSnapshot,
+    getDismissedServerSnapshot
+  );
+  const dismissed = !!dismissedMap[categorySlug];
 
   const ad = CATEGORY_ADS[categorySlug];
 
   function handleDismiss() {
-    setDismissed(true);
-    try {
-      const raw = localStorage.getItem(DISMISS_KEY);
-      const dismissedMap: Record<string, boolean> = raw ? JSON.parse(raw) : {};
-      dismissedMap[categorySlug] = true;
-      localStorage.setItem(DISMISS_KEY, JSON.stringify(dismissedMap));
-    } catch {
-      // silent
-    }
+    writeDismissed(categorySlug);
   }
 
   if (!ad || dismissed) return null;

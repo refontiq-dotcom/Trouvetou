@@ -28,7 +28,8 @@ const STORAGE_KEY = "trouvetou_favorites";
 // `useSyncExternalStore` permet un chargement initial sans « cascade » de
 // rendus (la règle react-hooks/set-state-in-effect est ainsi respectée).
 // ---------------------------------------------------------------------------
-let snapshot: string[] = readEmptyOrStored();
+const EMPTY_SNAPSHOT: string[] = [];
+let snapshot: string[] = EMPTY_SNAPSHOT;
 const listeners = new Set<() => void>();
 
 function readEmptyOrStored(): string[] {
@@ -50,6 +51,15 @@ function emit() {
 
 function subscribe(callback: () => void): () => void {
   listeners.add(callback);
+
+  // Après l’hydratation, on recharge les favoris persistés sans modifier
+  // l’instantané utilisé par le serveur.
+  const stored = readEmptyOrStored();
+  if (stored.join("\u0000") !== snapshot.join("\u0000")) {
+    snapshot = stored;
+    callback();
+  }
+
   const onStorage = (e: StorageEvent) => {
     if (e.key === STORAGE_KEY) emit();
   };
@@ -69,7 +79,8 @@ function getSnapshot(): string[] {
 }
 
 function getServerSnapshot(): string[] {
-  return [];
+  // La référence doit rester stable pendant le SSR et l’hydratation.
+  return EMPTY_SNAPSHOT;
 }
 
 function persist(next: Set<string>) {
