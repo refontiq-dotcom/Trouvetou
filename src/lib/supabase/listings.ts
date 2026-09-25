@@ -28,7 +28,8 @@ export async function fetchListingById(id: string): Promise<ListedListing | null
   }
 }
 
-import type { Listing } from "./database.types";\nimport { getAdminClient } from "./admin";
+import type { Listing } from "./database.types";
+import { getAdminClient } from "./admin";
 
 // ============================================================================
 // TROUVETOU — Lecture du catalogue public (base autonome Trouvetou)
