@@ -13,8 +13,15 @@ interface HotelsPageProps {
 }
 
 export default async function HotelsPage({ searchParams }: HotelsPageProps) {
-  const { q } = await searchParams;
+  const { q, type } = await searchParams;
   const initialQuery = typeof q === "string" ? q : "";
+  const initialTypes = type === "hotel" || type === "residence" ? [type] : [];
 
-  return <CatalogContent config={HOTELS_CONFIG} initialQuery={initialQuery} />;
+  return (
+    <CatalogContent
+      config={HOTELS_CONFIG}
+      initialQuery={initialQuery}
+      initialTypes={initialTypes}
+    />
+  );
 }
