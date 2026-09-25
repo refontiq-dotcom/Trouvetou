@@ -115,9 +115,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   const toggleFavorite = useCallback((id: string) => {
     const performToggle = async () => {
-      const currentUser = user;
       const supabase = getSupabase();
-      if (!currentUser || !supabase) return;
+      if (!supabase) return;
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUser = authData.user;
+      if (!currentUser) return;
 
       const currentlyLiked = snapshot.includes(id);
       const previous = [...snapshot];
