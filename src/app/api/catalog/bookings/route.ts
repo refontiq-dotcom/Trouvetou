@@ -271,7 +271,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (guestPhone && guestPhone.length > 30) {
     return jsonError("Le numéro de téléphone est trop long.", 400, "INVALID_PHONE");
   }
-  if (guestEmail && (guestEmail.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(guestEmail))) {
+  if (guestEmail && (guestEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail))) {
     return jsonError("L'adresse e-mail est invalide.", 400, "INVALID_EMAIL");
   }
   if (specialRequests && specialRequests.length > 2000) {
@@ -288,11 +288,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         check_in_date,
         check_out_date,
         number_of_guests: parseInt(String(number_of_guests), 10) || 1,
-        special_requests: special_requests ? String(special_requests) : null,
+        special_requests: specialRequests,
         guest: {
-          full_name: guest.full_name.trim(),
-          phone: guest.phone ? String(guest.phone).trim() : null,
-          email: guest.email ? String(guest.email).trim() : null,
+          full_name: guestName,
+          phone: guestPhone,
+          email: guestEmail,
         },
       }),
     }
