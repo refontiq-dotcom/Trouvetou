@@ -57,6 +57,16 @@ export const CLINIQUES_CONFIG: CatalogContentConfig = {
   footerNote: "Les annonces sont gérées par les établissements via nos logiciels partenaires.",
 };
 
+export const ANNONCES_CONFIG: CatalogContentConfig = {
+  slug: "autres",
+  categories: ["hotel", "residence", "clinic", "school", "other"],
+  title: "Toutes les annonces",
+  breadcrumbLabel: "Annonces",
+  searchPlaceholder: "Rechercher une annonce, une ville, un établissement…",
+  priceSuffix: "à partir de",
+  footerNote: "Les annonces sont gérées par les établissements partenaires.",
+};
+
 export const AUTRES_CONFIG: CatalogContentConfig = {
   slug: "autres",
   categories: ["other"],
