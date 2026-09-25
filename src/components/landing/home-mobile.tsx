@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bell, ChevronDown, Filter, MapPin, Search, SlidersHorizontal, Stethoscope, GraduationCap, House, Hotel, Grid2X2Plus } from "lucide-react";
+import { Bell, ChevronDown, MapPin, Search, SlidersHorizontal, Stethoscope, GraduationCap, House, Hotel } from "lucide-react";
 import { useLocation } from "@/contexts/location-context";
 import { LocationPicker } from "@/components/location/location-picker";
 import { HomeRecentListings } from "@/components/landing/home-recent-listings";
