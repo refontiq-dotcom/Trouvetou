@@ -96,7 +96,7 @@ export function HomeMobile() {
         <section aria-labelledby="home-offers-title">
           <div className="mb-3 flex items-center justify-between">
             <h2 id="home-offers-title" className="text-xl font-bold tracking-tight text-slate-900">Annonces / Offres</h2>
-            <Link href="/hotels" className="text-xs font-semibold text-[#079b97]">Voir tout</Link>
+            <Link href="/annonces" className="text-xs font-semibold text-[#079b97]">Voir tout</Link>
           </div>
           <div className="-mx-4">
             <HomeAdCarousel />
