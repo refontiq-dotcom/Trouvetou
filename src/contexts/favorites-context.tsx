@@ -85,6 +85,8 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const ids = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const favorites = useMemo(() => new Set(ids), [ids]);
 
+  useEffect(() => { void syncFromSupabase(); }, [syncFromSupabase]);
+
   const toggleFavorite = useCallback((id: string) => {
     const next = new Set(snapshot);
     if (next.has(id)) {
