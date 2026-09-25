@@ -30,7 +30,7 @@ export function HomeRecentListings() {
     <section aria-labelledby="home-recent-title" className="mt-8">
       <div className="mb-4 flex items-center justify-between">
         <h2 id="home-recent-title" className="text-xl font-bold tracking-tight text-slate-900">Annonces récentes</h2>
-        <Link href="/hotels" className="text-xs font-semibold text-[#079b97]">Voir tout</Link>
+        <Link href="/annonces" className="text-xs font-semibold text-[#079b97]">Voir tout</Link>
       </div>
 
       {loading ? (
