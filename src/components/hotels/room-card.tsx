@@ -245,6 +245,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             </div>
           </div>
         </div>
+      </div>
       </motion.article>
 
       <AnimatePresence>

@@ -81,12 +81,16 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
     const localIds = readLocal();
     const supabaseClient = supabase;
+    // Capture explicite : `user` est une valeur nullable et TypeScript ne
+    // propage pas le narrowing du garde-fou dans les closures asynchrones
+    // (erreur « 'user' is possibly 'null' »).
+    const userId = user.id;
 
     async function loadAndMerge() {
       if (localIds.length > 0) {
         await Promise.all(localIds.map(async (listingId) => {
           await supabaseClient.from("favorites").upsert(
-            { user_id: user.id, listing_id: listingId },
+            { user_id: userId, listing_id: listingId },
             { onConflict: "user_id,listing_id", ignoreDuplicates: true }
           );
         }));
@@ -100,7 +104,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       const { data } = await supabaseClient
         .from("favorites")
         .select("listing_id")
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       if (cancelled) return;
       const remoteIds = (data ?? []).map((row) => row.listing_id);
