@@ -9,7 +9,7 @@ const STORAGE_KEY = "trouvetou_arrival_tracking";
 const ArrivalTrackingContext = createContext<ArrivalTrackingContextValue | null>(null);
 
 export function ArrivalTrackingProvider({ children }: { children: ReactNode }) {
-  const { bookings, updateBooking } = useBookings();
+  const { updateBooking } = useBookings();
   const [active, setActive] = useState<ActiveTracking | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,15 +125,13 @@ export function ArrivalTrackingProvider({ children }: { children: ReactNode }) {
         return;
       }
       setActive(saved);
-      if (bookings.some((b) => b.booking_id === saved.booking_id)) {
-        updateBooking(saved.booking_id, {
-          arrival_tracking: { status: "active", token: saved.token, started_at: saved.started_at, expires_at: saved.expires_at },
-        });
-      }
+      updateBooking(saved.booking_id, {
+        arrival_tracking: { status: "active", token: saved.token, started_at: saved.started_at, expires_at: saved.expires_at },
+      });
       startPolling(saved);
     } catch {}
     return clearTimer;
-  }, [bookings, clearTimer, startPolling, updateBooking]);
+  }, [clearTimer, startPolling, updateBooking]);
 
   useEffect(() => () => clearTimer(), [clearTimer]);
 
