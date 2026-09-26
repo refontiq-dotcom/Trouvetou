@@ -26,12 +26,54 @@ export function ArrivalTrackingProvider({ children }: { children: ReactNode }) {
 
   const sendCurrentPosition = useCallback(async (session: ActiveTracking, force = false) => {
     const loc = await requestBrowserLocation();
-    if (!loc) { setError("La position n’a pas pu être obtenue. Vérifiez l’autorisation de localisation."); return; }
+    if (!loc) {
+      setError("Position indisponible. Vérifiez l’autorisation GPS.");
+      return;
+    }
     const now = Date.now();
     if (!force && lastSentRef.current && now - lastSentAtRef.current < 15000 && haversineDistance(lastSentRef.current, loc) < 100) return;
-    lastSentRef.current = loc; lastSentAtRef.current = now;
-    const res = await fetch("/api/catalog/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_tracking", booking_id: session.booking_id, public_token: session.token, latitude: loc.lat, longitude: loc.lng }), cache: "no-store" });
-    if (res.status === 410 || res.status === 409 || res.status === 404) { clearTimer(); persist(null); updateBooking(session.booking_id, { arrival_tracking: { status: "expired" } }); }
+
+    try {
+      const res = await fetch("/api/catalog/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_tracking",
+          booking_id: session.booking_id,
+          public_token: session.token,
+          latitude: loc.lat,
+          longitude: loc.lng,
+        }),
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        lastSentRef.current = loc;
+        lastSentAtRef.current = now;
+        setError(null);
+        return;
+      }
+
+      if (res.status === 410 || res.status === 409 || res.status === 404) {
+        clearTimer();
+        persist(null);
+        updateBooking(session.booking_id, {
+          arrival_tracking: { status: res.status === 410 ? "expired" : "stopped" },
+        });
+        setError(
+          res.status === 410
+            ? "Le suivi a expiré. Vous pouvez le réactiver si votre arrivée est toujours prévue."
+            : "Le suivi n’est plus actif pour cette réservation."
+        );
+        return;
+      }
+
+      setError("Connexion au service de suivi momentanément indisponible. Nouvelle tentative automatique.");
+    } catch {
+      // Une perte de réseau ne termine pas la session : le serveur conserve
+      // la session active et le prochain cycle réessaiera automatiquement.
+      setError("Connexion perdue. Le suivi reprendra automatiquement dès que le réseau revient.");
+    }
   }, [clearTimer, persist, updateBooking]);
 
   const startPolling = useCallback((session: ActiveTracking) => {
@@ -42,6 +84,11 @@ export function ArrivalTrackingProvider({ children }: { children: ReactNode }) {
 
   const startTracking = useCallback(async (booking: BookingRecord) => {
     if (!booking.booking_id || starting) return false;
+    if (active && active.booking_id === booking.booking_id) return true;
+    if (active && active.booking_id !== booking.booking_id) {
+      setError("Un autre suivi d’arrivée est déjà actif.");
+      return false;
+    }
     setStarting(true); setError(null);
     try {
       const initial = await requestBrowserLocation();
@@ -57,7 +104,7 @@ export function ArrivalTrackingProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (e) { setError(e instanceof Error ? e.message : "Impossible d’activer le suivi."); return false; }
     finally { setStarting(false); }
-  }, [startPolling, starting, persist, updateBooking]);
+  }, [active, startPolling, starting, persist, updateBooking]);
 
   const stopTracking = useCallback(async (bookingId: string) => {
     const session = active?.booking_id === bookingId ? active : null;
@@ -72,13 +119,21 @@ export function ArrivalTrackingProvider({ children }: { children: ReactNode }) {
       if (!raw) return;
       const saved = JSON.parse(raw) as ActiveTracking;
       if (!saved?.booking_id || !saved?.token) return;
-      if (saved.expires_at && new Date(saved.expires_at) <= new Date()) { localStorage.removeItem(STORAGE_KEY); return; }
+      if (saved.expires_at && new Date(saved.expires_at) <= new Date()) {
+        localStorage.removeItem(STORAGE_KEY);
+        updateBooking(saved.booking_id, { arrival_tracking: { status: "expired" } });
+        return;
+      }
       setActive(saved);
-      if (bookings.some((b) => b.booking_id === saved.booking_id)) updateBooking(saved.booking_id, { arrival_tracking: { status: "active", token: saved.token, started_at: saved.started_at, expires_at: saved.expires_at } });
+      if (bookings.some((b) => b.booking_id === saved.booking_id)) {
+        updateBooking(saved.booking_id, {
+          arrival_tracking: { status: "active", token: saved.token, started_at: saved.started_at, expires_at: saved.expires_at },
+        });
+      }
       startPolling(saved);
     } catch {}
     return clearTimer;
-  }, []);
+  }, [bookings, clearTimer, startPolling, updateBooking]);
 
   useEffect(() => () => clearTimer(), [clearTimer]);
 
