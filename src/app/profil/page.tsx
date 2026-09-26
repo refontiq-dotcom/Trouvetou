@@ -7,6 +7,7 @@ import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
 import { useBookings } from "@/contexts/bookings-context";
 import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
+import { ArrivalTrackingAction } from "@/components/bookings/arrival-tracking-action";
 
 const MENU_ITEMS = [
   { href: "/favoris", label: "Mes favoris", icon: Heart, color: "text-red-500" },
@@ -93,6 +94,7 @@ export default function ProfilPage() {
                     </span>
                   )}
                 </div>
+                <ArrivalTrackingAction booking={b} />
               ))}
             </div>
           </div>
