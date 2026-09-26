@@ -8,6 +8,7 @@ import { LocationProvider } from "@/contexts/location-context";
 import { FavoritesProvider } from "@/contexts/favorites-context";
 import { CompareProvider } from "@/contexts/compare-context";
 import { BookingsProvider } from "@/contexts/bookings-context";
+import { ArrivalTrackingProvider } from "@/contexts/arrival-tracking-context";
 import { CompareBar } from "@/components/compare/compare-bar";
 import { PwaRegister } from "@/components/pwa-register";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
@@ -63,6 +64,7 @@ export default function RootLayout({
           <FavoritesProvider>
             <CompareProvider>
               <BookingsProvider>
+              <ArrivalTrackingProvider>
         {/* Header desktop — navigation complète */}
         <div className="hidden md:block">
           <Header />
@@ -81,6 +83,7 @@ export default function RootLayout({
               <PwaRegister />
               <PwaInstallBanner />
               <TrafficTracker />
+              </ArrivalTrackingProvider>
               </BookingsProvider>
             </CompareProvider>
           </FavoritesProvider>
