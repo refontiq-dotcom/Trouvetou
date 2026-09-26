@@ -17,6 +17,7 @@ export interface BookingRecord {
   establishment_name?: string;
   destination_latitude?: number | null;
   destination_longitude?: number | null;
+  status?: string;
   arrival_tracking?: {
     status: "active" | "stopped" | "completed" | "expired";
     token?: string;
