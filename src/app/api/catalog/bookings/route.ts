@@ -46,12 +46,20 @@ const RATE_LIMITS = {
   check: { limit: 20, windowMs: 60_000 },
   create: { limit: 5, windowMs: 60_000 },
   cancel: { limit: 10, windowMs: 60_000 },
+  start_tracking: { limit: 3, windowMs: 60_000 },
+  update_tracking: { limit: 12, windowMs: 60_000 },
+  stop_tracking: { limit: 5, windowMs: 60_000 },
+  status_tracking: { limit: 20, windowMs: 60_000 },
 } as const;
 
 interface BookingRequestBody {
   action?: string;
   listing_id?: string;
   booking_id?: string;
+  public_token?: string;
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number | null;
   reason?: string | null;
   check_in_date?: string;
   check_out_date?: string;
@@ -102,11 +110,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const action = body.action;
-  if (action !== "check" && action !== "create" && action !== "cancel") {
-    return jsonError("action doit être check, create ou cancel.", 400, "INVALID_ACTION");
+  const trackingActions = ["start_tracking", "update_tracking", "stop_tracking", "status_tracking"] as const;
+  if (action !== "check" && action !== "create" && action !== "cancel" && !trackingActions.includes(action as (typeof trackingActions)[number])) {
+    return jsonError("action est invalide.", 400, "INVALID_ACTION");
   }
 
-  const quota = RATE_LIMITS[action];
+  const quota = RATE_LIMITS[action as keyof typeof RATE_LIMITS];
   const decision = bookingsRateLimiter(`${action}:${client}`, quota.limit, quota.windowMs);
   if (!decision.allowed) {
     return NextResponse.json(
@@ -191,6 +200,33 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     "Content-Type": "application/json",
     "x-api-key": sejouraApiKey,
   };
+
+  // Suivi d’arrivée : la clé Séjoura reste côté serveur Trouvetou.
+  // Le navigateur ne reçoit qu’un jeton de session de suivi, jamais la clé API.
+  if (action === "start_tracking" || action === "update_tracking" || action === "stop_tracking" || action === "status_tracking") {
+    const bookingId = typeof body.booking_id === "string" ? body.booking_id : "";
+    if (!bookingId) return jsonError("booking_id est requis.", 400, "MISSING_BOOKING_ID");
+
+    const upstreamAction =
+      action === "start_tracking" ? "start" :
+      action === "update_tracking" ? "update" :
+      action === "stop_tracking" ? "stop" : "status";
+
+    const payload: Record<string, unknown> = { action: upstreamAction, booking_id: bookingId };
+    if (body.public_token) payload.public_token = body.public_token;
+    if (upstreamAction === "update") {
+      payload.latitude = Number(body.latitude);
+      payload.longitude = Number(body.longitude);
+      if (body.accuracy != null) payload.accuracy = Number(body.accuracy);
+    }
+
+    const upstream = await fetch(
+      `${SEJOURA_API_URL}/api/v1/external/arrival-tracking`,
+      { method: "POST", headers, body: JSON.stringify(payload), cache: "no-store" }
+    );
+    const data = await upstream.json().catch(() => ({}));
+    return NextResponse.json(data, { status: upstream.status });
+  }
 
   // ── Action "check" : disponibilité temps réel + estimation du prix ────────
   if (action === "check") {
