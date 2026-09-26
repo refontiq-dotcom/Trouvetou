@@ -10,8 +10,19 @@ import {
 } from "react";
 
 export interface BookingRecord {
+  booking_id?: string;
+  listing_id?: string;
   booking_code?: string;
   listing_name: string;
+  establishment_name?: string;
+  destination_latitude?: number | null;
+  destination_longitude?: number | null;
+  arrival_tracking?: {
+    status: "active" | "stopped" | "completed" | "expired";
+    token?: string;
+    started_at?: string;
+    expires_at?: string;
+  };
   check_in_date: string;
   check_out_date: string;
   number_of_guests: number;
@@ -22,6 +33,7 @@ export interface BookingRecord {
 interface BookingsContextValue {
   bookings: BookingRecord[];
   addBooking: (booking: BookingRecord) => void;
+  updateBooking: (bookingId: string, patch: Partial<BookingRecord>) => void;
   count: number;
 }
 
@@ -106,13 +118,23 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
     persist(next);
   }, []);
 
+  const updateBooking = useCallback((bookingId: string, patch: Partial<BookingRecord>) => {
+    const next = snapshot.map((booking) =>
+      booking.booking_id === bookingId || booking.booking_code === bookingId
+        ? { ...booking, ...patch }
+        : booking
+    );
+    persist(next);
+  }, []);
+
   const value = useMemo<BookingsContextValue>(
     () => ({
       bookings,
       addBooking,
+      updateBooking,
       count: bookings.length,
     }),
-    [bookings, addBooking]
+    [bookings, addBooking, updateBooking]
   );
 
   return (
@@ -128,6 +150,7 @@ export function useBookings(): BookingsContextValue {
     return {
       bookings: [],
       addBooking: () => {},
+      updateBooking: () => {},
       count: 0,
     };
   }
