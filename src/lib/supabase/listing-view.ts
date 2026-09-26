@@ -32,6 +32,8 @@ export interface ListingView {
   /** Prix de base en FCFA (par nuit). */
   price: number | null;
   images: string[];
+  cover_image_url: string | null;
+  panorama_360_url: string | null;
   description: string | null;
   amenities: string[];
   capacity: number | null;
@@ -70,6 +72,8 @@ export function toListingView(listing: ListedListing): ListingView {
     name: listing.title,
     price: listing.base_price,
     images: Array.isArray(listing.images) ? listing.images : [],
+    cover_image_url: asString(attrs.cover_image_url),
+    panorama_360_url: asString(attrs.panorama_360_url),
     description: listing.description,
     amenities: asStringArray(attrs.amenities),
     capacity: asNumber(attrs.capacity),
