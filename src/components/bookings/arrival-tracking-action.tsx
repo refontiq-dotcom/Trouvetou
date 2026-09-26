@@ -14,7 +14,11 @@ function dayDiff(date: string) {
 
 export function ArrivalTrackingAction({ booking }: { booking: BookingRecord }) {
   const { active, starting, error, startTracking, stopTracking, isTracking } = useArrivalTracking();
-  const available = useMemo(() => booking.check_in_date && dayDiff(booking.check_in_date) >= 0 && dayDiff(booking.check_in_date) <= 1, [booking.check_in_date]);
+  const available = useMemo(() => {
+    const arrivalWindow = booking.check_in_date && dayDiff(booking.check_in_date) >= 0 && dayDiff(booking.check_in_date) <= 1;
+    const statusAllowsTracking = !booking.status || booking.status === "confirmed";
+    return Boolean(arrivalWindow && statusAllowsTracking);
+  }, [booking.check_in_date, booking.status]);
   const activeForBooking = isTracking(booking.booking_id);
   if (!booking.booking_id || !available) return null;
 
