@@ -1,4 +1,6 @@
 import type { ListedListing } from "./listings";
+import type { PanoramaTour } from "@/types/panorama";
+import { normalizePanoramaTour } from "@/types/panorama";
 
 // ============================================================================
 // TROUVETOU — Vue d'affichage d'une annonce (`listings` polymorphe)
@@ -34,6 +36,7 @@ export interface ListingView {
   images: string[];
   cover_image_url: string | null;
   panorama_360_url: string | null;
+  panorama_tour: PanoramaTour | null;
   description: string | null;
   amenities: string[];
   capacity: number | null;
@@ -74,6 +77,7 @@ export function toListingView(listing: ListedListing): ListingView {
     images: Array.isArray(listing.images) ? listing.images : [],
     cover_image_url: asString(attrs.cover_image_url),
     panorama_360_url: asString(attrs.panorama_360_url),
+    panorama_tour: normalizePanoramaTour(attrs.panorama_tour).scenes.length > 0 ? normalizePanoramaTour(attrs.panorama_tour) : null,
     description: listing.description,
     amenities: asStringArray(attrs.amenities),
     capacity: asNumber(attrs.capacity),
