@@ -34,6 +34,8 @@ interface SchoolPayload {
   longitude?: number | null;
   description_publique?: string | null;
   itineraire?: string | null;
+  cover_photo?: string | null;
+  gallery?: unknown[] | null;
   photos_360?: unknown[] | null;
   video_url?: string | null;
   grille_tarifaire_publique?: unknown[] | null;
@@ -200,14 +202,37 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         description: school.description_publique ?? null,
         city: school.ville ?? null,
         base_price: null,
-        images: Array.isArray(school.photos_360)
-          ? school.photos_360.filter((photo) => typeof photo === "string").map((photo) => String(photo))
-          : [],
+        images: [
+          ...(typeof school.cover_photo === "string" && school.cover_photo.trim()
+            ? [school.cover_photo.trim()]
+            : []),
+          ...(Array.isArray(school.gallery)
+            ? school.gallery
+                .filter((photo) => typeof photo === "string" && photo.trim())
+                .map((photo) => String(photo).trim())
+            : []),
+        ].filter((photo, index, all) => all.indexOf(photo) === index),
         attributes: {
           school_id: school.id,
           latitude: school.latitude ?? null,
           longitude: school.longitude ?? null,
           itineraire: school.itineraire ?? null,
+          cover_image_url:
+            typeof school.cover_photo === "string" && school.cover_photo.trim()
+              ? school.cover_photo.trim()
+              : null,
+          gallery_images: Array.isArray(school.gallery)
+            ? school.gallery
+                .filter((photo) => typeof photo === "string" && photo.trim())
+                .map((photo) => String(photo).trim())
+                .filter((photo, index, all) => all.indexOf(photo) === index)
+            : [],
+          photos_360: Array.isArray(school.photos_360)
+            ? school.photos_360
+                .filter((photo) => typeof photo === "string" && photo.trim())
+                .map((photo) => String(photo).trim())
+                .filter((photo, index, all) => all.indexOf(photo) === index)
+            : [],
           video_url: school.video_url ?? null,
           grille_tarifaire_publique: school.grille_tarifaire_publique ?? null,
           levels: levels.map((level) => ({

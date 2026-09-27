@@ -35,6 +35,7 @@ type CheckResult = {
 };
 
 type BookingResult = {
+  id?: string;
   booking_code?: string;
   status?: string;
   check_in_date?: string;
@@ -223,8 +224,13 @@ export function BookingModal({
       }
       setBooking(body.booking ?? {});
       addBooking({
+        booking_id: body.booking?.id,
+        listing_id: room.id,
         booking_code: body.booking?.booking_code,
         listing_name: room.name,
+        establishment_name: establishment?.name,
+        destination_latitude: establishment?.latitude ?? null,
+        destination_longitude: establishment?.longitude ?? null,
         check_in_date: checkIn,
         check_out_date: checkOut,
         number_of_guests: guests,
