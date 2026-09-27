@@ -185,7 +185,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!title) errors.push(`items[${index}].title est requis.`);
 
     const images = Array.isArray(item.images)
-      ? item.images.filter((url) => typeof url === "string" && url.length > 0)
+      ? Array.from(
+          new Set(
+            item.images.filter(
+              (url) => typeof url === "string" && url.trim().length > 0
+            )
+          )
+        ).slice(0, 4)
       : [];
 
     const attributes =
