@@ -34,6 +34,8 @@ interface SchoolPayload {
   longitude?: number | null;
   description_publique?: string | null;
   itineraire?: string | null;
+  cover_photo?: string | null;
+  gallery?: unknown[] | null;
   photos_360?: unknown[] | null;
   video_url?: string | null;
   grille_tarifaire_publique?: unknown[] | null;
