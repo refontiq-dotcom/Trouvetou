@@ -52,6 +52,7 @@ interface RoomCardProps {
 export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCardProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { location: userLocation } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { toggleCompare, isSelected: isCompared } = useCompare();
@@ -118,7 +119,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             ? "border-accent/60 shadow-accent/20 ring-1 ring-accent/40"
             : "border-border hover:shadow-primary/10"
         )}
-        onClick={() => setDetailOpen(true)}
+        onClick={() => { setSelectedImage(coverImage); setDetailOpen(true); }}
       >
         {/* Image */}
         <motion.div
@@ -286,7 +287,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               <motion.div className="relative h-[48dvh] min-h-[320px] shrink-0 overflow-hidden" layoutId={"listing-image-" + room.id} transition={{ type: "spring", stiffness: 320, damping: 34 }}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_62%,rgba(255,255,255,.22),transparent_2px)] bg-[size:12px_12px] opacity-70" />
                 <div className="absolute inset-0 bg-gradient-to-br from-navy via-primary to-primary-light" />
-                <Image src={coverImage} alt={room.name} fill priority sizes="(min-width: 640px) 430px, 100vw" className="object-contain px-8 pb-5 pt-24 drop-shadow-[0_22px_18px_rgba(16,42,114,.38)]" />
+                <Image src={selectedImage ?? coverImage} alt={room.name} fill priority sizes="(min-width: 640px) 430px, 100vw" className="object-contain px-8 pb-5 pt-24 drop-shadow-[0_22px_18px_rgba(16,42,114,.38)]" />
                 <div className="absolute inset-x-0 top-0 flex items-center justify-between p-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
                   <button type="button" onClick={() => setDetailOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Retour aux annonces"><ArrowLeft className="h-5 w-5" /></button>
                   <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Partager l'annonce"><Share2 className="h-5 w-5" /></a>
@@ -296,6 +297,37 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               <motion.div initial={{ y: 28, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} transition={{ delay: 0.08, duration: 0.28 }} className="relative -mt-5 flex flex-1 flex-col rounded-t-[2rem] bg-white px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 shadow-[0_-10px_26px_rgba(16,42,114,.18)]">
                 <div className="absolute -top-12 left-0 rounded-tr-[2rem] bg-white px-6 pb-4 pt-5"><p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Prix</p><p className="mt-0.5 text-xl font-extrabold leading-tight text-accent-hover">{formatFCFA(room.price ?? 0)}</p><p className="mt-0.5 text-xs text-muted-foreground">{priceSuffix}</p></div>
                 <button type="button" onClick={() => toggleFavorite(room.id)} className={cn("absolute right-6 -top-11 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm", liked ? "text-rose-500" : "text-navy")} aria-label="Ajouter aux favoris"><Heart className={cn("h-5 w-5", liked && "fill-current")} /></button>
+                {room.images.length > 1 && (
+                  <div className="mt-5">
+                    <div className="mb-2 flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-foreground">Photos</h3>
+                      <span className="text-xs text-muted-foreground">{room.images.length} photos</span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1 snap-x">
+                      {room.images.map((image, imageIndex) => (
+                        <button
+                          key={image + imageIndex}
+                          type="button"
+                          onClick={() => setSelectedImage(image)}
+                          className={cn(
+                            "relative h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-secondary snap-start",
+                            (selectedImage ?? coverImage) === image ? "border-primary" : "border-transparent"
+                          )}
+                          aria-label={"Afficher la photo " + (imageIndex + 1)}
+                        >
+                          <Image
+                            src={image}
+                            alt={room.name + " — photo " + (imageIndex + 1)}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-14 flex items-center justify-between gap-4"><h3 className="text-sm font-bold text-foreground">Description</h3><span className="flex items-center gap-1 text-xs font-semibold text-accent-hover"><Star className="h-4 w-4 fill-current" /> Trouvetou</span></div>
                 {room.description ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{room.description}</p> : <p className="mt-2 text-sm leading-6 text-muted-foreground">Découvrez les informations et services proposés par cette annonce.</p>}
                 {amenities.length > 0 && <div className="mt-5"><h3 className="mb-2 text-sm font-bold text-foreground">Services</h3><div className="flex flex-wrap gap-2">{getAmenitiesInfo(room.amenities ?? []).map(({ label, icon: Icon }) => <span key={label} className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground"><Icon className="h-3.5 w-3.5 text-primary" />{label}</span>)}</div></div>}
