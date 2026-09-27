@@ -76,25 +76,27 @@ export default function ProfilPage() {
             </h2>
             <div className="space-y-2">
               {bookings.slice(-3).reverse().map((b, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <CalendarCheck className="h-5 w-5" />
+                <div key={i}>
+                  <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <CalendarCheck className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {b.listing_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.check_in_date} → {b.check_out_date} · {b.number_of_guests} pers.
+                      </p>
+                    </div>
+                    {b.booking_code && (
+                      <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                        {b.booking_code}
+                      </span>
+                    )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {b.listing_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {b.check_in_date} → {b.check_out_date} · {b.number_of_guests} pers.
-                    </p>
-                  </div>
-                  {b.booking_code && (
-                    <span className="shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                      {b.booking_code}
-                    </span>
-                  )}
+                  <ArrivalTrackingAction booking={b} />
                 </div>
-                <ArrivalTrackingAction booking={b} />
               ))}
             </div>
           </div>
