@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { normalizePanoramaTour, type PanoramaTour } from "@/types/panorama";
 import {
   hashApiKey,
   parseProviderIdFromKey,
@@ -37,6 +38,7 @@ interface SchoolPayload {
   cover_photo?: string | null;
   gallery?: unknown[] | null;
   photos_360?: unknown[] | null;
+  panorama_tour?: unknown;
   video_url?: string | null;
   grille_tarifaire_publique?: unknown[] | null;
   published?: boolean | null;
@@ -54,6 +56,87 @@ interface LevelPayload {
 interface SyncBody {
   school?: SchoolPayload;
   levels?: LevelPayload[];
+}
+
+function buildSchoolPanoramaTour(school: SchoolPayload): PanoramaTour | null {
+  const explicit = normalizePanoramaTour(school.panorama_tour);
+  if (explicit.scenes.length > 0) return explicit;
+
+  const rawPhotos = Array.isArray(school.photos_360) ? school.photos_360 : [];
+  const scenes = rawPhotos
+    .map((photo, index) => {
+      if (typeof photo === "string" && photo.trim()) {
+        return {
+          id: `schooly-360-${index + 1}`,
+          name: `Vue 360° ${index + 1}`,
+          kind: "other" as const,
+          src: photo.trim(),
+          previewSrc: null,
+          isStart: index === 0,
+          isPublished: true,
+          infoHotspots: [],
+        };
+      }
+      if (!photo || typeof photo !== "object") return null;
+      const value = photo as Record<string, unknown>;
+      const src =
+        typeof value.src === "string" ? value.src.trim() :
+        typeof value.url === "string" ? value.url.trim() :
+        typeof value.image === "string" ? value.image.trim() : "";
+      if (!src) return null;
+      const id = typeof value.id === "string" && value.id.trim()
+        ? value.id.trim()
+        : `schooly-360-${index + 1}`;
+      const name = typeof value.name === "string" && value.name.trim()
+        ? value.name.trim()
+        : `Vue 360° ${index + 1}`;
+      const kind =
+        value.kind === "room" || value.kind === "corridor" || value.kind === "lobby"
+          ? value.kind
+          : "other";
+      return {
+        id,
+        name,
+        kind,
+        src,
+        previewSrc: typeof value.previewSrc === "string" ? value.previewSrc.trim() || null : null,
+        isStart: value.isStart === true || index === 0,
+        isPublished: value.isPublished !== false,
+        infoHotspots: Array.isArray(value.infoHotspots) ? value.infoHotspots : [],
+      };
+    })
+    .filter((scene): scene is NonNullable<typeof scene> => Boolean(scene));
+
+  if (scenes.length === 0) return null;
+
+  const links = scenes.slice(1).flatMap((scene, index) => {
+    const previous = scenes[index];
+    return [
+      {
+        id: `schooly-link-${index + 1}`,
+        fromSceneId: previous.id,
+        toSceneId: scene.id,
+        yaw: 0,
+        pitch: 0,
+        label: `Aller vers ${scene.name}`,
+      },
+      {
+        id: `schooly-link-back-${index + 1}`,
+        fromSceneId: scene.id,
+        toSceneId: previous.id,
+        yaw: Math.PI,
+        pitch: 0,
+        label: `Retour vers ${previous.name}`,
+      },
+    ];
+  });
+
+  return normalizePanoramaTour({
+    version: 1,
+    startSceneId: scenes.find((scene) => scene.isStart)?.id ?? scenes[0].id,
+    scenes,
+    links,
+  });
 }
 
 function jsonError(message: string, status: number, code?: string): NextResponse {
@@ -172,6 +255,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Synchronisation refusée par la base.", 502, "SYNC_RPC_FAILED");
   }
 
+  const panoramaTour = buildSchoolPanoramaTour(school);
+  const panoramaStartSceneId = panoramaTour?.startSceneId ?? null;
+  const panorama360Url = panoramaTour?.scenes.find((scene) => scene.id === panoramaStartSceneId)?.src ?? panoramaTour?.scenes[0]?.src ?? null;
+
   // 5. Le catalogue public de Trouvetou repose sur la table polymorphe
   // listings. Le RPC Schooly synchronise les données dédiées schooly_*,
   // mais ne crée pas automatiquement la fiche catalogue. On maintient donc
@@ -233,6 +320,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
                 .map((photo) => String(photo).trim())
                 .filter((photo, index, all) => all.indexOf(photo) === index)
             : [],
+          panorama_360_url: panorama360Url,
+          panorama_start_scene_id: panoramaStartSceneId,
+          panorama_tour: panoramaTour,
           video_url: school.video_url ?? null,
           grille_tarifaire_publique: school.grille_tarifaire_publique ?? null,
           levels: levels.map((level) => ({
