@@ -60,9 +60,19 @@ interface SyncBody {
 
 function buildSchoolPanoramaTour(school: SchoolPayload): PanoramaTour | null {
   const explicit = normalizePanoramaTour(school.panorama_tour);
-  if (explicit.scenes.length > 0) return explicit;
+  if (explicit.scenes.length > 0) {
+    const scene = explicit.scenes[0];
+    return normalizePanoramaTour({
+      version: 1,
+      startSceneId: scene.id,
+      scenes: [{ ...scene, isStart: true }],
+      links: [],
+    });
+  }
 
-  const rawPhotos = Array.isArray(school.photos_360) ? school.photos_360 : [];
+  // Schooly : une seule visite 360° par établissement.
+  // On conserve uniquement la première scène/source 360°.
+  const rawPhotos = Array.isArray(school.photos_360) ? school.photos_360.slice(0, 1) : [];
   const scenes = rawPhotos
     .map((photo, index) => {
       if (typeof photo === "string" && photo.trim()) {
@@ -278,6 +288,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("La catégorie 'school' est introuvable dans Trouvetou.", 502, "SCHOOL_CATEGORY_MISSING");
   }
 
+  const coverPhoto =
+    typeof school.cover_photo === "string" && school.cover_photo.trim()
+      ? school.cover_photo.trim()
+      : null;
+  const galleryPhotos = Array.isArray(school.gallery)
+    ? Array.from(
+        new Set(
+          school.gallery
+            .filter((photo) => typeof photo === "string" && photo.trim())
+            .map((photo) => String(photo).trim())
+        )
+      )
+    : [];
+  const ordinaryPhotos = [
+    ...(coverPhoto ? [coverPhoto] : []),
+    ...galleryPhotos,
+  ].filter((photo, index, all) => all.indexOf(photo) === index).slice(0, 4);
+  const limitedGalleryPhotos = ordinaryPhotos.slice(coverPhoto ? 1 : 0);
+
   const { data: listing, error: listingError } = await admin
     .from("listings")
     .upsert(
@@ -289,16 +318,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         description: school.description_publique ?? null,
         city: school.ville ?? null,
         base_price: null,
-        images: [
-          ...(typeof school.cover_photo === "string" && school.cover_photo.trim()
-            ? [school.cover_photo.trim()]
-            : []),
-          ...(Array.isArray(school.gallery)
-            ? school.gallery
-                .filter((photo) => typeof photo === "string" && photo.trim())
-                .map((photo) => String(photo).trim())
-            : []),
-        ].filter((photo, index, all) => all.indexOf(photo) === index),
+        images: ordinaryPhotos,
         attributes: {
           school_id: school.id,
           latitude: school.latitude ?? null,
@@ -308,18 +328,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             typeof school.cover_photo === "string" && school.cover_photo.trim()
               ? school.cover_photo.trim()
               : null,
-          gallery_images: Array.isArray(school.gallery)
-            ? school.gallery
-                .filter((photo) => typeof photo === "string" && photo.trim())
-                .map((photo) => String(photo).trim())
-                .filter((photo, index, all) => all.indexOf(photo) === index)
-            : [],
-          photos_360: Array.isArray(school.photos_360)
-            ? school.photos_360
-                .filter((photo) => typeof photo === "string" && photo.trim())
-                .map((photo) => String(photo).trim())
-                .filter((photo, index, all) => all.indexOf(photo) === index)
-            : [],
+          gallery_images: limitedGalleryPhotos,
+          photos_360: panorama360Url ? [panorama360Url] : [],
           panorama_360_url: panorama360Url,
           panorama_start_scene_id: panoramaStartSceneId,
           panorama_tour: panoramaTour,
