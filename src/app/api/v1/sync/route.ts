@@ -1,10 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { safeHttpUrl, safeHttpUrlList } from "@/lib/http/url";
+import { normalizePanoramaTour } from "@/types/panorama";
 import {
   hashApiKey,
   parseProviderIdFromKey,
   secureCompare,
 } from "@/lib/sync/api-key";
+
+/**
+ * Nombre maximal d'images synchronisées par annonce.
+ *
+ * Reprend la limite appliquée jusqu'ici côté route, afin que ce durcissement
+ * de sécurité n'introduise aucun changement de comportement sur la longueur
+ * des galeries. La décision architecturale de conserver ou d'assouplir cette
+ * limite est volontairement DIFFÉRÉE : la valeur est isolée ici pour être
+ * modifiable en un seul endroit le jour où la question est tranchée.
+ */
+const MAX_SYNC_IMAGES = 4;
+
+/**
+ * Assainit les `attributes` d'une annonce avant écriture.
+ *
+ * Point de passage OBLIGATOIRE pour tout média externe stocké en JSONB :
+ * `attributes` accepte n'importe quel objet, donc n'importe quelle URL. On
+ * applique ici les mêmes règles de validation que pour `images`, aux champs
+ * dont la valeur part dans le navigateur du visiteur :
+ *
+ *   - `panorama_tour`   → re-normalisé (scènes et URLs non http(s) écartées)
+ *   - `panorama_360_url` / `cover_image_url` → validés par `safeHttpUrl`
+ *
+ * Tout AUTRE champ est conservé tel quel : `attributes` est l'espace
+ * d'extension du cœur générique (lits/wifi, spécialités, niveaux scolaires…),
+ * et le vider ici reviendrait à casser des providers qui l'utilisent déjà
+ * correctement. Le durcissement progressif se fera champ par champ, jamais
+ * par un rejet global.
+ */
+export function sanitizeSyncAttributes(input: Record<string, unknown>): Record<string, unknown> {
+  const output: Record<string, unknown> = { ...input };
+
+  if ("panorama_tour" in output) {
+    const tour = normalizePanoramaTour(output.panorama_tour);
+    // Un tour sans scène exploitable est retiré : le viewer n'a rien à
+    // afficher et une entrée vide ferait croire à une visite disponible.
+    output.panorama_tour = tour.scenes.length > 0 ? tour : null;
+  }
+
+  for (const key of ["panorama_360_url", "cover_image_url"] as const) {
+    if (!(key in output)) continue;
+    output[key] = safeHttpUrl(output[key]);
+  }
+
+  return output;
+}
 
 /**
  * TROUVETOU — API d'ingestion multi-sources
@@ -184,20 +232,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!externalId) errors.push(`items[${index}].external_id est requis.`);
     if (!title) errors.push(`items[${index}].title est requis.`);
 
-    const images = Array.isArray(item.images)
-      ? Array.from(
-          new Set(
-            item.images.filter(
-              (url) => typeof url === "string" && url.trim().length > 0
-            )
-          )
-        ).slice(0, 4)
-      : [];
+    // SÉCURITÉ — point d'entrée des médias externes.
+    // Ces URLs sont stockées puis rendues dans `src`/`href` chez le visiteur.
+    // On filtre par ALLOWLISTE http/https : `javascript:`, `data:` et URL
+    // relatives sont écartés ici, à l'ingestion, donc ils n'atteignent JAMAIS
+    // la base. Une URL invalide est retirée silencieusement plutôt que de faire
+    // échouer tout le lot : une photo cassée ne doit pas empêcher la
+    // publication d'une annonce par ailleurs valide.
+    const images = safeHttpUrlList(item.images).slice(0, MAX_SYNC_IMAGES);
 
-    const attributes =
-      item.attributes && typeof item.attributes === "object"
+    const rawAttributes =
+      item.attributes && typeof item.attributes === "object" && !Array.isArray(item.attributes)
         ? item.attributes
         : {};
+
+    // Le tour 360° est re-normalisé : `normalizePanoramaTour` écarte toute
+    // scène dont l'URL n'est pas http(s), donc un `javascript:` glissé dans
+    // `attributes.panorama_tour` est éliminé avant écriture.
+    const attributes = sanitizeSyncAttributes(rawAttributes);
 
     const basePrice =
       item.base_price === null ||

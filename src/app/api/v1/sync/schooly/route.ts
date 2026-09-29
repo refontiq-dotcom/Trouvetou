@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { safeHttpUrl, safeHttpUrlList } from "@/lib/http/url";
 import { normalizePanoramaTour, type PanoramaTour } from "@/types/panorama";
 import {
   hashApiKey,
@@ -25,6 +26,16 @@ import {
  */
 
 export const runtime = "nodejs";
+
+/**
+ * Nombre maximal d'images ordinaires stockées pour une école (photo principale
+ * incluse). Valeur inchangée par rapport à la branche d'origine : la limite de
+ * 4 photos reste une décision ARCHITECTURALE NON TRANCHÉE, appliquée
+ * provisoirement des deux côtés pour que le comportement ne bouge pas pendant
+ * le durcissement sécurité. Les deux constantes sont volontairement distinctes
+ * pour qu'un assouplissement ultérieur puisse les traiter indépendamment.
+ */
+const MAX_SCHOOLY_IMAGES = 4;
 
 interface SchoolPayload {
   id: string;
@@ -75,12 +86,16 @@ function buildSchoolPanoramaTour(school: SchoolPayload): PanoramaTour | null {
   const rawPhotos = Array.isArray(school.photos_360) ? school.photos_360.slice(0, 1) : [];
   const scenes = rawPhotos
     .map((photo, index) => {
-      if (typeof photo === "string" && photo.trim()) {
+      if (typeof photo === "string") {
+        // SÉCURITÉ : l'URL est validée AVANT d'entrer dans le tour. Un
+        // `javascript:` ici deviendrait une texture WebGL chez le visiteur.
+        const src = safeHttpUrl(photo);
+        if (src === null) return null;
         return {
           id: `schooly-360-${index + 1}`,
           name: `Vue 360° ${index + 1}`,
           kind: "other" as const,
-          src: photo.trim(),
+          src,
           previewSrc: null,
           isStart: index === 0,
           isPublished: true,
@@ -90,9 +105,9 @@ function buildSchoolPanoramaTour(school: SchoolPayload): PanoramaTour | null {
       if (!photo || typeof photo !== "object") return null;
       const value = photo as Record<string, unknown>;
       const src =
-        typeof value.src === "string" ? value.src.trim() :
-        typeof value.url === "string" ? value.url.trim() :
-        typeof value.image === "string" ? value.image.trim() : "";
+        safeHttpUrl(value.src) ??
+        safeHttpUrl(value.url) ??
+        safeHttpUrl(value.image);
       if (!src) return null;
       const id = typeof value.id === "string" && value.id.trim()
         ? value.id.trim()
@@ -109,7 +124,7 @@ function buildSchoolPanoramaTour(school: SchoolPayload): PanoramaTour | null {
         name,
         kind,
         src,
-        previewSrc: typeof value.previewSrc === "string" ? value.previewSrc.trim() || null : null,
+        previewSrc: safeHttpUrl(value.previewSrc),
         isStart: value.isStart === true || index === 0,
         isPublished: value.isPublished !== false,
         infoHotspots: Array.isArray(value.infoHotspots) ? value.infoHotspots : [],
@@ -288,23 +303,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("La catégorie 'school' est introuvable dans Trouvetou.", 502, "SCHOOL_CATEGORY_MISSING");
   }
 
-  const coverPhoto =
-    typeof school.cover_photo === "string" && school.cover_photo.trim()
-      ? school.cover_photo.trim()
-      : null;
-  const galleryPhotos = Array.isArray(school.gallery)
-    ? Array.from(
-        new Set(
-          school.gallery
-            .filter((photo) => typeof photo === "string" && photo.trim())
-            .map((photo) => String(photo).trim())
-        )
-      )
-    : [];
-  const ordinaryPhotos = [
-    ...(coverPhoto ? [coverPhoto] : []),
-    ...galleryPhotos,
-  ].filter((photo, index, all) => all.indexOf(photo) === index).slice(0, 4);
+  // SÉCURITÉ : la photo principale et la galerie sont des URLs fournies par un
+  // provider distant puis rendues en `src` chez le visiteur. Filtrées par
+  // ALLOWLISTE http/https avant écriture en base.
+  const coverPhoto = safeHttpUrl(school.cover_photo);
+  const galleryPhotos = safeHttpUrlList(school.gallery);
+  const ordinaryPhotos = Array.from(new Set([...(coverPhoto ? [coverPhoto] : []), ...galleryPhotos])).slice(0, MAX_SCHOOLY_IMAGES);
   const limitedGalleryPhotos = ordinaryPhotos.slice(coverPhoto ? 1 : 0);
 
   const { data: listing, error: listingError } = await admin

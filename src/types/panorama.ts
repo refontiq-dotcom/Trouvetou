@@ -1,3 +1,5 @@
+import { safeHttpUrl } from "@/lib/http/url";
+
 export type PanoramaSceneKind = "room" | "corridor" | "lobby" | "other";
 
 export interface PanoramaInfoHotspot {
@@ -90,7 +92,16 @@ function validAngle(yaw: unknown, pitch: unknown): yaw is number {
   return finite(yaw) && finite(pitch) && pitch >= PITCH_MIN && pitch <= PITCH_MAX;
 }
 
-function isScene(value: unknown): value is PanoramaScene {
+/**
+ * Validation de la FORME d'une scène, sans aucune contrainte d'URL.
+ *
+ * Séparée de `isScene` volontairement : `validatePanoramaTour` a besoin de
+ * distinguer « cette scène est malformée » de « cette scène porte une URL
+ * dangereuse ». Fusionner les deux dans `isScene` ferait remonter un
+ * `javascript:` comme un banal `invalid_scene`, sans message exploitable pour
+ * le provider. Ici on valide la structure, `isScene` ajoute la sécurité.
+ */
+function isRawSceneShape(value: unknown): value is Record<string, unknown> & { id: string; name: string } {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return (
@@ -99,10 +110,19 @@ function isScene(value: unknown): value is PanoramaScene {
     typeof v.name === "string" &&
     v.name.trim().length > 0 &&
     v.name.length <= SCENE_NAME_MAX &&
-    typeof v.src === "string" &&
-    v.src.trim().length > 0 &&
     (v.kind === "room" || v.kind === "corridor" || v.kind === "lobby" || v.kind === "other")
   );
+}
+
+/** Valide une scène entrant : FORME correcte ET URL http(s) sûre. */
+function isScene(value: unknown): value is PanoramaScene {
+  if (!isRawSceneShape(value)) return false;
+  // `previewSrc` est OPTIONNEL : son absence est légitime (le viewer retombe
+  // sur la couleur de fond). On ne le valide que s'il est présent — sinon on
+  // rejeterait toute scène qui n'a pas d'aperçu, ce qui est la majorité.
+  if (safeHttpUrl(value.src) === null) return false;
+  if (value.previewSrc != null && safeHttpUrl(value.previewSrc) === null) return false;
+  return true;
 }
 
 function isInfoHotspot(value: unknown): value is PanoramaInfoHotspot {
@@ -160,12 +180,18 @@ export function normalizePanoramaTour(value: unknown): PanoramaTour {
         pitch: Math.max(PITCH_MIN, Math.min(PITCH_MAX, hotspot.pitch)),
       }));
 
+    // `src` a déjà été validé par `isScene` (filtre ALLOWLISTE http/https).
+    // On ré-applique `safeHttpUrl` pour STOCKER la forme normalisée plutôt que
+    // la chaîne brute : un préfixe équivalent (`HTTP://`, espaces) ne peut pas
+    // resurgir en base, et le contrat "ce qui est validé est ce qui est stocké"
+    // tient. Le repli `""` est inatteignable (isScene l'exclut) mais reste
+    // défensif pour que le type `string` soit toujours respecté.
     scenes.push({
       ...scene,
       id: scene.id.trim(),
       name: scene.name.trim(),
-      src: scene.src.trim(),
-      previewSrc: typeof scene.previewSrc === "string" ? scene.previewSrc.trim() || null : null,
+      src: safeHttpUrl(scene.src) ?? "",
+      previewSrc: scene.previewSrc == null ? null : safeHttpUrl(scene.previewSrc),
       roomTypeId: typeof scene.roomTypeId === "string" ? scene.roomTypeId : null,
       isStart: Boolean(scene.isStart),
       isPublished: scene.isPublished !== false,
@@ -226,8 +252,28 @@ export function validatePanoramaTour(value: unknown, options?: { requirePublishe
   }
 
   for (const rawScene of rawScenes) {
-    if (!isScene(rawScene)) {
+    if (!isRawSceneShape(rawScene)) {
       issues.push({ code: "invalid_scene", message: "Une scène est invalide." });
+      continue;
+    }
+    // SÉCURITÉ : diagnostic explicite pour une URL refusée. Sans ce cas, un
+    // `javascript:` ou un `data:` remonterait comme un « invalid_scene » opaque
+    // et le provider ne comprendrait pas pourquoi sa visite est rejetée.
+    if (safeHttpUrl(rawScene.src) === null) {
+      issues.push({
+        code: "invalid_scene_src",
+        sceneId: typeof rawScene.id === "string" ? rawScene.id : undefined,
+        message: "La scène doit avoir une URL de panorama absolue en http ou https.",
+      });
+      continue;
+    }
+    // `previewSrc` est optionnel : absent = légitime, pas une erreur.
+    if (rawScene.previewSrc != null && safeHttpUrl(rawScene.previewSrc) === null) {
+      issues.push({
+        code: "invalid_scene_src",
+        sceneId: typeof rawScene.id === "string" ? rawScene.id : undefined,
+        message: "L'aperçu de la scène doit avoir une URL absolue en http ou https.",
+      });
       continue;
     }
     if (sceneIds.has(rawScene.id)) {
@@ -237,9 +283,6 @@ export function validatePanoramaTour(value: unknown, options?: { requirePublishe
 
     if (rawScene.name.trim().length === 0 || rawScene.name.length > SCENE_NAME_MAX) {
       issues.push({ code: "invalid_scene_name", sceneId: rawScene.id, message: "Le nom de scène doit contenir 1 à 120 caractères." });
-    }
-    if (rawScene.src.trim().length === 0) {
-      issues.push({ code: "invalid_scene_src", sceneId: rawScene.id, message: "La scène doit avoir une URL de panorama." });
     }
 
     const hotspots = Array.isArray(rawScene.infoHotspots) ? rawScene.infoHotspots : [];

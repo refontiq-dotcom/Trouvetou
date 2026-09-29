@@ -32,6 +32,7 @@ import {
   PLACEHOLDER_IMAGE,
 } from "@/lib/utils";
 import { isListingBookable, resolveCategorySlug } from "@/lib/booking/eligibility";
+import { safeHttpUrl } from "@/lib/http/url";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 /** Couleurs par catégorie pour les badges */
@@ -60,6 +61,29 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
   const establishment = room.establishment;
   const coverImage = room.cover_image_url ?? room.images[0] ?? PLACEHOLDER_IMAGE;
   const amenities = getAmenitiesInfo(room.amenities ?? []).slice(0, 3);
+
+  // ---------------------------------------------------------------------------
+  // Panorama 360° : source retenue pour la visionneuse.
+  //
+  // Trois sources possibles, par ordre de priorité :
+  //   1. la scène de DÉPART synchronisée (`panorama_start_scene_id`)
+  //   2. la scène de DÉPART déclarée par le tour lui-même
+  //   3. la première scène du tour
+  // et, à défaut, l'URL 360° historique mono-scène.
+  //
+  // `safeHttpUrl` est appliqué ici et non seulement à l'ingestion : cette URL
+  // part vers une texture WebGL, donc un `javascript:` stocké en base
+  // deviendrait une exécution de script chez le visiteur. Le tour étant déjà
+  // normalisé à la lecture (`toListingView`), il ne contient que des scènes
+  // valides ; seule l'URL mono-scène héritée peut être douteuse.
+  // ---------------------------------------------------------------------------
+  const tourScenes = room.panorama_tour?.scenes ?? [];
+  const startSceneId = room.panorama_start_scene_id ?? room.panorama_tour?.startSceneId ?? null;
+  const panoramaSrc =
+    safeHttpUrl(tourScenes.find((scene) => scene.id === startSceneId)?.src) ??
+    safeHttpUrl(tourScenes[0]?.src) ??
+    safeHttpUrl(room.panorama_360_url);
+
   const mapsUrl = buildGoogleMapsUrl(
     establishment?.latitude,
     establishment?.longitude,
@@ -331,7 +355,18 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 <div className="mt-14 flex items-center justify-between gap-4"><h3 className="text-sm font-bold text-foreground">Description</h3><span className="flex items-center gap-1 text-xs font-semibold text-accent-hover"><Star className="h-4 w-4 fill-current" /> Trouvetou</span></div>
                 {room.description ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{room.description}</p> : <p className="mt-2 text-sm leading-6 text-muted-foreground">Découvrez les informations et services proposés par cette annonce.</p>}
                 {amenities.length > 0 && <div className="mt-5"><h3 className="mb-2 text-sm font-bold text-foreground">Services</h3><div className="flex flex-wrap gap-2">{getAmenitiesInfo(room.amenities ?? []).map(({ label, icon: Icon }) => <span key={label} className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground"><Icon className="h-3.5 w-3.5 text-primary" />{label}</span>)}</div></div>}
-                {location && <p className="mt-5 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{location}</span></p>}\n                {(room.panorama_360_url || room.panorama_tour) && <div className="mt-5"><PanoramaViewer src={room.panorama_360_url ?? room.panorama_tour?.scenes.find((scene) => scene.id === room.panorama_start_scene_id)?.src ?? room.panorama_tour?.scenes[0]?.src ?? ""} previewSrc={coverImage} title={room.name + " — visite 360°"} tour={room.panorama_tour} initialSceneId={room.panorama_start_scene_id ?? room.panorama_tour?.startSceneId} /></div>}
+                {location && <p className="mt-5 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{location}</span></p>}
+                {panoramaSrc && (
+                  <div className="mt-5">
+                    <PanoramaViewer
+                      src={panoramaSrc}
+                      previewSrc={coverImage}
+                      title={room.name + " — visite 360°"}
+                      tour={room.panorama_tour}
+                      initialSceneId={room.panorama_start_scene_id ?? room.panorama_tour?.startSceneId}
+                    />
+                  </div>
+                )}
                 <div className="mt-auto grid grid-cols-3 gap-2 pt-7">
                   <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#25D366]">
                     <MessageCircle className="h-5 w-5" />WhatsApp
