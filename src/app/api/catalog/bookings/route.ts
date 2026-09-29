@@ -6,28 +6,66 @@ import {
   safeSecretEqual,
   verifySameOrigin,
 } from "@/lib/http/request-guard";
+import { executeBooking } from "@/lib/booking/service";
+import { isBookingError } from "@/lib/booking/errors";
+import type { BookingConfirmation, BookingQuote } from "@/lib/providers/contract";
+import type { ProviderContext } from "@/lib/providers/context";
+import { findAdapter, registerAdapter } from "@/lib/providers/registry";
+import { SejouraBookingAdapter, parseSejouraRoomTypeId } from "@/connectors/sejoura/sejoura-booking-adapter";
+import type { ProviderType } from "@/lib/supabase/database.types";
 
 /**
- * TROUVETOU — Réservation en ligne (création d'une réservation Séjour@)
+ * Enregistrement des connecteurs au chargement du module.
  *
- * Sert de passerelle : le portail ne stocke aucune donnée client, il transmet
- * la demande au logiciel métier de l'établissement (Séjour@) via l'API externe
- * de Séjour@, authentifiée par la clé API de l'établissement stockée dans
- * `listings.attributes.sejoura_api_key` (masquée des réponses publiques).
+ * L'adapter est construit à partir de `SEJOURA_API_URL` : c'est le seul endroit
+ * du dépôt où cette variable est lue pour la réservation. La route ignore
+ * désormais totalement Séjour@ pour `check`, `create` et `cancel` — elle ne
+ * connaît plus que `provider.type`.
  *
- * Trois actions :
- *   action = "check"   → vérifie la disponibilité temps réel et calcule le prix
- *                        (GET /api/v1/external/availability côté Séjour@).
- *   action = "create"  → crée la réservation côté Séjour@
- *                        (POST /api/v1/external/bookings). Le statut est
- *                        `confirmed` dès la création (anti double-book).
- *   action = "cancel"  → annule une réservation côté Séjour@
- *                        (POST /api/v1/external/bookings/cancel).
+ * L'enregistrement est idempotent : `findAdapter` évite de lever une erreur de
+ * doublon si le module était évalué deux fois (utile en développement à chaud).
+ */
+function ensureSejouraAdapter(): void {
+  if (findAdapter("sejoura") !== null) return;
+  registerAdapter(new SejouraBookingAdapter({
+    baseUrl: process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app",
+  }));
+}
+
+/**
+ * TROUVETOU — Réservation en ligne
+ *
+ * Cette route est une COUCHE HTTP : elle valide la requête, applique les
+ * garde-fous (CSRF, débit, secret d'annulation), résout l'annonce et son
+ * provider, puis délègue l'opération métier.
+ *
+ * Elle ne connaît plus AUCUN détail de Séjour@ pour `check`, `create` et
+ * `cancel`. Le chemin d'exécution est :
+ *
+ *   route → executeBooking → ProviderRegistry → SejouraBookingAdapter → Séjour@
+ *
+ * La résolution se fait par `providers.type`, jamais par le nom du provider.
+ * Un provider `unknown` n'a aucun connecteur et la requête est refusée : il
+ * n'existe AUCUN repli automatique vers Séjour@.
+ *
+ * Sept actions, dont trois migrées vers l'architecture générique :
+ *   action = "check"  → disponibilité temps réel + estimation du prix
+ *                       (BookingService → quote)
+ *   action = "create" → crée la réservation (BookingService → create). Le
+ *                       statut est `confirmed` dès la création (anti
+ *                       double-book).
+ *   action = "cancel" → annule une réservation (BookingService → cancel)
+ *
+ *   action = "start_tracking" | "update_tracking" | "stop_tracking"
+ *          | "status_tracking"
+ *                       → suivi d'arrivée du client. ENCORE DIRECT : c'est une
+ *                         fonctionnalité propre à Séjour@, extraite dans une
+ *                         phase dédiée (ArrivalTrackingService).
  *
  *   POST /api/catalog/bookings
  *   { "action": "check"|"create"|"cancel",
  *     "listing_id": "<uuid listing trouvetou>",
- *     "booking_id": "<uuid réservation séjour@>",   // requis pour cancel
+ *     "booking_id": "<uuid réservation>",
  *     "reason": "..." | null,                        // optionnel pour cancel
  *     "check_in_date": "YYYY-MM-DD",
  *     "check_out_date": "YYYY-MM-DD",
@@ -38,6 +76,13 @@ import {
 
 export const runtime = "nodejs";
 
+/**
+ * URL de Séjour@, encore utilisée par le suivi d'arrivée.
+ *
+ * Elle ne sert plus qu'au bloc arrival-tracking, qui n'est pas migré. Elle
+ * disparaîtra avec l'extraction d'`ArrivalTrackingService`. Les opérations
+ * booking lisent leur URL dans leur adapter.
+ */
 const SEJOURA_API_URL =
   process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app";
 
@@ -79,14 +124,42 @@ function jsonError(message: string, status: number, code?: string): NextResponse
   );
 }
 
-/** Extrait le type de chambre Séjour@ depuis l'external_id (`rt:<uuid>`). */
-function parseRoomTypeId(externalId: string): string | null {
-  if (!externalId.startsWith("rt:")) return null;
-  const id = externalId.slice(3);
-  return id.length > 0 ? id : null;
+/**
+ * Traduit une erreur interne en réponse HTTP PUBLIQUE.
+ *
+ * Les `BookingError` portent un `kind` technique et un `code` métier. Le
+ * client, lui, attend les codes historiques de l'API. Ce mapping est le seul
+ * endroit qui fait le lien, ce qui évite de faire circuler les deux
+ * vocabulaires dans le reste du code.
+ *
+ * Règle de sécurité : le message d'une `BookingError` a été construit pour
+ * être affichable (jamais d'URL interne, jamais de secret). Une erreur non
+ * typée ne laisse passer qu'un message générique.
+ */
+function bookingErrorResponse(error: unknown): NextResponse {
+  if (!isBookingError(error)) {
+    return jsonError("Erreur interne du service de réservation.", 500, "BOOKING_INTERNAL");
+  }
+
+  // `check` renvoie historiquement `available: false` en cas d'échec amont :
+  // le frontend lit ce champ pour ne pas afficher de prix. On le conserve.
+  return NextResponse.json(
+    {
+      success: false,
+      available: false,
+      code: error.code,
+      error: error.message,
+    },
+    { status: error.httpStatus }
+  );
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Les connecteurs doivent exister avant toute résolution. L'enregistrement
+  // est explicite et centralisé : ajouter un provider consiste à écrire son
+  // adapter puis à l'enregistrer ici, sans qu'aucune autre règle ne bouge.
+  ensureSejouraAdapter();
+
   // ── Garde 1 : même origine (CSRF) ──────────────────────────────────────────
   // Avant toute autre chose : une requête cross-site ne doit jamais atteindre
   // la logique métier, quel que soit l'état de la configuration serveur.
@@ -163,10 +236,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("listing_id est requis.", 400, "MISSING_LISTING");
   }
 
-  // 1. Lire l'annonce en base (service_role) pour récupérer la clé API Séjour@
+  // 1. Lire l'annonce en base (service_role).
+  //
+  // `providers!inner(type)` : l'identité technique du connecteur vient
+  // EXCLUSIVEMENT de `providers.type`. Elle n'est jamais déduite de `name`,
+  // de la catégorie ni du webhook.
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, base_price, attributes, providers!inner(id, is_active)")
+    .select("id, external_id, base_price, attributes, providers!inner(id, type, is_active)")
     .eq("id", listing_id)
     .eq("is_available", true)
     .eq("providers.is_active", true)
@@ -179,12 +256,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Annonce introuvable.", 404, "LISTING_NOT_FOUND");
   }
 
-  const roomTypeId = parseRoomTypeId(listing.external_id);
-  if (!roomTypeId) {
-    return jsonError("Cette annonce ne permet pas la réservation en ligne.", 400, "NOT_BOOKABLE");
-  }
+  // La relation `providers!inner` est un objet ou un tableau selon la
+  // cardinalité déduite par le client Supabase : les deux formes sont
+  // tolérées, comme dans `listings.ts`.
+  const provider = (Array.isArray(listing.providers) ? listing.providers[0] : listing.providers) as
+    | { id: string; type: ProviderType }
+    | null;
+  const providerType: ProviderType = provider?.type ?? "unknown";
+  const providerId = provider?.id ?? "";
 
   const attrs = listing.attributes as Record<string, unknown> | null;
+
+  // 2. Clé d'API du provider.
+  //
+  // La lecture de `sejoura_api_key` reste ici : c'est le MÉCANISME DE
+  // STOCKAGE EXISTANT, volontairement conservé pour la parité. Le stockage
+  // des credentials est un chantier séparé. Cette valeur ne quitte jamais le
+  // serveur : elle n'est ni journalisée, ni renvoyée au client, ni inscrite
+  // dans un message d'erreur.
   const sejouraApiKey = typeof attrs?.sejoura_api_key === "string"
     ? attrs.sejoura_api_key
     : null;
@@ -199,6 +288,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const headers = {
     "Content-Type": "application/json",
     "x-api-key": sejouraApiKey,
+  };
+
+  const providerContext: ProviderContext = {
+    providerId,
+    listing: {
+      listingId: listing.id,
+      externalId: listing.external_id,
+      basePrice: listing.base_price === null ? null : Number(listing.base_price),
+    },
+    credentials: { apiKey: sejouraApiKey },
   };
 
   // Suivi d’arrivée : la clé Séjoura reste côté serveur Trouvetou.
@@ -229,6 +328,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // ── Action "check" : disponibilité temps réel + estimation du prix ────────
+  //
+  // ORCHESTRATION : la route valide l'entrée HTTP, l'adapter interroge Séjour@.
+  // Aucune URL, aucun `room_type_id`, aucun payload Séjour@ ici.
   if (action === "check") {
     if (!check_in_date || !check_out_date) {
       return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
@@ -249,56 +351,40 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       )
     );
 
-    const url = new URL("/api/v1/external/availability", SEJOURA_API_URL);
-    url.searchParams.set("room_type_id", roomTypeId);
-    url.searchParams.set("check_in", check_in_date);
-    url.searchParams.set("check_out", check_out_date);
-
-    const res = await fetch(url, { headers });
-    const data = (await res.json().catch(() => ({}))) as {
-      available?: boolean;
-      available_rooms?: number;
-      /** Montant proposé par Séjour@ s'il l'expose (prioritaire). */
-      estimated_total?: number;
-      total_amount?: number;
-      error?: string;
-    };
-
-    if (!res.ok) {
-      return NextResponse.json(
+    try {
+      const quote = (await executeBooking(
+        providerType,
+        "quote",
+        providerContext,
         {
-          success: false,
-          available: false,
-          error: data.error ?? `Erreur de vérification (HTTP ${res.status})`,
-        },
-        { status: res.status === 401 || res.status === 403 ? 409 : 502 }
-      );
+          schedule: { startDate: check_in_date, endDate: check_out_date },
+          partySize: 1,
+          items: [],
+          notes: null,
+          guest: { fullName: "" },
+        }
+      )) as BookingQuote;
+
+      // Structure de réponse INCHANGÉE, y compris `room_type_id` : il est
+      // désormais dérivé de l'external_id par l'adapter, mais reste exposé
+      // pour ne pas casser les clients qui le consomment.
+      return NextResponse.json({
+        success: true,
+        available: quote.available,
+        available_rooms: quote.availabilityCount ?? 0,
+        nights,
+        estimated_total: quote.totalAmount,
+        room_type_id: parseSejouraRoomTypeId(listing.external_id),
+      });
+    } catch (error: unknown) {
+      return bookingErrorResponse(error);
     }
-
-    // Prix calculé côté SERVEUR à partir de la base : le client ne peut plus
-    // altérer le montant affiché avant confirmation. Si Séjour@ renvoie son
-    // propre montant, il gagne (c'est la source de vérité du PMS).
-    const upstreamTotal = data.estimated_total ?? data.total_amount;
-    const nightPrice = Number(listing.base_price ?? 0);
-    const estimatedTotal =
-      typeof upstreamTotal === "number" && Number.isFinite(upstreamTotal)
-        ? Math.round(upstreamTotal)
-        : Number.isFinite(nightPrice)
-          ? Math.round(nightPrice * nights)
-          : null;
-
-    const available = data.available === true;
-    return NextResponse.json({
-      success: true,
-      available,
-      available_rooms: data.available_rooms ?? 0,
-      nights,
-      estimated_total: estimatedTotal,
-      room_type_id: roomTypeId,
-    });
   }
 
-  // ── Action "cancel" : annulation d'une réservation Séjour@ ─────────────────
+  // ── Action "cancel" : annulation d'une réservation ─────────────────────────
+  //
+  // Les validations HTTP (longueur, motif) restent ici. L'appel provider part
+  // par l'adapter, qui construit la requête Séjour@.
   if (action === "cancel") {
     const { booking_id, reason } = body;
     if (!booking_id || typeof booking_id !== "string") {
@@ -311,52 +397,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return jsonError("Le motif d'annulation est trop long.", 400, "INVALID_CANCEL_REASON");
     }
 
-    const cancelRes = await fetch(
-      `${SEJOURA_API_URL}/api/v1/external/bookings/cancel`,
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          booking_id,
-          reason: reason ? String(reason) : null,
-        }),
-      }
-    );
-
-    const cancelData = (await cancelRes.json().catch(() => ({}))) as {
-      success?: boolean;
-      error?: string;
-      booking?: {
-        booking_code?: string;
-        status?: string;
-      };
-    };
-
-    if (!cancelRes.ok) {
-      const status = cancelRes.status;
-      if (status === 404) {
-        return NextResponse.json(
-          { success: false, code: "BOOKING_NOT_FOUND", error: cancelData.error ?? "Réservation introuvable." },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json(
-        {
-          success: false,
-          code: status === 401 || status === 403 ? "BOOKING_ACTION_FORBIDDEN" : "CANCEL_FAILED",
-          error: cancelData.error ?? `Erreur d'annulation (HTTP ${status})`,
-        },
-        { status: status === 401 || status === 403 ? 409 : 502 }
+    try {
+      await executeBooking(
+        providerType,
+        "cancel",
+        providerContext,
+        undefined,
+        booking_id
       );
-    }
 
-    return NextResponse.json({
-      success: true,
-      booking: cancelData.booking ?? null,
-    });
+      return NextResponse.json({ success: true, booking: null });
+    } catch (error: unknown) {
+      return bookingErrorResponse(error);
+    }
   }
 
-  // ── Action "create" : création de la réservation Séjour@ ──────────────────
+  // ── Action "create" : création de la réservation ──────────────────────────
+  //
+  // Toute la validation HTTP du voyageur reste ici (nom, e-mail, téléphone,
+  // demandes, nombre d'occupants) : ce sont des règles PUBLIQUES de TrouveTout,
+  // indépendantes du PMS. Seul l'assemblage de la requête Séjour@ est délégué.
   const { guest, special_requests } = body;
   if (!check_in_date || !check_out_date) {
     return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
@@ -397,70 +457,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("La demande spéciale est trop longue.", 400, "INVALID_SPECIAL_REQUEST");
   }
 
-  const createRes = await fetch(
-    `${SEJOURA_API_URL}/api/v1/external/bookings`,
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        room_type_id: roomTypeId,
-        check_in_date,
-        check_out_date,
-        number_of_guests: parseInt(String(number_of_guests), 10) || 1,
-        special_requests: specialRequests,
-        guest: {
-          full_name: guestName,
-          phone: guestPhone,
-          email: guestEmail,
-        },
-      }),
-    }
-  );
-
-  const createData = (await createRes.json().catch(() => ({}))) as {
-    success?: boolean;
-    error?: string;
-    code?: string;
-    booking?: {
-      booking_code?: string;
-      status?: string;
-      check_in_date?: string;
-      check_out_date?: string;
-      total_amount?: number;
-      number_of_guests?: number;
-      room_id?: string;
-    };
-  };
-
-  if (!createRes.ok) {
-    const status = createRes.status;
-    if (status === 409) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: createData.code ?? "CONFLICT",
-          error: createData.error ?? "Aucune chambre disponible pour ces dates.",
-        },
-        { status: 409 }
-      );
-    }
-    return NextResponse.json(
+  try {
+    const confirmation = (await executeBooking(
+      providerType,
+      "create",
+      providerContext,
       {
-        success: false,
-        code: createData.code ?? "BOOKING_FAILED",
-        error: createData.error ?? `Erreur de création (HTTP ${status})`,
-      },
-      { status: status === 401 || status === 403 ? 409 : 502 }
-    );
-  }
+        schedule: { startDate: check_in_date, endDate: check_out_date },
+        partySize: parseInt(String(number_of_guests), 10) || 1,
+        items: [],
+        notes: specialRequests,
+        guest: { fullName: guestName, phone: guestPhone, email: guestEmail },
+      }
+    )) as BookingConfirmation;
 
-  return NextResponse.json(
-    {
-      success: true,
-      booking: createData.booking ?? null,
-    },
-    { status: 201 }
-  );
+    // `details` porte la réservation telle que Séjour@ l'a décrite : c'est
+    // exactement l'objet `booking` renvoyé auparavant, donc la structure
+    // publique reste identique.
+    return NextResponse.json(
+      { success: true, booking: confirmation.details ?? null },
+      { status: 201 }
+    );
+  } catch (error: unknown) {
+    return bookingErrorResponse(error);
+  }
 }
 
 /** Toute autre méthode HTTP est refusée. */

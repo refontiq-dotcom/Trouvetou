@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  SejourraBookingAdapter,
+  SejouraBookingAdapter,
   SEJOURA_PROVIDER_TYPE,
   type HttpTransport,
-} from "./sejourra-booking-adapter";
+} from "./sejoura-booking-adapter";
 import { BookingError } from "@/lib/booking/errors";
 import type { BookingRequest } from "@/lib/providers/contract";
 import type { ProviderContext } from "@/lib/providers/context";
@@ -62,15 +62,15 @@ function makeRequest(overrides: Partial<BookingRequest> = {}): BookingRequest {
   };
 }
 
-function makeAdapter(transport: HttpTransport): SejourraBookingAdapter {
-  return new SejourraBookingAdapter({ baseUrl: BASE_URL, transport });
+function makeAdapter(transport: HttpTransport): SejouraBookingAdapter {
+  return new SejouraBookingAdapter({ baseUrl: BASE_URL, transport });
 }
 
 function withExternalId(externalId: string): Partial<ProviderContext> {
   return { listing: { listingId: "l", externalId, basePrice: null } };
 }
 
-describe("SejourraBookingAdapter — identité et capacités", () => {
+describe("SejouraBookingAdapter — identité et capacités", () => {
   it("s'identifie par un identifiant technique stable", () => {
     expect(makeAdapter(stubTransport({ ok: true, status: 200, json: {} })).id).toBe(
       SEJOURA_PROVIDER_TYPE
@@ -83,7 +83,7 @@ describe("SejourraBookingAdapter — identité et capacités", () => {
   });
 });
 
-describe("SejourraBookingAdapter — external_id vers room_type_id", () => {
+describe("SejouraBookingAdapter — external_id vers room_type_id", () => {
   it("extrait l'identifiant de type de chambre du préfixe rt:", async () => {
     const calls: RecordedCall[] = [];
     const adapter = makeAdapter(
@@ -123,7 +123,7 @@ describe("SejourraBookingAdapter — external_id vers room_type_id", () => {
   });
 });
 
-describe("SejourraBookingAdapter — authentification", () => {
+describe("SejouraBookingAdapter — authentification", () => {
   it("transmet la clé en en-tête x-api-key, jamais dans l'URL", async () => {
     const calls: RecordedCall[] = [];
     const adapter = makeAdapter(
@@ -133,7 +133,7 @@ describe("SejourraBookingAdapter — authentification", () => {
     await adapter.quote(makeRequest(), makeContext());
 
     expect(calls[0].headers["x-api-key"]).toBe("secret-sejoura-key");
-    expect(calls[0].url).not.toContain("secret-sejourra-key");
+    expect(calls[0].url).not.toContain("secret-sejoura-key");
   });
 
   it("déclare le type de contenu JSON", async () => {
@@ -148,7 +148,7 @@ describe("SejourraBookingAdapter — authentification", () => {
   });
 });
 
-describe("SejourraBookingAdapter — quote", () => {
+describe("SejouraBookingAdapter — quote", () => {
   it("appelle GET sur /api/v1/external/availability avec les bonnes dates", async () => {
     const calls: RecordedCall[] = [];
     const adapter = makeAdapter(
@@ -220,7 +220,7 @@ describe("SejourraBookingAdapter — quote", () => {
   });
 });
 
-describe("SejourraBookingAdapter — create", () => {
+describe("SejouraBookingAdapter — create", () => {
   it("envoie le payload au format Séjour@ sur POST /api/v1/external/bookings", async () => {
     const calls: RecordedCall[] = [];
     const adapter = makeAdapter(
@@ -296,7 +296,7 @@ describe("SejourraBookingAdapter — create", () => {
   });
 });
 
-describe("SejourraBookingAdapter — cancel", () => {
+describe("SejouraBookingAdapter — cancel", () => {
   it("appelle POST /api/v1/external/bookings/cancel avec le booking_id", async () => {
     const calls: RecordedCall[] = [];
     const adapter = makeAdapter(

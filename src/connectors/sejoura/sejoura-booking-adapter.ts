@@ -63,7 +63,7 @@ export type HttpTransport = (
   init: { method: string; headers: Record<string, string>; body?: string }
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
-export interface SejourraAdapterOptions {
+export interface SejouraAdapterOptions {
   /** URL de base de l'API Séjour@. */
   baseUrl: string;
   /** Transport HTTP injectable. Par défaut `fetch`. */
@@ -82,14 +82,30 @@ export const SEJOURA_CAPABILITIES: ProviderCapabilities = Object.freeze({
   cancellation: true,
 });
 
-export class SejourraBookingAdapter implements ProviderAdapter {
+/**
+ * Identifiant de ressource Séjour@ extrait d'un `external_id`.
+ *
+ * Exporté pour un seul usage : la route doit conserver la forme historique de
+ * la réponse `check`, qui expose `room_type_id`. Le principe reste inchangé —
+ * c'est l'adapter qui interprète l'`external_id` — mais le routeur ne doit pas
+ * réimplémenter le format : il délègue.
+ *
+ * `null` si l'`external_id` n'est pas un identifiant Séjour@ exploitable.
+ */
+export function parseSejouraRoomTypeId(externalId: string): string | null {
+  if (!externalId.startsWith(ROOM_TYPE_PREFIX)) return null;
+  const id = externalId.slice(ROOM_TYPE_PREFIX.length);
+  return id.length > 0 ? id : null;
+}
+
+export class SejouraBookingAdapter implements ProviderAdapter {
   readonly id = SEJOURA_PROVIDER_TYPE;
   readonly capabilities = SEJOURA_CAPABILITIES;
 
   private readonly baseUrl: string;
   private readonly transport: HttpTransport;
 
-  constructor(options: SejourraAdapterOptions) {
+  constructor(options: SejouraAdapterOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
     this.transport = options.transport ?? defaultTransport;
   }

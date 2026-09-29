@@ -4,9 +4,9 @@ import { BookingError } from "./errors";
 import { redactContext } from "@/lib/providers/context";
 import { findAdapter, registerAdapter, resetRegistry } from "@/lib/providers/registry";
 import {
-  SejourraBookingAdapter,
+  SejouraBookingAdapter,
   SEJOURA_PROVIDER_TYPE,
-} from "@/connectors/sejoura/sejourra-booking-adapter";
+} from "@/connectors/sejoura/sejoura-booking-adapter";
 import type {
   BookingCancellation,
   BookingConfirmation,
@@ -82,7 +82,7 @@ beforeEach(() => {
 describe("executeBooking — résolution de l'adapter", () => {
   it("sélectionne l'adapter Séjour@ pour le provider sejoura", async () => {
     registerAdapter(
-      new SejourraBookingAdapter({
+      new SejouraBookingAdapter({
         baseUrl: "https://sejoura.test",
         transport: async () => ({
           ok: true,
@@ -104,7 +104,7 @@ describe("executeBooking — résolution de l'adapter", () => {
   });
 
   it("expose l'adapter enregistré dans le registre", () => {
-    const adapter = new SejourraBookingAdapter({ baseUrl: "https://sejoura.test" });
+    const adapter = new SejouraBookingAdapter({ baseUrl: "https://sejoura.test" });
     registerAdapter(adapter);
 
     expect(findAdapter(SEJOURA_PROVIDER_TYPE)).toBe(adapter);
@@ -121,9 +121,9 @@ describe("executeBooking — résolution de l'adapter", () => {
   });
 
   it("refuse d'enregistrer deux fois le même identifiant", () => {
-    registerAdapter(new SejourraBookingAdapter({ baseUrl: "https://a.test" }));
+    registerAdapter(new SejouraBookingAdapter({ baseUrl: "https://a.test" }));
 
-    expect(() => registerAdapter(new SejourraBookingAdapter({ baseUrl: "https://b.test" }))).toThrow(
+    expect(() => registerAdapter(new SejouraBookingAdapter({ baseUrl: "https://b.test" }))).toThrow(
       /déjà enregistré/
     );
   });
