@@ -94,7 +94,10 @@ describe("Route Booking — absence de parsing métier Séjour@", () => {
   });
 
   it("résout le type depuis providers.type, jamais depuis le nom", () => {
-    expect(routeSource).toContain("providers!inner(id, type, is_active)");
+    // Le SELECT a été élargi en Phase 2D.1 (ajout du credential sortant
+    // chiffré) : on vérifie l'INVARIANT — `type` est bien lu — pas la chaîne
+    // littérale, qui deviendrait inutilement fragile.
+    expect(routeSource).toMatch(/providers!inner\([^)]*\btype\b/);
     expect(routeSource).not.toMatch(/provider\.name\s*===\s*["']S/);
   });
 });

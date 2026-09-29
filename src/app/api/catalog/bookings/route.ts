@@ -9,6 +9,7 @@ import {
 import { executeBooking } from "@/lib/booking/service";
 import { isBookingError } from "@/lib/booking/errors";
 import { executeTracking } from "@/lib/arrival-tracking/service";
+import { resolveOutboundCredential } from "@/lib/credentials/resolver";
 import type { BookingCancellation, BookingConfirmation, BookingQuote } from "@/lib/providers/contract";
 import type { ProviderContext } from "@/lib/providers/context";
 import { findAdapter, findTrackingAdapter, registerAdapter, registerTrackingAdapter } from "@/lib/providers/registry";
@@ -242,7 +243,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // de la catégorie ni du webhook.
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, base_price, attributes, providers!inner(id, type, is_active)")
+    .select("id, external_id, base_price, attributes, providers!inner(id, type, is_active, outbound_api_key_encrypted)")
     .eq("id", listing_id)
     .eq("is_available", true)
     .eq("providers.is_active", true)
@@ -259,24 +260,48 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // cardinalité déduite par le client Supabase : les deux formes sont
   // tolérées, comme dans `listings.ts`.
   const provider = (Array.isArray(listing.providers) ? listing.providers[0] : listing.providers) as
-    | { id: string; type: ProviderType }
+    | { id: string; type: ProviderType; outbound_api_key_encrypted: string | null }
     | null;
   const providerType: ProviderType = provider?.type ?? "unknown";
   const providerId = provider?.id ?? "";
 
   const attrs = listing.attributes as Record<string, unknown> | null;
 
-  // 2. Clé d'API du provider.
+  // 2. Credential sortant du provider.
   //
-  // La lecture de `sejoura_api_key` reste ici : c'est le MÉCANISME DE
-  // STOCKAGE EXISTANT, volontairement conservé pour la parité. Le stockage
-  // des credentials est un chantier séparé. Cette valeur ne quitte jamais le
-  // serveur : elle n'est ni journalisée, ni renvoyée au client, ni inscrite
-  // dans un message d'erreur.
-  const sejouraApiKey = typeof attrs?.sejoura_api_key === "string"
-    ? attrs.sejoura_api_key
-    : null;
-  if (!sejouraApiKey) {
+  // SOURCE OFFICIELLE : `providers.outbound_api_key_encrypted`, chiffré en
+  // AES-256-GCM, une seule fois par provider. Elle prime TOUJOURS, même si le
+  // listing porte une valeur legacy différente.
+  //
+  // FALLBACK LEGACY : `listings.attributes.sejoura_api_key`. Conservé pendant
+  // la migration progressive, sera supprimé quand tous les providers auront
+  // été backfillés.
+  //
+  // La résolution, le chiffrement et l'ordre de priorité sont encapsulés dans
+  // `resolveOutboundCredential` : cette route ne connaît ni AES, ni le format
+  // du ciphertext, ni le nom de l'attribut legacy. Elle ignore volontairement
+  // le TYPE du provider : aucun repli n'est possible vers un autre logiciel.
+  //
+  // La valeur ne quitte jamais le serveur : ni journalisée, ni renvoyée au
+  // client, ni inscrite dans un message d'erreur.
+  let outboundApiKey: string | null;
+  try {
+    outboundApiKey = resolveOutboundCredential({
+      encrypted: provider?.outbound_api_key_encrypted ?? null,
+      listingAttributes: attrs,
+    });
+  } catch {
+    // Échec de déchiffrement : configuration serveur ou donnée corrompue.
+    // On ne retombe JAMAIS sur le legacy ici, ce qui masquerait une panne de
+    // configuration par un secret périmé.
+    return jsonError(
+      "Credential du provider illisible.",
+      500,
+      "PROVIDER_CREDENTIAL_INVALID"
+    );
+  }
+
+  if (!outboundApiKey) {
     return jsonError(
       "La réservation en ligne n'est pas activée pour cet établissement (clé API Séjour@ absente).",
       409,
@@ -291,7 +316,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       externalId: listing.external_id,
       basePrice: listing.base_price === null ? null : Number(listing.base_price),
     },
-    credentials: { apiKey: sejouraApiKey },
+    credentials: { apiKey: outboundApiKey },
   };
 
   // Suivi d'arrivée : passe-through intégral.

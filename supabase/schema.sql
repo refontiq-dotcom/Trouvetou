@@ -68,6 +68,11 @@ CREATE TABLE providers (
   -- sélectionner un adapter. 'unknown' = non établi. Ne jamais dériver cette
   -- valeur de `name` (texte libre) ni de `category_id` (secteur, pas logiciel).
   type         public.provider_type NOT NULL DEFAULT 'unknown',
+  -- Credential SORTANT (Trouvetou -> provider), chiffre en AES-256-GCM,
+  -- format v1:iv:tag:ciphertext. Distinct de `api_key_hash` (credential
+  -- ENTRANT, stocke en HMAC). NULL tant que le backfill applicatif n'a pas
+  -- tourne.
+  outbound_api_key_encrypted TEXT,
   api_key_hash TEXT NOT NULL,                  -- HMAC-SHA256(clé API, pepper), jamais la clé en clair
   webhook_url  TEXT,                           -- URL de notification (optionnel)
   is_active    BOOLEAN NOT NULL DEFAULT TRUE,
@@ -80,6 +85,8 @@ COMMENT ON TABLE providers IS
   'Chaque source d''alimentation (logiciel métier) est enregistrée ici.';
 COMMENT ON COLUMN providers.api_key_hash IS
   'Empreinte HMAC-SHA256 de la clé API. La clé n''est jamais stockée en clair.';
+COMMENT ON COLUMN providers.outbound_api_key_encrypted IS
+  'Credential SORTANT (Trouvetou -> provider), chiffre en AES-256-GCM, format v1:iv:tag:ciphertext. Distinct de api_key_hash qui porte le credential ENTRANT (provider -> Trouvetou), stocke en HMAC. NULL tant que le backfill applicatif n''est pas passe.';
 COMMENT ON COLUMN providers.type IS
   'Identité technique du logiciel métier. Résolue par ProviderRegistry pour sélectionner un adapter. Ne jamais dériver cette valeur de ''name'' ou de la catégorie.';
 

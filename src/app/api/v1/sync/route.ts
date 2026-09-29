@@ -35,6 +35,19 @@ const MAX_SYNC_IMAGES = 4;
  * et le vider ici reviendrait à casser des providers qui l'utilisent déjà
  * correctement. Le durcissement progressif se fera champ par champ, jamais
  * par un rejet global.
+ *
+ * CREDENTIAL SORTANT — VOIR LA MIGRATION 20260929150000
+ *
+ * La protection contre la perte silencieuse du credential lors d'une
+ * synchronisation N'EST PAS implémentée ici, mais dans `ingest_listings`.
+ *
+ * Raison : c'est la seule fonction qui dispose à la fois de la nouvelle
+ * charge utile ET de la valeur déjà en base pour cette annonce. Cette
+ * fonction, elle, prépare le payload AVANT l'upsert, sans connaître l'état
+ * actuel. Y mettre la règle obligerait à relire la base une fois par annonce
+ * et déplacerait la correction au mauvais endroit : la perte se produit
+ * exactement dans le `ON CONFLICT ... DO UPDATE`, donc c est la qu elle doit
+ * etre prevenuee.
  */
 export function sanitizeSyncAttributes(input: Record<string, unknown>): Record<string, unknown> {
   const output: Record<string, unknown> = { ...input };

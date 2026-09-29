@@ -204,6 +204,7 @@ export type Database = {
           category_id: string;
           /** Requis explicitement : on n'hérite pas d'un `'unknown'` silencieux. */
           type: ProviderType;
+          outbound_api_key_encrypted?: string | null;
           api_key_hash: string;
           webhook_url?: string | null;
           is_active?: boolean;
@@ -214,6 +215,7 @@ export type Database = {
           name?: string;
           category_id?: string;
           type?: ProviderType;
+          outbound_api_key_encrypted?: string | null;
           api_key_hash?: string;
           webhook_url?: string | null;
           is_active?: boolean;
