@@ -8,10 +8,10 @@ import {
 } from "@/lib/http/request-guard";
 import { executeBooking } from "@/lib/booking/service";
 import { isBookingError } from "@/lib/booking/errors";
-import type { BookingConfirmation, BookingQuote } from "@/lib/providers/contract";
+import type { BookingCancellation, BookingConfirmation, BookingQuote } from "@/lib/providers/contract";
 import type { ProviderContext } from "@/lib/providers/context";
 import { findAdapter, registerAdapter } from "@/lib/providers/registry";
-import { SejouraBookingAdapter, parseSejouraRoomTypeId } from "@/connectors/sejoura/sejoura-booking-adapter";
+import { SejouraBookingAdapter } from "@/connectors/sejoura/sejoura-booking-adapter";
 import type { ProviderType } from "@/lib/supabase/database.types";
 
 /**
@@ -365,16 +365,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
       )) as BookingQuote;
 
-      // Structure de réponse INCHANGÉE, y compris `room_type_id` : il est
-      // désormais dérivé de l'external_id par l'adapter, mais reste exposé
-      // pour ne pas casser les clients qui le consomment.
+      // Structure de réponse INCHANGÉE.
+      //
+      // `room_type_id` est un nom de COLONNE de l'API HTTP historique, pas
+      // un concept métier du cœur : la route le RENOMME à partir de
+      // `resourceRef`, un identifiant opaque que l'adapter a produit. Elle
+      // n'appelle aucun parseur Séjour@ et n'en connaît aucun.
       return NextResponse.json({
         success: true,
         available: quote.available,
         available_rooms: quote.availabilityCount ?? 0,
         nights,
         estimated_total: quote.totalAmount,
-        room_type_id: parseSejouraRoomTypeId(listing.external_id),
+        room_type_id: quote.resourceRef,
       });
     } catch (error: unknown) {
       return bookingErrorResponse(error);
@@ -398,15 +401,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     try {
-      await executeBooking(
+      const cancellation = (await executeBooking(
         providerType,
         "cancel",
         providerContext,
         undefined,
         booking_id
-      );
+      )) as BookingCancellation;
 
-      return NextResponse.json({ success: true, booking: null });
+      // `booking` est restitué tel que le provider l'a décrit, exactement
+      // comme avant la migration. Le core ne l'interprète pas : il se contente
+      // de transporter l'objet opaque.
+      return NextResponse.json({
+        success: true,
+        booking: cancellation.details ?? null,
+      });
     } catch (error: unknown) {
       return bookingErrorResponse(error);
     }

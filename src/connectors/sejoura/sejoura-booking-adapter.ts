@@ -85,14 +85,11 @@ export const SEJOURA_CAPABILITIES: ProviderCapabilities = Object.freeze({
 /**
  * Identifiant de ressource Séjour@ extrait d'un `external_id`.
  *
- * Exporté pour un seul usage : la route doit conserver la forme historique de
- * la réponse `check`, qui expose `room_type_id`. Le principe reste inchangé —
- * c'est l'adapter qui interprète l'`external_id` — mais le routeur ne doit pas
- * réimplémenter le format : il délègue.
- *
- * `null` si l'`external_id` n'est pas un identifiant Séjour@ exploitable.
+ * Fonction PRIVÉE : c'est le seul endroit du dépôt qui connaît le format
+ * `rt:`. Le core ne l'appelle jamais — il reçoit le résultat via
+ * `BookingQuote.resourceRef`, un identifiant opaque.
  */
-export function parseSejouraRoomTypeId(externalId: string): string | null {
+function parseRoomTypeId(externalId: string): string | null {
   if (!externalId.startsWith(ROOM_TYPE_PREFIX)) return null;
   const id = externalId.slice(ROOM_TYPE_PREFIX.length);
   return id.length > 0 ? id : null;
@@ -160,6 +157,9 @@ export class SejouraBookingAdapter implements ProviderAdapter {
       totalAmount,
       currency: DEFAULT_CURRENCY,
       amountSource,
+      // Identifiant opaque côté Séjour@ : le core le transporte sans savoir
+      // qu'il s'agit d'un type de chambre.
+      resourceRef: roomTypeId,
       details: { nights },
     };
   }
@@ -256,8 +256,9 @@ export class SejouraBookingAdapter implements ProviderAdapter {
    * adapter : information métier, pas erreur de transport.
    */
   private requireRoomTypeId(context: ProviderContext): string {
-    const externalId = context.listing.externalId;
-    const id = externalId.startsWith(ROOM_TYPE_PREFIX) ? externalId.slice(ROOM_TYPE_PREFIX.length) : "";
+    // Réutilise le parseur unique du module : une seule implémentation du
+    // format `rt:`, donc une seule chose à maintenir.
+    const id = parseRoomTypeId(context.listing.externalId) ?? "";
 
     if (id === "") {
       throw new BookingError(

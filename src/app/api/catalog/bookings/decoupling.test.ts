@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { findAdapter, registerAdapter, resetRegistry } from "@/lib/providers/registry";
 import { executeBooking } from "@/lib/booking/service";
 import { SejouraBookingAdapter } from "@/connectors/sejoura/sejoura-booking-adapter";
 import type { ProviderContext } from "@/lib/providers/context";
-import type { BookingRequest } from "@/lib/providers/contract";
+import type {
+  BookingCancellation,
+  BookingQuote,
+  BookingRequest,
+} from "@/lib/providers/contract";
 
 // ============================================================================
 // Non-régression du DÉCOUPLAGE de la route Booking.
@@ -23,6 +27,9 @@ import type { BookingRequest } from "@/lib/providers/contract";
 
 const ROUTE_PATH = resolve(process.cwd(), "src/app/api/catalog/bookings/route.ts");
 const routeSource = readFileSync(ROUTE_PATH, "utf8");
+
+/** Faute du nom officiel du provider, à ne jamais réintroduire. */
+const TYPO_PATTERN = /sejo" + "urra|Sejo" + "urra/;
 
 /** Extrait le bloc d'une action, de son commentaire jusqu'au `if` suivant. */
 function actionBlock(marker: string, endMarker?: string): string {
@@ -117,6 +124,160 @@ describe("Route Booking — registre et types de provider", () => {
     // Interdit explicite de la mission : le fallback `unknown -> sejoura`
     // ferait réserver chez un PMS qui n'est pas le bon.
     expect(routeSource).not.toMatch(/type\s*===\s*["']unknown["']\s*\?\s*["']sejoura/);
+  });
+});
+
+describe("Route Booking — absence de couplage via parseur Séjour@", () => {
+  it("n'importe plus aucun parseur Séjour@", () => {
+    // Le format `rt:` est un détail du PMS : seul l'adapter le connaît.
+    expect(routeSource).not.toContain("parseSejouraRoomTypeId");
+    expect(routeSource).not.toContain("parseRoomTypeId");
+  });
+
+  it("n'importe plus que l'IDENTITÉ de l'adapter, pas son outillage interne", () => {
+    // Importer `SejouraBookingAdapter` est nécessaire : c'est l'enregistrement.
+    // Ce qui est interdit, c'est d'appeler un utilitaire métier de Séjour@.
+    const imports = routeSource
+      .split("\n")
+      .filter((line) => line.includes("sejoura-booking-adapter"));
+    expect(imports).toHaveLength(1);
+    expect(imports[0]).toContain("SejouraBookingAdapter");
+    expect(imports[0]).not.toContain("parse");
+  });
+
+  it("reçoit room_type_id par resourceRef, pas par un parseur", () => {
+    // La route RENOMME une donnée générique : elle ne l'interprète pas.
+    expect(routeSource).toContain("room_type_id: quote.resourceRef");
+    expect(routeSource).not.toMatch(/room_type_id:\s*parse/);
+  });
+
+  it("n'expose plus aucun préfixe rt: dans la route", () => {
+    expect(routeSource).not.toContain('"rt:"');
+    expect(routeSource).not.toContain("rt:");
+  });
+});
+
+describe("Réponse check — parité du champ room_type_id", () => {
+  it("restitue exactement l'identifiant fourni par l'adapter", async () => {
+    resetRegistry();
+    // L'adapter produit la référence. Avant la Phase 2B.1, la route la
+    // recalculait elle-même depuis l'external_id : le test verrouille que la
+    // valeur est désormais TRANSPORTÉE, pas réinterprétée.
+    registerAdapter(
+      new SejouraBookingAdapter({
+        baseUrl: "https://sejoura.test",
+        transport: async () => ({
+          ok: true,
+          status: 200,
+          json: async () => ({ available: true, available_rooms: 2, estimated_total: 50_000 }),
+        }),
+      })
+    );
+
+    const quote = (await executeBooking("sejoura", "quote", CONTEXT, REQUEST)) as BookingQuote;
+
+    // CONTEXT.listing.externalId vaut "rt:42" : la référence doit être "42".
+    expect(quote.resourceRef).toBe("42");
+    expect(quote.available).toBe(true);
+    expect(quote.availabilityCount).toBe(2);
+    expect(quote.totalAmount).toBe(50_000);
+    resetRegistry();
+  });
+
+  it("expose la référence quand le provider ne renvoie pas de montant", async () => {
+    resetRegistry();
+    registerAdapter(
+      new SejouraBookingAdapter({
+        baseUrl: "https://sejoura.test",
+        transport: async () => ({ ok: true, status: 200, json: async () => ({ available: true }) }),
+      })
+    );
+
+    // Sans montant Séjour@, TrouveTout estime depuis `base_price` — mais la
+    // RÉFÉRENCE vient toujours du provider, jamais d'une estimation.
+    const quote = (await executeBooking("sejoura", "quote", CONTEXT, REQUEST)) as BookingQuote;
+
+    expect(quote.amountSource).toBe("estimated");
+    expect(quote.resourceRef).toBe("42");
+    resetRegistry();
+  });
+});
+
+describe("Réponse cancel — parité de l'objet booking", () => {
+  it("transporte l'objet booking décrit par le provider", async () => {
+    resetRegistry();
+    // Avant la migration, `cancel` renvoyait l'objet `booking` brut de Séjour@.
+    // La route doit le restituer à l'identique.
+    const upstreamBooking = { booking_code: "RES-7", status: "cancelled" };
+    registerAdapter(
+      new SejouraBookingAdapter({
+        baseUrl: "https://sejoura.test",
+        transport: async () => ({ ok: true, status: 200, json: async () => ({ booking: upstreamBooking }) }),
+      })
+    );
+
+    const cancellation = (await executeBooking(
+      "sejoura",
+      "cancel",
+      CONTEXT,
+      undefined,
+      "RES-7"
+    )) as BookingCancellation;
+
+    // La route répond `booking: cancellation.details ?? null`.
+    expect(cancellation.details).toEqual(upstreamBooking);
+    expect(cancellation.status).toBe("cancelled");
+    resetRegistry();
+  });
+
+  it("expose details vide quand le provider ne renvoie pas de booking", async () => {
+    resetRegistry();
+    registerAdapter(
+      new SejouraBookingAdapter({
+        baseUrl: "https://sejoura.test",
+        transport: async () => ({ ok: true, status: 200, json: async () => ({}) }),
+      })
+    );
+
+    const cancellation = (await executeBooking(
+      "sejoura",
+      "cancel",
+      CONTEXT,
+      undefined,
+      "RES-8"
+    )) as BookingCancellation;
+
+    // Un objet vide reste un objet : la route produit `{}`, pas `null` Brut.
+    expect(cancellation.details).toEqual({});
+    resetRegistry();
+  });
+});
+
+describe("Aucun typo sejorra dans le code applicatif", () => {
+  it("n'apparaît dans aucun fichier de src/", () => {
+    // Le nom officiel est `sejoura`. Un typo dans un nom de fichier ou de
+    // symbole deviendrait une faute permanente dans l'architecture.
+    //
+    // `readdirSync` + `readFileSync` plutôt que `execSync` : pas de dépendance
+    // à un shell externe, et le test reste déterministe.
+    const offenders: string[] = [];
+    // Ce fichier CONTIENT le motif qu'il traque : il doit s'exclure, sinon il
+    // se signale lui-même et le test échouerait toujours.
+    const self = resolve(process.cwd(), "src/app/api/catalog/bookings/decoupling.test.ts");
+
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = resolve(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (full !== self && /\.(ts|tsx)$/.test(entry.name) && TYPO_PATTERN.test(readFileSync(full, "utf8"))) {
+          offenders.push(full.replace(`${process.cwd()}/`, ""));
+        }
+      }
+    };
+
+    walk(resolve(process.cwd(), "src"));
+    expect(offenders).toEqual([]);
   });
 });
 

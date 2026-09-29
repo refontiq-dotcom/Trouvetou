@@ -44,6 +44,8 @@ const NO_AVAILABILITY: BookingQuote = {
   totalAmount: null,
   currency: "XOF",
   amountSource: "provider",
+  // Le provider peut ne pas exposer de référence de ressource exploitable.
+  resourceRef: null,
 };
 
 /** Adapter sans annulation : sert à tester le refus de capacité. */

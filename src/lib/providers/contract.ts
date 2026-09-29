@@ -83,6 +83,20 @@ export interface BookingQuote {
    * doit jamais être présenté à l'utilisateur comme un devis ferme.
    */
   amountSource: "provider" | "estimated";
+  /**
+   * Référence de la ressource devisée, telle que le fournisseur la désigne.
+   *
+   * Question posée : « sur quoi porte ce devis ? ». Un hôtelier répond « le type
+   * de chambre 42 », une agence de voyage « le vol AF1234 », un restaurant « la
+   * table de 4 personnes ». Le core ne connaît aucun de ces concepts : il
+   * transporte l'IDENTIFIANT opaque et le restitue tel quel.
+   *
+   * Cette valeur alimente le champ historique `room_type_id` de la réponse
+   * publique de `check`. C'est un nom de COLONNE_HTTP historique, pas un
+   * concept métier du cœur : la route ne fait que le renommer, elle ne
+   * l'interprète jamais.
+   */
+  resourceRef: string | null;
   /** Infos libres et non sensibles fournies par le fournisseur. */
   details?: Record<string, unknown> | null;
 }
@@ -100,6 +114,13 @@ export interface BookingConfirmation {
 /** Résultat d'une annulation. */
 export interface BookingCancellation {
   status: string;
+  /**
+   * Réservation telle que le fournisseur la décrit APRÈS annulation.
+   *
+   * Conservée pour que la route puisse restituer la réponse historique, qui
+   * exposait un objet `booking`. Le core transporte l'objet opaque du
+   * fournisseur sans en connaître les champs.
+   */
   details?: Record<string, unknown> | null;
 }
 
