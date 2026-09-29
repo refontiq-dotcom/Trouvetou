@@ -118,4 +118,81 @@ alter table public.providers
 -- plus le jour où le nombre de providers croît.
 create index if not exists idx_providers_type on public.providers(type);
 
+-- 7. `create_provider()` : ajout du paramètre `p_type`.
+--
+-- ⚠️ DÉCISION D'ARCHITECTURE : PAS DE SURCHARGE
+--
+-- Une fonction PL/pgSQL dont les derniers paramètres ont une valeur par
+-- défaut ne peut pas coexister avec une signature plus courte. PostgreSQL
+-- refuse alors de choisir :
+--
+--     ERROR: function create_provider(text, text, text, text) is not unique
+--     HINT:  Could not choose a best candidate function.
+--
+-- Le problème ne se contourne PAS avec un cast : le message persiste même
+-- avec des types explicites, parce que les DEUX candidats restent applicables
+-- (les 4 derniers paramètres de la nouvelle sont tous optionnels). Créer une
+-- 5ᵉ surcharge casserait donc TOUT appel à 4 arguments — y compris l'outillage
+-- existant.
+--
+-- On remplace donc l'ancienne fonction par une nouvelle qui porte les DEUX
+-- anciens paramètres par défaut (`p_webhook_url`, `p_type`). Une seule
+-- signature, aucun appel ambigu :
+--
+--   3 arguments  -> OK  (comportement historique, type 'unknown')
+--   4 arguments  -> OK  (comportement historique, type 'unknown')
+--   5 arguments  -> OK  (type explicite)
+--
+-- Le premier `drop` supprime la surcharge 5 args d'un essai antérieur, ET
+-- l'ancienne signature 4 args : `CREATE OR REPLACE` ne supprime PAS une
+-- fonction dont la nouvelle définition a PLUS de paramètres — il crée une
+-- surcharge à côté. Sans ce `drop`, les deux coexistent et tout appel à
+-- 3 ou 4 arguments devient ambigu.
+drop function if exists public.create_provider(text, text, text, text, text);
+drop function if exists public.create_provider(text, text, text, text);
+
+create or replace function public.create_provider(
+  p_name         TEXT,
+  p_category     TEXT,
+  p_api_key_hash TEXT,
+  p_webhook_url  TEXT DEFAULT NULL,
+  p_type         TEXT DEFAULT 'unknown'
+)
+returns public.providers as $$
+declare
+  v_category_id UUID;
+  v_provider    public.providers;
+  v_type        public.provider_type;
+begin
+  select id into v_category_id
+    from public.categories
+   where slug = p_category;
+  if not found then
+    raise exception 'CATEGORY_NOT_FOUND: catégorie % inconnue', p_category;
+  end if;
+
+  -- Le cast échoue sur une valeur hors vocabulaire : l'appelant reçoit une
+  -- erreur explicite plutôt que de créer un provider au type arbitraire.
+  -- `lower` + `trim` tolèrent la casse et les espaces superflus.
+  v_type := lower(trim(p_type))::public.provider_type;
+
+  insert into public.providers (name, category_id, api_key_hash, webhook_url, type)
+  values (p_name, v_category_id, p_api_key_hash, p_webhook_url, v_type)
+  returning * into v_provider;
+
+  return v_provider;
+end;
+$$ language plpgsql security definer;
+
+-- SÉCURITÉ — point critique
+--
+-- `20260925_production_audit_hardening.sql` révoque l'EXECUTE sur la
+-- signature 4 args pour empêcher l'exposition via l'API Data de Supabase.
+-- `CREATE OR REPLACE` conserve les privilèges existants, mais la révocation
+-- est réappliquée explicitement : elle ne doit dépendre d'aucun état antérieur
+-- de la base. Sans elle, la fonction créerait des providers — donc des sources
+-- d'alimentation — depuis n'importe quel client authentifié.
+revoke all on function public.create_provider(text, text, text, text, text) from public, anon, authenticated;
+alter function public.create_provider(text, text, text, text, text) set search_path = public;
+
 commit;

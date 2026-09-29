@@ -251,34 +251,58 @@ CREATE POLICY "listings_select_public" ON listings
 --    La conversion tolère les MAJUSCULES et les espaces ; en cas de valeur
 --    inconnue, le cast en enum échoue et l'insertion est refusée plutôt que de
 --    créer un provider au type arbitraire.
+--
+--    PAS DE SURCHARGE : `p_webhook_url` ET `p_type` portent tous deux une
+--    valeur par défaut, et il n'existe qu'une seule signature. Une fonction
+--    plus longue NE REMPLACE PAS la précédente : `CREATE OR REPLACE` crée une
+--    surcharge à côté, et les deux signatures 4 args et 5 args deviennent
+--    ambiguës (« function create_provider(text, text, text, text) is not
+--    unique »), y compris avec des cast explicites. D'où les deux `DROP`.
+--    3, 4 ou 5 arguments fonctionnent ensuite sans ambiguïté.
 -- ----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION create_provider(
-  p_name        TEXT,
-  p_category    TEXT,
+DROP FUNCTION IF EXISTS public.create_provider(text, text, text, text, text);
+DROP FUNCTION IF EXISTS public.create_provider(text, text, text, text);
+
+CREATE OR REPLACE FUNCTION public.create_provider(
+  p_name         TEXT,
+  p_category     TEXT,
   p_api_key_hash TEXT,
-  p_webhook_url TEXT DEFAULT NULL,
-  p_type        TEXT DEFAULT 'unknown'
+  p_webhook_url  TEXT DEFAULT NULL,
+  p_type         TEXT DEFAULT 'unknown'
 )
-RETURNS providers AS $$
+RETURNS public.providers AS $$
 DECLARE
   v_category_id UUID;
-  v_provider    providers;
+  v_provider    public.providers;
   v_type        public.provider_type;
 BEGIN
-  SELECT id INTO v_category_id FROM categories WHERE slug = p_category;
+  SELECT id INTO v_category_id
+    FROM public.categories
+   WHERE slug = p_category;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'CATEGORY_NOT_FOUND: catégorie % inconnue', p_category;
   END IF;
 
+  -- Le cast échoue sur une valeur hors vocabulaire : l'appelant reçoit une
+  -- erreur explicite plutôt que de créer un provider au type arbitraire.
+  -- `lower` + `trim` tolèrent la casse et les espaces superflus.
   v_type := lower(trim(p_type))::public.provider_type;
 
-  INSERT INTO providers (name, category_id, api_key_hash, webhook_url, type)
+  INSERT INTO public.providers (name, category_id, api_key_hash, webhook_url, type)
   VALUES (p_name, v_category_id, p_api_key_hash, p_webhook_url, v_type)
   RETURNING * INTO v_provider;
 
   RETURN v_provider;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Même restriction que la signature historique (4 arguments) : serveur
+-- uniquement, jamais exposée via l'API Data de Supabase. Sans cette révocation,
+-- cette nouvelle signature hériterait du droit PUBLIC par défaut sur EXECUTE
+-- et réintroduirait la faille refermée par
+-- 20260925_production_audit_hardening.sql.
+REVOKE ALL ON FUNCTION public.create_provider(text, text, text, text, text) FROM public, anon, authenticated;
+ALTER FUNCTION public.create_provider(text, text, text, text, text) SET search_path = public;
 
 -- 9. FONCTION UTILITAIRE: Purge des annonces d'un provider
 --    Usage : SELECT purge_provider_listings('<provider_id>');
