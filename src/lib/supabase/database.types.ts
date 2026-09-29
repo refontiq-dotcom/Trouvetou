@@ -15,12 +15,35 @@ export type Category = {
 };
 
 // ---------------------------------------------------------------------------
+// Type `provider_type` — identité technique du logiciel métier
+// ---------------------------------------------------------------------------
+
+/**
+ * Vocabulaire de `providers.type`.
+ *
+ * `'unknown'` signifie « le logiciel métier n'est pas établi » : c'est l'état
+ * par défaut d'une ligne existante dont l'identité n'a pas été confirmée. Un
+ * provider dans cet état ne doit être considéré comme réservable par AUCUN
+ * connecteur.
+ *
+ * Ajouter un connecteur revient à étendre l'enum en base
+ * (`alter type ... add value`) puis cette union : le modèle n'est pas à
+ * réécrire.
+ */
+export type ProviderType = "unknown" | "sejoura";
+
+// ---------------------------------------------------------------------------
 // Table `providers` — Sources d'alimentation (logiciels métiers partenaires)
 // ---------------------------------------------------------------------------
 export type Provider = {
   id: string;
   name: string;
   category_id: string;
+  /**
+   * Identité technique du connecteur. Ne jamais dériver cette valeur de
+   * `name` (texte libre) ni de la catégorie (secteur, pas logiciel).
+   */
+  type: ProviderType;
   api_key_hash: string;
   webhook_url: string | null;
   is_active: boolean;
@@ -179,6 +202,8 @@ export type Database = {
           id?: string;
           name: string;
           category_id: string;
+          /** Requis explicitement : on n'hérite pas d'un `'unknown'` silencieux. */
+          type: ProviderType;
           api_key_hash: string;
           webhook_url?: string | null;
           is_active?: boolean;
@@ -188,9 +213,11 @@ export type Database = {
         Update: {
           name?: string;
           category_id?: string;
+          type?: ProviderType;
           api_key_hash?: string;
           webhook_url?: string | null;
           is_active?: boolean;
+          updated_at?: string;
         };
         Relationships: [];
       };

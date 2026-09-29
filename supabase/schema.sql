@@ -40,13 +40,34 @@ COMMENT ON COLUMN categories.slug IS
   'Identifiant lisible stable du secteur, utilisé comme valeur de référence.';
 
 -- ----------------------------------------------------------------------------
--- 2. TABLE: providers (Sources d'alimentation des annonces)
+-- 2. TYPE: provider_type (identité technique du logiciel métier)
+--    Valeurs volontairement minimales : 'unknown' (non établi) et 'sejoura'
+--    (seul connecteur Booking implémenté). Ajouter un connecteur revient à
+--    `alter type ... add value`, sans réécrire le schéma.
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'provider_type') THEN
+    CREATE TYPE public.provider_type AS ENUM ('unknown', 'sejoura');
+  END IF;
+END;
+$$;
+
+COMMENT ON TYPE public.provider_type IS
+  'Logiciel métier alimentant le provider. Résolu via ProviderRegistry. ''unknown'' = non établi. ''sejoura'' = PMS Séjour@.';
+
+-- ----------------------------------------------------------------------------
+-- 3. TABLE: providers (Sources d'alimentation des annonces)
 --    Chaque logiciel métier (Séjoura, PMS clinique, SIS école) est un provider.
 -- ----------------------------------------------------------------------------
 CREATE TABLE providers (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name         TEXT NOT NULL,                  -- 'Séjoura', 'MediPMS', 'EduSoft', ...
   category_id  UUID NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+  -- Identité technique du logiciel métier, résolue par ProviderRegistry pour
+  -- sélectionner un adapter. 'unknown' = non établi. Ne jamais dériver cette
+  -- valeur de `name` (texte libre) ni de `category_id` (secteur, pas logiciel).
+  type         public.provider_type NOT NULL DEFAULT 'unknown',
   api_key_hash TEXT NOT NULL,                  -- HMAC-SHA256(clé API, pepper), jamais la clé en clair
   webhook_url  TEXT,                           -- URL de notification (optionnel)
   is_active    BOOLEAN NOT NULL DEFAULT TRUE,
@@ -59,12 +80,15 @@ COMMENT ON TABLE providers IS
   'Chaque source d''alimentation (logiciel métier) est enregistrée ici.';
 COMMENT ON COLUMN providers.api_key_hash IS
   'Empreinte HMAC-SHA256 de la clé API. La clé n''est jamais stockée en clair.';
+COMMENT ON COLUMN providers.type IS
+  'Identité technique du logiciel métier. Résolue par ProviderRegistry pour sélectionner un adapter. Ne jamais dériver cette valeur de ''name'' ou de la catégorie.';
 
 CREATE INDEX idx_providers_category ON providers(category_id);
 CREATE INDEX idx_providers_active ON providers(is_active);
+CREATE INDEX idx_providers_type ON providers(type);
 
 -- ----------------------------------------------------------------------------
--- 3. TABLE: listings (Annonces polymorphes multi-secteurs)
+-- 4. TABLE: listings (Annonces polymorphes multi-secteurs)
 --    Unicité (provider_id, external_id) → sert de cible au UPSERT.
 --    attributes JSONB porte la spécificité du secteur, ex :
 --      hôtel   : { "beds": 3, "wifi": true, "amenities": ["clim"] }
@@ -110,7 +134,7 @@ CREATE INDEX idx_listings_updated ON listings(updated_at DESC);
 CREATE INDEX idx_listings_attributes_gin ON listings USING gin (attributes jsonb_path_ops);
 
 -- ----------------------------------------------------------------------------
--- 4. TABLE: sync_logs (Journal des synchronisations entrantes)
+-- 5. TABLE: sync_logs (Journal des synchronisations entrantes)
 --    Trace chaque appel à /api/v1/sync : qui, quand, combien, statut.
 -- ----------------------------------------------------------------------------
 CREATE TABLE sync_logs (
@@ -216,27 +240,40 @@ CREATE POLICY "listings_select_public" ON listings
 -- ----------------------------------------------------------------------------
 -- 8. FONCTION UTILITAIRE: Créer un provider avec sa clé API hashée
 --    Usage (SQL Editor Supabase) :
---      SELECT create_provider('Séjoura', 'hotel', '<api_key_hash>', 'https://...');
+--      SELECT create_provider('Séjoura', 'hotel', '<api_key_hash>', 'https://...', 'sejoura');
 --    Le hash est généré côté application : HMAC-SHA256(clé complète, pepper).
+--
+--    `p_type` est OPTIONNEL et vaut 'unknown' par défaut : un provider dont le
+--    logiciel métier n'est pas encore établi doit pouvoir être créé sans
+--    mentir sur son identité. Il ne doit JAMAIS être déduit de `p_name` ni de
+--    `p_category` — ce sont un libellé et un secteur, pas un connecteur.
+--
+--    La conversion tolère les MAJUSCULES et les espaces ; en cas de valeur
+--    inconnue, le cast en enum échoue et l'insertion est refusée plutôt que de
+--    créer un provider au type arbitraire.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION create_provider(
   p_name        TEXT,
   p_category    TEXT,
   p_api_key_hash TEXT,
-  p_webhook_url TEXT DEFAULT NULL
+  p_webhook_url TEXT DEFAULT NULL,
+  p_type        TEXT DEFAULT 'unknown'
 )
 RETURNS providers AS $$
 DECLARE
   v_category_id UUID;
   v_provider    providers;
+  v_type        public.provider_type;
 BEGIN
   SELECT id INTO v_category_id FROM categories WHERE slug = p_category;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'CATEGORY_NOT_FOUND: catégorie % inconnue', p_category;
   END IF;
 
-  INSERT INTO providers (name, category_id, api_key_hash, webhook_url)
-  VALUES (p_name, v_category_id, p_api_key_hash, p_webhook_url)
+  v_type := lower(trim(p_type))::public.provider_type;
+
+  INSERT INTO providers (name, category_id, api_key_hash, webhook_url, type)
+  VALUES (p_name, v_category_id, p_api_key_hash, p_webhook_url, v_type)
   RETURNING * INTO v_provider;
 
   RETURN v_provider;
