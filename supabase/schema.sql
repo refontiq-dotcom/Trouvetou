@@ -333,6 +333,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 --     external_id). Le retour indique le nombre d'insertions vs de mises à
 --     jour (détection fiable via le marqueur système `xmax`).
 --
+--     ⚠️ CONTRAT : SNAPSHOT COMPLET — voir docs/sync-contract.md
+--     `attributes = EXCLUDED.attributes` signifie qu'un champ omis du snapshot
+--     est EFFACÉ, et non conservé. C'est voulu : la base est le miroir exact de
+--     ce que le provider déclare. Toute logique de merge (PATCH) demanderait
+--     d'être décidée ici, dans la fonction, et non dans la route appelante.
+--
+--     EXCEPTION : `sejoura_api_key` est un credential technique, HORS du miroir
+--     public. Il est lu AVANT l'upsert — seule occasion où l'ancienne valeur
+--     existe encore — puis réappliqué si le snapshot n'en fournit pas. Sans
+--     cela, un connecteur ignorant ce champ effacerait le credential de tout son
+--     lot, cassant les réservations (Phase 2D.1).
+--
 --     Usage (via la couche API) :
 --       SELECT * FROM ingest_listings(
 --         p_provider_id  => '<uuid>',
@@ -340,20 +352,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 --         p_items        => '[{ "external_id": "...", "title": "..." }]'::jsonb
 --       );
 -- ----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ingest_listings(
+create or replace function public.ingest_listings(
   p_provider_id UUID,
   p_category_id UUID,
   p_items       JSONB
 )
-RETURNS TABLE (inserted INTEGER, updated INTEGER) AS $$
-DECLARE
-  v_item        JSONB;
-  v_is_insert   BOOLEAN;
-  v_inserted    INTEGER := 0;
-  v_updated     INTEGER := 0;
-BEGIN
+returns table (inserted INTEGER, updated INTEGER) as $$
+declare
+  v_item              JSONB;
+  v_is_insert         BOOLEAN;
+  v_inserted          INTEGER := 0;
+  v_updated           INTEGER := 0;
+  v_previous_credential TEXT;
+begin
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array'
-     OR jsonb_array_length(p_items) = 0 THEN
+    OR jsonb_array_length(p_items) = 0 THEN
     RAISE EXCEPTION 'EMPTY_PAYLOAD: le lot "items" est manquant ou vide';
   END IF;
 
@@ -364,7 +377,6 @@ BEGIN
   END IF;
 
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
-    -- Résolution de la catégorie par item
     DECLARE
       v_item_category_id UUID;
       v_slug TEXT;
@@ -379,10 +391,17 @@ BEGIN
         v_item_category_id := p_category_id;
       END IF;
 
-      INSERT INTO listings (
+      -- Lecture de l'credential AVANT l'upsert, qui l'écrasera.
+      select l.attributes ->> 'sejoura_api_key'
+        into v_previous_credential
+        from public.listings l
+       where l.provider_id = p_provider_id
+         and l.external_id = v_item ->> 'external_id';
+
+      insert into public.listings (
         provider_id, category_id, external_id, title, description,
         city, base_price, images, attributes, is_available
-      ) VALUES (
+      ) values (
         p_provider_id,
         v_item_category_id,
         v_item ->> 'external_id',
@@ -394,7 +413,7 @@ BEGIN
         COALESCE(v_item -> 'attributes', '{}'::jsonb),
         COALESCE((v_item ->> 'is_available')::BOOLEAN, TRUE)
       )
-      ON CONFLICT (provider_id, external_id) DO UPDATE SET
+      on conflict (provider_id, external_id) do update set
         category_id  = EXCLUDED.category_id,
         title        = EXCLUDED.title,
         description  = EXCLUDED.description,
@@ -403,7 +422,21 @@ BEGIN
         images       = EXCLUDED.images,
         attributes   = EXCLUDED.attributes,
         is_available = EXCLUDED.is_available
-      RETURNING (xmax = 0) INTO v_is_insert;
+      returning (xmax = 0) into v_is_insert;
+
+      -- Restauration : uniquement si le nouveau lot n'en a pas fourni un.
+      IF v_previous_credential IS NOT NULL
+         AND (v_item -> 'attributes' ->> 'sejoura_api_key') IS NULL THEN
+        update public.listings l
+           set attributes = jsonb_set(
+                 l.attributes,
+                 '{sejoura_api_key}',
+                 to_jsonb(v_previous_credential),
+                 true
+               )
+         where l.provider_id = p_provider_id
+           and l.external_id = v_item ->> 'external_id';
+      END IF;
 
       IF v_is_insert THEN
         v_inserted := v_inserted + 1;
@@ -416,6 +449,7 @@ BEGIN
   RETURN QUERY SELECT v_inserted, v_updated;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- ============================================================================
 -- 11. OBJETS COMPLÉMENTAIRES (reconstitués le 2026-09-24)

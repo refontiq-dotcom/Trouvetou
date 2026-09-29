@@ -77,6 +77,30 @@ export function sanitizeSyncAttributes(input: Record<string, unknown>): Record<s
  *   POST /api/v1/sync
  *   Authorization / x-trouvetou-api-key: tv_live_<providerId>.<secret>
  *   Content-Type: application/json
+ *
+ * ── CONTRAT : SNAPSHOT COMPLET ──────────────────────────────────────────────
+ *
+ * Un appel représente l'état COMPLET, à cet instant, des annonces publiques
+ * que le provider veut exposer. Ce n'est PAS un PATCH : un champ omis est
+ * traité comme absent, jamais comme « conserver l'ancienne valeur ». Le lot
+ * est atomique (accepté ou rejeté en entier) et idempotent sur l'identité
+ * `(provider_id, external_id)`.
+ *
+ * Cette route ne peut pas rendre un PATCH correct : `ingest_listings` applique
+ * `attributes = EXCLUDED.attributes`, donc toute logique de merge devrait vivre
+ * dans la fonction SQL, pas ici. C'est pourquoi aucun indicateur `partial` ou
+ * `merge` n'existe — et ne doit pas être ajouté sans décision d'architecture.
+ *
+ * ⚠️  AVANT D'IMPLÉMENTER UN CONNECTEUR, LIRE : docs/sync-contract.md
+ *
+ *     Le document normatif détaille le contrat du payload (champs obligatoires
+ *     et optionnels), la sémantique des champs omis, le sort des annonces
+ *     absentes, et l'exception des credentials. L'implémenter sans le lire
+ *     produira une perte de données silencieuse, pas une erreur visible.
+ *
+ * Les credentials techniques (`sejoura_api_key`) sont volontairement HORS du
+ * miroir public : leur préservation en cas de snapshot partiel est gérée dans
+ * `ingest_listings`, pas ici.
  */
 
 export const runtime = "nodejs";
