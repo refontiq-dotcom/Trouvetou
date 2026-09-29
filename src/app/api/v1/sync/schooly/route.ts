@@ -5,6 +5,11 @@ import {
   parseProviderIdFromKey,
   secureCompare,
 } from "@/lib/sync/api-key";
+import {
+  normalizeHttpUrlList,
+  toClassicImages,
+  toPanoramas,
+} from "@/lib/sync/schooly-media";
 
 /**
  * TROUVETOU — API d'ingestion Schooly (SIS école)
@@ -34,7 +39,12 @@ interface SchoolPayload {
   longitude?: number | null;
   description_publique?: string | null;
   itineraire?: string | null;
+  /** Ancien champ d'URL 360°. Conservé pour traçabilité, plus pour `images`. */
   photos_360?: unknown[] | null;
+  /** Contrat riche §12 : seule source des panoramas affichables. */
+  panoramas?: unknown[] | null;
+  cover_photo?: unknown;
+  gallery?: unknown[] | null;
   video_url?: string | null;
   grille_tarifaire_publique?: unknown[] | null;
   published?: boolean | null;
@@ -200,9 +210,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         description: school.description_publique ?? null,
         city: school.ville ?? null,
         base_price: null,
-        images: Array.isArray(school.photos_360)
-          ? school.photos_360.filter((photo) => typeof photo === "string").map((photo) => String(photo))
-          : [],
+        // Photos CLASSIQUES uniquement : photo principale puis galerie.
+        // `photos_360` n'est plus injecté ici — c'était un panorama rendu dans
+        // la galerie comme une photo plate (voir src/lib/sync/schooly-media.ts).
+        images: toClassicImages(school),
         attributes: {
           school_id: school.id,
           latitude: school.latitude ?? null,
@@ -210,6 +221,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           itineraire: school.itineraire ?? null,
           video_url: school.video_url ?? null,
           grille_tarifaire_publique: school.grille_tarifaire_publique ?? null,
+          // Visites 360° au contrat riche §12. Seul point d'entrée de la
+          // visionneuse : `panoramas` est écrasé à chaque synchronisation, donc
+          // un panorama retiré côté Schooly disparaît ici sans stratégie
+          // supplémentaire.
+          panoramas: toPanoramas(school),
+          // Conservé tel quel : la §12.3 le déclare comme repli, et c'est la
+          // seule trace permettant de remonter à l'URL d'origine. Jamais promu
+          // en panorama — une URL nue ne prouve pas la projection.
+          photos_360: normalizeHttpUrlList(school.photos_360),
           levels: levels.map((level) => ({
             id: level.id,
             label: level.label,

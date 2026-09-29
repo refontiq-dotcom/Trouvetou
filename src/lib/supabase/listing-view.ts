@@ -1,4 +1,5 @@
 import type { ListedListing } from "./listings";
+import { parsePanoramas, type PanoramaMedia } from "./panorama";
 
 // ============================================================================
 // TROUVETOU — Vue d'affichage d'une annonce (`listings` polymorphe)
@@ -38,6 +39,12 @@ export interface ListingView {
   is_boosted: boolean;
   category_slug: string;
   establishment: EstablishmentView;
+  /**
+   * Visites 360° exploitables, déjà validées par `parsePanoramas`.
+   * Vide pour la très grande majorité des annonces : ce champ ne doit RIEN
+   * changer à l'affichage d'une annonce sans panorama.
+   */
+  panoramas: PanoramaMedia[];
   updated_at: string;
 }
 
@@ -75,6 +82,7 @@ export function toListingView(listing: ListedListing): ListingView {
     capacity: asNumber(attrs.capacity),
     is_boosted: attrs.is_boosted === true,
     category_slug: listing.category.slug,
+    panoramas: parsePanoramas(attrs.panoramas),
     establishment: {
       id: listing.provider_id,
       name: listing.provider.name,

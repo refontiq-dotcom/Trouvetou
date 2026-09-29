@@ -11,11 +11,13 @@ import {
   MessageCircle,
   Navigation,
   Phone,
+  Rotate3D,
   Share2,
   Star,
   Wallet,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
+import { PanoramaViewer } from "@/components/media/panorama-viewer";
 import { useLocation } from "@/contexts/location-context";
 import { useFavorites } from "@/contexts/favorites-context";
 import { useCompare } from "@/contexts/compare-context";
@@ -51,12 +53,21 @@ interface RoomCardProps {
 export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCardProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  // Index dans `room.panoramas`, ou null quand la visionneuse est fermée.
+  // Un index plutôt qu'un booléen : le contrat autorise plusieurs visites par
+  // annonce, même si l'interface n'en expose qu'une à la fois.
+  const [panoramaIndex, setPanoramaIndex] = useState<number | null>(null);
   const { location: userLocation } = useLocation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { toggleCompare, isSelected: isCompared } = useCompare();
 
   const establishment = room.establishment;
   const coverImage = room.images[0] ?? PLACEHOLDER_IMAGE;
+  // Première visite exploitable, ou null. `parsePanoramas` a déjà écarté tout
+  // ce qui n'était pas une vraie visite 360° : une annonce sans panorama
+  // affichera donc exactement ce qu'elle affichait avant, bouton en moins.
+  const panorama = room.panoramas?.[0] ?? null;
+  const isPanoramaOpen = panoramaIndex !== null && panorama !== null;
   const amenities = getAmenitiesInfo(room.amenities ?? []).slice(0, 3);
   const mapsUrl = buildGoogleMapsUrl(
     establishment?.latitude,
@@ -282,6 +293,13 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         {detailOpen && (
           <motion.div className="fixed inset-0 z-[100] overflow-y-auto bg-navy/90 p-0 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="dialog" aria-modal="true" aria-label={"Détails de " + room.name}>
             <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-secondary shadow-2xl sm:min-h-[calc(100dvh-3rem)] sm:rounded-[2rem]">
+              {isPanoramaOpen && panorama && (
+                <PanoramaViewer
+                  panorama={panorama}
+                  label={room.name}
+                  onClose={() => setPanoramaIndex(null)}
+                />
+              )}
               <motion.div className="relative h-[48dvh] min-h-[320px] shrink-0 overflow-hidden" layoutId={"listing-image-" + room.id} transition={{ type: "spring", stiffness: 320, damping: 34 }}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_62%,rgba(255,255,255,.22),transparent_2px)] bg-[size:12px_12px] opacity-70" />
                 <div className="absolute inset-0 bg-gradient-to-br from-navy via-primary to-primary-light" />
@@ -296,6 +314,22 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 <div className="absolute -top-12 left-0 rounded-tr-[2rem] bg-white px-6 pb-4 pt-5"><p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Prix</p><p className="mt-0.5 text-xl font-extrabold leading-tight text-accent-hover">{formatFCFA(room.price ?? 0)}</p><p className="mt-0.5 text-xs text-muted-foreground">{priceSuffix}</p></div>
                 <button type="button" onClick={() => toggleFavorite(room.id)} className={cn("absolute right-6 -top-11 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm", liked ? "text-rose-500" : "text-navy")} aria-label="Ajouter aux favoris"><Heart className={cn("h-5 w-5", liked && "fill-current")} /></button>
                 <div className="mt-14 flex items-center justify-between gap-4"><h3 className="text-sm font-bold text-foreground">Description</h3><span className="flex items-center gap-1 text-xs font-semibold text-accent-hover"><Star className="h-4 w-4 fill-current" /> Trouvetou</span></div>
+                {panorama && !isPanoramaOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setPanoramaIndex(0)}
+                    className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left transition-colors hover:bg-primary/10"
+                    aria-label={`Ouvrir la visite 360° de ${room.name}`}
+                  >
+                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary text-white">
+                      <Rotate3D className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-foreground">Vue 360°</span>
+                      <span className="block text-xs text-muted-foreground">Explorez la pièce comme si vous y étiez</span>
+                    </span>
+                  </button>
+                )}
                 {room.description ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{room.description}</p> : <p className="mt-2 text-sm leading-6 text-muted-foreground">Découvrez les informations et services proposés par cette annonce.</p>}
                 {amenities.length > 0 && <div className="mt-5"><h3 className="mb-2 text-sm font-bold text-foreground">Services</h3><div className="flex flex-wrap gap-2">{getAmenitiesInfo(room.amenities ?? []).map(({ label, icon: Icon }) => <span key={label} className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground"><Icon className="h-3.5 w-3.5 text-primary" />{label}</span>)}</div></div>}
                 {location && <p className="mt-5 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{location}</span></p>}
