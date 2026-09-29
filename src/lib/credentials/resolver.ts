@@ -9,7 +9,7 @@ import { decryptCredential } from "./encryption";
 //
 //   1. `providers.outbound_api_key_encrypted` — source OFFICIELLE, chiffrée,
 //      une seule fois par provider. Ne dépend d'aucune annonce.
-//   2. `listings.attributes.sejourra_api_key`  — FALLBACK LEGACY, en clair,
+//   2. `listings.attributes.sejoura_api_key`  — FALLBACK LEGACY, en clair,
 //      dupliqué par annonce.
 //
 // POURQUOI LE FALLBACK EXISTE ENCORE
