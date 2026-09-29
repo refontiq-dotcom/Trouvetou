@@ -58,15 +58,20 @@ COMMENT ON TYPE public.provider_type IS
 
 -- ----------------------------------------------------------------------------
 -- 3. TABLE: providers (Sources d'alimentation des annonces)
---    Chaque logiciel métier (Séjoura, PMS clinique, SIS école) est un provider.
+--    ATTENTION : un provider est une INSTANCE / CLIENT / CONNEXION authentifiée,
+--    pas un logiciel métier. Le logiciel est porté par `type` (colonne
+--    ci-dessous). Plusieurs providers peuvent partager le même `type` tout en
+--    ayant des `id` et des credentials distincts : c'est le cas normal quand
+--    plusieurs établissements d'un même PMS se connectent séparément.
+--    Voir docs/provider-identity.md.
 -- ----------------------------------------------------------------------------
 CREATE TABLE providers (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name         TEXT NOT NULL,                  -- 'Séjoura', 'MediPMS', 'EduSoft', ...
-  category_id  UUID NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
-  -- Identité technique du logiciel métier, résolue par ProviderRegistry pour
-  -- sélectionner un adapter. 'unknown' = non établi. Ne jamais dériver cette
-  -- valeur de `name` (texte libre) ni de `category_id` (secteur, pas logiciel).
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- identité de l'instance
+  name         TEXT NOT NULL,                  -- libellé libre, PAS une clé de résolution
+  category_id  UUID NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,  -- secteur d'activité
+  -- Logiciel métier (ex. 'sejoura'), résolu par ProviderRegistry pour sélectionner
+  -- un adapter. 'unknown' = non établi. Ne jamais dériver cette valeur de `name`
+  -- (texte libre) ni de `category_id` (secteur, pas logiciel).
   type         public.provider_type NOT NULL DEFAULT 'unknown',
   -- Credential SORTANT (Trouvetou -> provider), chiffre en AES-256-GCM,
   -- format v1:iv:tag:ciphertext. Distinct de `api_key_hash` (credential
@@ -82,7 +87,7 @@ CREATE TABLE providers (
 );
 
 COMMENT ON TABLE providers IS
-  'Chaque source d''alimentation (logiciel métier) est enregistrée ici.';
+  'Une instance/client/connexion authentifiée d''un logiciel métier. Le logiciel est porté par la colonne `type` ; plusieurs providers peuvent partager le même type avec des id et credentials distincts. Voir docs/provider-identity.md.';
 COMMENT ON COLUMN providers.api_key_hash IS
   'Empreinte HMAC-SHA256 de la clé API. La clé n''est jamais stockée en clair.';
 COMMENT ON COLUMN providers.outbound_api_key_encrypted IS
