@@ -141,6 +141,18 @@ import type { ProviderContext } from "./context";
 export interface ProviderCapabilities {
   booking: boolean;
   cancellation: boolean;
+  /**
+   * Le provider sait-il suivre un client qui voyage vers lui ?
+   *
+   * Vrai pour un hôtel ou un transporteur, faux pour un restaurant ou une
+   * clinique : le suivi GPS n'a de sens que là où le client se déplace.
+   *
+   * Cette capacité est interrogée par l'`ArrivalTrackingService` via le
+   * REGISTRE, qui ne contient un adapter que si le provider sait suivre. Le
+   * booléen documente la même réalité à un niveau lisible, sans créer une
+   * source de vérité concurrente.
+   */
+  arrivalTracking: boolean;
 }
 
 /**

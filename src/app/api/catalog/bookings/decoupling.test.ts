@@ -99,16 +99,39 @@ describe("Route Booking — absence de parsing métier Séjour@", () => {
   });
 });
 
-describe("Route Booking — arrival tracking laissé intact", () => {
-  it("conserve l'endpoint de tracking (hors périmètre de cette phase)", () => {
-    // Le tracking n'est PAS migré : il reste branché comme avant, et c'est
-    // volontaire. Ce test verrouille ce choix pour qu'on ne l'oublie pas.
-    expect(routeSource).toContain("/api/v1/external/arrival-tracking");
+describe("Route Booking — arrival tracking désormais extrait", () => {
+  it("n'appelle plus l'endpoint de tracking Séjour@", () => {
+    // Phase 2C.1 : le suivi est passé par l'ArrivalTrackingService. Ce test
+    // affirmait l'inverse ; il vérifie maintenant l'absence de couplage —
+    // c'est la preuve que l'extraction a eu lieu.
+    expect(routeSource).not.toContain("/api/v1/external/arrival-tracking");
   });
 
-  it("conserve ses quatre actions", () => {
+  it("ne construit plus la charge utile de tracking Séjour@", () => {
+    // Ni le discriminant `action`, ni les noms de champs propres à Séjour@.
+    const block = actionBlock('if (action === "start_tracking"');
+    expect(block).not.toContain('payload.public_token');
+    expect(block).not.toContain('payload.latitude');
+  });
+
+  it("délègue le suivi à l'ArrivalTrackingService", () => {
+    expect(routeSource).toContain("executeTracking(");
+    // Les quatre actions restent routées, mais ne construisent plus de payload.
     for (const action of ["start_tracking", "update_tracking", "stop_tracking", "status_tracking"]) {
       expect(routeSource).toContain(action);
+    }
+  });
+
+  it("restitue le JSON et le statut du fournisseur sans enveloppe", () => {
+    // Passe-through : c'est la contrainte de compatibilité de la phase.
+    expect(routeSource).toContain("NextResponse.json(result.body, { status: result.status })");
+  });
+
+  it("conserve la validation booking_id et ses quotas propres", () => {
+    // Les protections ne migrent pas avec la logique métier.
+    expect(routeSource).toContain('"MISSING_BOOKING_ID"');
+    for (const quota of ["start_tracking:", "update_tracking:", "stop_tracking:", "status_tracking:"]) {
+      expect(routeSource).toContain(quota);
     }
   });
 });

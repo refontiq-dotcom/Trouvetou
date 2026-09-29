@@ -77,9 +77,14 @@ describe("SejouraBookingAdapter — identité et capacités", () => {
     );
   });
 
-  it("déclare réserver et annuler, et rien de plus", () => {
+  it("déclare réserver, annuler et suivre l'arrivée", () => {
     const adapter = makeAdapter(stubTransport({ ok: true, status: 200, json: {} }));
-    expect(adapter.capabilities).toEqual({ booking: true, cancellation: true });
+    expect(adapter.capabilities).toEqual({
+      booking: true,
+      cancellation: true,
+      // Séjour@ suit les clients qui voyagent vers l'établissement.
+      arrivalTracking: true,
+    });
   });
 });
 

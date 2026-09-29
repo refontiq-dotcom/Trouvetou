@@ -80,6 +80,9 @@ export interface SejouraAdapterOptions {
 export const SEJOURA_CAPABILITIES: ProviderCapabilities = Object.freeze({
   booking: true,
   cancellation: true,
+  // Séjour@ sait suivre un client qui voyage vers son établissement :
+  // `SejouraArrivalTrackingAdapter` est enregistré pour ce même type.
+  arrivalTracking: true,
 });
 
 /**

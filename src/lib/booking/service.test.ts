@@ -52,7 +52,7 @@ const NO_AVAILABILITY: BookingQuote = {
 function bookingOnlyAdapter(): ProviderAdapter {
   return {
     id: "booking-only",
-    capabilities: { booking: true, cancellation: false },
+    capabilities: { booking: true, cancellation: false, arrivalTracking: false },
     quote: async () => NO_AVAILABILITY,
     create: async () => ({ bookingId: "B-1", status: "confirmed" }),
     // Présent pour satisfaire le contrat, mais JAMAIS appelé : c'est ce que
@@ -70,7 +70,7 @@ function catalogOnlyAdapter(): ProviderAdapter {
   };
   return {
     id: "catalog-only",
-    capabilities: { booking: false, cancellation: false },
+    capabilities: { booking: false, cancellation: false, arrivalTracking: false },
     quote: forbidden,
     create: forbidden,
     cancel: forbidden,
@@ -172,7 +172,7 @@ describe("executeBooking — transmission aux adapters", () => {
     const received: BookingRequest[] = [];
     registerAdapter({
       id: "spy",
-      capabilities: { booking: true, cancellation: true },
+      capabilities: { booking: true, cancellation: true, arrivalTracking: false },
       quote: async () => NO_AVAILABILITY,
       create: async (request) => {
         received.push(request);
@@ -192,7 +192,7 @@ describe("executeBooking — transmission aux adapters", () => {
     const cancelled: string[] = [];
     registerAdapter({
       id: "spy",
-      capabilities: { booking: true, cancellation: true },
+      capabilities: { booking: true, cancellation: true, arrivalTracking: false },
       quote: async () => NO_AVAILABILITY,
       create: async () => ({ bookingId: "X", status: "confirmed" }),
       cancel: async (bookingId) => {
@@ -235,7 +235,7 @@ describe("executeBooking — traduction d'erreur", () => {
   it("laisse passer une BookingError de l'adapter telle quelle", async () => {
     registerAdapter({
       id: "failer",
-      capabilities: { booking: true, cancellation: true },
+      capabilities: { booking: true, cancellation: true, arrivalTracking: false },
       quote: async () => {
         throw new BookingError("conflict", "NO_ROOM", "Plus de chambres.", 409);
       },
@@ -253,7 +253,7 @@ describe("executeBooking — traduction d'erreur", () => {
   it("traduit une erreur brute en erreur générique, sans fuite de détail", async () => {
     registerAdapter({
       id: "leaky",
-      capabilities: { booking: true, cancellation: true },
+      capabilities: { booking: true, cancellation: true, arrivalTracking: false },
       quote: async () => {
         // Exemple de fuite : un message de stack trace contenant l'URL interne.
         throw new Error("connect ECONNREFUSED https://sejoura.test/api/v1/external/availability");

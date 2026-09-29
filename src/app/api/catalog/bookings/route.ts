@@ -8,28 +8,37 @@ import {
 } from "@/lib/http/request-guard";
 import { executeBooking } from "@/lib/booking/service";
 import { isBookingError } from "@/lib/booking/errors";
+import { executeTracking } from "@/lib/arrival-tracking/service";
 import type { BookingCancellation, BookingConfirmation, BookingQuote } from "@/lib/providers/contract";
 import type { ProviderContext } from "@/lib/providers/context";
-import { findAdapter, registerAdapter } from "@/lib/providers/registry";
+import { findAdapter, findTrackingAdapter, registerAdapter, registerTrackingAdapter } from "@/lib/providers/registry";
 import { SejouraBookingAdapter } from "@/connectors/sejoura/sejoura-booking-adapter";
+import { SejouraArrivalTrackingAdapter } from "@/connectors/sejoura/sejoura-arrival-tracking-adapter";
 import type { ProviderType } from "@/lib/supabase/database.types";
 
 /**
  * Enregistrement des connecteurs au chargement du module.
  *
- * L'adapter est construit à partir de `SEJOURA_API_URL` : c'est le seul endroit
- * du dépôt où cette variable est lue pour la réservation. La route ignore
- * désormais totalement Séjour@ pour `check`, `create` et `cancel` — elle ne
- * connaît plus que `provider.type`.
+ * `SEJOURA_API_URL` n'est lue ici que pour construire les ADAPTERS. La route
+ * ne connaît plus aucun endpoint Séjour@ : `check`/`create`/`cancel` passent
+ * par le BookingService, le suivi par l'ArrivalTrackingService.
  *
- * L'enregistrement est idempotent : `findAdapter` évite de lever une erreur de
- * doublon si le module était évalué deux fois (utile en développement à chaud).
+ * L'URL vient de la configuration serveur : le client ne peut ni la choisir ni
+ * influencer la destination.
+ *
+ * L'enregistrement est idempotent : `findAdapter` / `findTrackingAdapter`
+ * évitent de lever une erreur de doublon si le module était évalué deux fois
+ * (développement à chaud).
  */
-function ensureSejouraAdapter(): void {
-  if (findAdapter("sejoura") !== null) return;
-  registerAdapter(new SejouraBookingAdapter({
-    baseUrl: process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app",
-  }));
+function ensureAdapters(): void {
+  const baseUrl = process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app";
+
+  if (findAdapter("sejoura") === null) {
+    registerAdapter(new SejouraBookingAdapter({ baseUrl }));
+  }
+  if (findTrackingAdapter("sejoura") === null) {
+    registerTrackingAdapter(new SejouraArrivalTrackingAdapter({ baseUrl }));
+  }
 }
 
 /**
@@ -75,16 +84,6 @@ function ensureSejouraAdapter(): void {
  */
 
 export const runtime = "nodejs";
-
-/**
- * URL de Séjour@, encore utilisée par le suivi d'arrivée.
- *
- * Elle ne sert plus qu'au bloc arrival-tracking, qui n'est pas migré. Elle
- * disparaîtra avec l'extraction d'`ArrivalTrackingService`. Les opérations
- * booking lisent leur URL dans leur adapter.
- */
-const SEJOURA_API_URL =
-  process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app";
 
 /** Limites de débit par action et par IP (fenêtre de 1 minute). */
 const RATE_LIMITS = {
@@ -158,7 +157,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Les connecteurs doivent exister avant toute résolution. L'enregistrement
   // est explicite et centralisé : ajouter un provider consiste à écrire son
   // adapter puis à l'enregistrer ici, sans qu'aucune autre règle ne bouge.
-  ensureSejouraAdapter();
+  ensureAdapters();
 
   // ── Garde 1 : même origine (CSRF) ──────────────────────────────────────────
   // Avant toute autre chose : une requête cross-site ne doit jamais atteindre
@@ -285,11 +284,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const headers = {
-    "Content-Type": "application/json",
-    "x-api-key": sejouraApiKey,
-  };
-
   const providerContext: ProviderContext = {
     providerId,
     listing: {
@@ -300,31 +294,50 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     credentials: { apiKey: sejouraApiKey },
   };
 
-  // Suivi d’arrivée : la clé Séjoura reste côté serveur Trouvetou.
-  // Le navigateur ne reçoit qu’un jeton de session de suivi, jamais la clé API.
+  // Suivi d'arrivée : passe-through intégral.
+  //
+  // La clé Séjour@ reste côté serveur Trouvetou ; le navigateur ne reçoit que
+  // le jeton de session de suivi, jamais la clé API. Le JSON et le statut HTTP
+  // du fournisseur sont restitués tels quels, sans enveloppe ni normalisation.
   if (action === "start_tracking" || action === "update_tracking" || action === "stop_tracking" || action === "status_tracking") {
     const bookingId = typeof body.booking_id === "string" ? body.booking_id : "";
     if (!bookingId) return jsonError("booking_id est requis.", 400, "MISSING_BOOKING_ID");
 
-    const upstreamAction =
+    const operation =
       action === "start_tracking" ? "start" :
       action === "update_tracking" ? "update" :
       action === "stop_tracking" ? "stop" : "status";
 
-    const payload: Record<string, unknown> = { action: upstreamAction, booking_id: bookingId };
-    if (body.public_token) payload.public_token = body.public_token;
-    if (upstreamAction === "update") {
-      payload.latitude = Number(body.latitude);
-      payload.longitude = Number(body.longitude);
-      if (body.accuracy != null) payload.accuracy = Number(body.accuracy);
-    }
+    try {
+      const result = await executeTracking(
+        providerType,
+        operation,
+        {
+          bookingId,
+          publicToken: typeof body.public_token === "string" ? body.public_token : null,
+          position:
+            operation === "update"
+              ? {
+                  latitude: Number(body.latitude),
+                  longitude: Number(body.longitude),
+                  accuracy: body.accuracy != null ? Number(body.accuracy) : null,
+                }
+              : undefined,
+        },
+        providerContext
+      );
 
-    const upstream = await fetch(
-      `${SEJOURA_API_URL}/api/v1/external/arrival-tracking`,
-      { method: "POST", headers, body: JSON.stringify(payload), cache: "no-store" }
-    );
-    const data = await upstream.json().catch(() => ({}));
-    return NextResponse.json(data, { status: upstream.status });
+      return NextResponse.json(result.body, { status: result.status });
+    } catch {
+      // Seuls deux cas atteignent ce point : l'appel n'a pas atteint le
+      // fournisseur (panne réseau) ou le provider n'a pas d'adapter de suivi
+      // enregistré. Dans les deux cas il n'existe pas de statut amont à
+      // restituer, et 502 décrit correctement « passerelle injoignable ».
+      return NextResponse.json(
+        { success: false, error: "Suivi d'arrivée indisponible." },
+        { status: 502 }
+      );
+    }
   }
 
   // ── Action "check" : disponibilité temps réel + estimation du prix ────────
