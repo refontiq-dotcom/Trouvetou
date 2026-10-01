@@ -19,7 +19,11 @@ const NAV_LINKS = [
 
 export function Footer() {
   return (
-    <footer className="bg-navy text-white">
+    // `--navy` et `--tt-dark` valaient la même valeur (#171c22) : le rendu est
+      // strictement identique, seule la référence de couleur change. Le texte
+      // reste en `text-white` : il n'existe pas de token `tt-white` dans le
+      // `@theme`.
+      <footer className="bg-tt-dark text-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="grid gap-10 md:grid-cols-4">
           {/* Brand */}

@@ -26,14 +26,30 @@ export function ArrivalTrackingAction({ booking }: { booking: BookingRecord }) {
     return (
       <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-950/20">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
+          {/* Le point pulsé est décoratif : le statut est déjà écrit en toutes
+              lettres juste après, donc l'information ne repose pas sur la
+              couleur seule. */}
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse"
+          />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-200">Vous êtes en route</p>
-            <p className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80">Position partagée avec la résidence</p>
+            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+              <span className="sr-only">Statut : </span>Vous êtes en route
+            </p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-300">
+              Position partagée avec la résidence
+            </p>
           </div>
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-7 shrink-0 px-2 text-[11px]" onClick={() => void stopTracking(booking.booking_id!)}>
-          <Square className="h-3 w-3" /> Arrêter
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0 px-2 text-xs"
+          onClick={() => void stopTracking(booking.booking_id!)}
+        >
+          <Square className="h-3 w-3" aria-hidden="true" /> Arrêter
         </Button>
       </div>
     );
@@ -42,10 +58,17 @@ export function ArrivalTrackingAction({ booking }: { booking: BookingRecord }) {
   return (
     <div className="mt-3">
       <Button type="button" variant="outline" size="sm" className="w-full justify-center" loading={starting} onClick={() => void startTracking(booking)}>
-        <Navigation className="h-4 w-4" /> Je suis en route
+        <Navigation className="h-4 w-4" aria-hidden="true" /> Je suis en route
       </Button>
-      <p className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-muted-foreground"><MapPin className="h-3 w-3" /> Partage temporaire de votre position</p>
-      {error && <p className="mt-1 text-center text-[10px] text-destructive">{error}</p>}
+      <p className="mt-1.5 flex items-center justify-center gap-1 text-xs text-muted-foreground">
+        <MapPin className="h-3 w-3" aria-hidden="true" /> Partage temporaire de
+        votre position
+      </p>
+      {error && (
+        <p role="alert" className="mt-1 text-center text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

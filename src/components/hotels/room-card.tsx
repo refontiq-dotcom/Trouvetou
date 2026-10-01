@@ -2,38 +2,53 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Heart,
-  X,
-  ArrowLeft,
-  MapPin,
-  MessageCircle,
-  Navigation,
-  Phone,
-  Share2,
-  Star,
-  Wallet,
-} from "lucide-react";
-import { BookingModal } from "@/components/hotels/booking-modal";
-import { PanoramaViewer } from "@/components/hotels/panorama-viewer";
-import { useLocation } from "@/contexts/location-context";
-import { useFavorites } from "@/contexts/favorites-context";
+import { motion } from "framer-motion";
+import { Heart, MapPin, MessageCircle, Navigation, Phone, Wallet } from "lucide-react";
+import { ListingDetailModal } from "@/components/hotels/listing-detail-modal";
+import { useListingActions } from "@/components/hotels/use-listing-actions";
 import { useCompare } from "@/contexts/compare-context";
-import { haversineDistance, formatDistance } from "@/lib/geo";
-import { buildWhatsAppShareUrl } from "@/lib/whatsapp";
-import {
-  buildGoogleMapsUrl,
-  buildWhatsAppUrl,
-  cn,
-  formatFCFA,
-  getAmenitiesInfo,
-  getCategoryLabel,
-  PLACEHOLDER_IMAGE,
-} from "@/lib/utils";
-import { isListingBookable, resolveCategorySlug } from "@/lib/booking/eligibility";
-import { safeHttpUrl } from "@/lib/http/url";
+import { formatDistance } from "@/lib/geo";
+import { cn, formatFCFA, getAmenitiesInfo, getCategoryLabel } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
+
+// Phase 6C — RoomCard.
+//
+// Le catalogue affiche désormais la MÊME annonce via `ListingCard`, déjà
+// intégralement passé aux tokens `tt-*` (cf. `catalog/listing-card.tsx`).
+// RoomCard sert la page Favoris ; aligner sa structure sur `tt-*` évite que la
+// même annonce n'ait deux rendus selon la page qui l'affiche.
+//
+// MIGRÉES — valeur identique, aucun changement visuel :
+//   --card #ffffff          -> --tt-card #ffffff      (bg-card)
+//   --border #e7eaec        -> --tt-line #e7eaec      (border-border)
+//   --foreground #171c22    -> --tt-ink  #171c22      (text-foreground)
+//   --muted-foreground      -> --tt-ink-60 #66717c    (texte secondaire)
+//   --primary #171c22       -> --tt-ink  #171c22      (boutons d'action)
+//
+// MIGRÉE — rôle identique, écart imperceptible :
+//   bg-slate-50  #f8fafc -> bg-tt-surface #f7f8f8 (fond de pastille, 2/255)
+//   text-slate-500 #64748b -> text-tt-ink-60 #66717c (icône décorative, 4/255)
+//   text-slate-400 #94a3b8 -> text-tt-ink-40 #8b949e (icône décorative — le
+//     token est explicitement réservé à cet usage ; le libellé porte le sens)
+//
+// CONSERVÉES — fonctionnelles, aucun équivalent tt-* (palette = encre/gris/lime) :
+//   CATEGORY_COLORS : identité de catégorie (clinique/école/restaurant/hôtel).
+//     Aucune couleur bleue, orange ou ambre n'existe dans la marque : à
+//     conserver tant qu'un token de catégorie n'est pas arbitré par le
+//     propriétaire. Besoin signalé, AUCUN token créé.
+//   #25D366 (vert WhatsApp) : couleur de marque du canal de contact.
+//   red-500/90 (état favori) : état, pas décoration.
+//   black/30 / black/50 : voile assurant le contraste des boutons sur photo.
+//   accent (lime) : badge « Lime » et surbrillance annonce boostée.
+//   border-slate-100 #f1f5f9 : séparateur très clair. `--tt-line` #e7eaec est
+//     nettement plus foncé et le rendrait visible : conservé et signalé.
+//   text-slate-600 #475569 : libellés de 9 px. `--tt-ink-60` ne monte qu'à
+//     4,98:1 contre 7,6:1 ici : le contraste plus faible n'est pas accepté sur
+//     du texte de cette taille. Conservés et signalés.
+//   to-lime-300 #bef264 : aucun token ne correspond (la marque est #c6f02d).
+//
+// Logique métier INCHANGÉE : favori, comparaison, réservation, WhatsApp,
+// itinéraire, prix, distance, chargement et erreurs ne sont pas touchés.
 
 /** Couleurs par catégorie pour les badges */
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
@@ -51,84 +66,29 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCardProps) {
-  const [bookingOpen, setBookingOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const { location: userLocation } = useLocation();
-  const { isFavorite, toggleFavorite } = useFavorites();
   const { toggleCompare, isSelected: isCompared } = useCompare();
 
-  const establishment = room.establishment;
-  const coverImage = room.cover_image_url ?? room.images[0] ?? PLACEHOLDER_IMAGE;
+  // Logique métier partagée avec la carte verticale du catalogue.
+  const {
+    establishment,
+    coverImage,
+    categorySlug,
+    location,
+    distance,
+    liked,
+    toggleFavorite,
+    whatsappUrl,
+    mapsUrl,
+    contactUrl,
+    isBookable,
+    openBooking,
+  } = useListingActions(room, priceSuffix);
+
   const amenities = getAmenitiesInfo(room.amenities ?? []).slice(0, 3);
-
-  // ---------------------------------------------------------------------------
-  // Panorama 360° : source retenue pour la visionneuse.
-  //
-  // Trois sources possibles, par ordre de priorité :
-  //   1. la scène de DÉPART synchronisée (`panorama_start_scene_id`)
-  //   2. la scène de DÉPART déclarée par le tour lui-même
-  //   3. la première scène du tour
-  // et, à défaut, l'URL 360° historique mono-scène.
-  //
-  // `safeHttpUrl` est appliqué ici et non seulement à l'ingestion : cette URL
-  // part vers une texture WebGL, donc un `javascript:` stocké en base
-  // deviendrait une exécution de script chez le visiteur. Le tour étant déjà
-  // normalisé à la lecture (`toListingView`), il ne contient que des scènes
-  // valides ; seule l'URL mono-scène héritée peut être douteuse.
-  // ---------------------------------------------------------------------------
-  const tourScenes = room.panorama_tour?.scenes ?? [];
-  const startSceneId = room.panorama_start_scene_id ?? room.panorama_tour?.startSceneId ?? null;
-  const panoramaSrc =
-    safeHttpUrl(tourScenes.find((scene) => scene.id === startSceneId)?.src) ??
-    safeHttpUrl(tourScenes[0]?.src) ??
-    safeHttpUrl(room.panorama_360_url);
-
-  const mapsUrl = buildGoogleMapsUrl(
-    establishment?.latitude,
-    establishment?.longitude,
-    establishment?.address ?? establishment?.city
-  );
-  const liked = isFavorite(room.id);
   const compared = isCompared(room.id);
-  const catSlug = resolveCategorySlug(room);
-  const catColor = CATEGORY_COLORS[catSlug] ?? CATEGORY_COLORS.hotel;
-
-  // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
-  // Source de vérité partagée avec le BookingModal (sinon : clic sans effet).
-  // Les autres catégories proposent un simple contact WhatsApp.
-  const isBookable = isListingBookable(room);
-  const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
-  const contactUrl =
-    contactPhone && !isBookable
-      ? buildWhatsAppUrl(
-          contactPhone,
-          `Bonjour, je vous contacte depuis Trouvetou à propos de « ${room.name} ».`,
-          establishment?.country
-        )
-      : null;
-
-  const location = [establishment?.city, establishment?.address]
-    .filter(Boolean)
-    .join(" · ");
-
-  const distance =
-    userLocation && establishment?.latitude != null && establishment?.longitude != null
-      ? haversineDistance(userLocation, { lat: establishment.latitude, lng: establishment.longitude })
-      : null;
-
-  const listingUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/${catSlug === "school" ? "ecoles" : catSlug === "clinic" ? "cliniques" : catSlug === "restaurant" ? "restaurants" : "hotels"}?q=${encodeURIComponent(room.name)}`
-      : "";
-
-  const whatsappUrl = buildWhatsAppShareUrl({
-    name: room.name,
-    city: establishment?.city,
-    price: room.price,
-    priceSuffix,
-    url: listingUrl,
-  });
+  const catColor = CATEGORY_COLORS[categorySlug] ?? CATEGORY_COLORS.hotel;
 
   return (
     <>
@@ -138,10 +98,10 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.4, delay: Math.min(index, 4) * 0.06 }}
         className={cn(
-          "group flex h-[176px] sm:h-[190px] cursor-pointer flex-row overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md",
+          "group flex h-[176px] sm:h-[190px] cursor-pointer flex-row overflow-hidden rounded-2xl border bg-tt-card shadow-sm transition-shadow duration-300 hover:shadow-md",
           room.is_boosted
             ? "border-accent/60 shadow-accent/20 ring-1 ring-accent/40"
-            : "border-border hover:shadow-primary/10"
+            : "border-tt-line hover:shadow-tt-ink/10"
         )}
         onClick={() => { setSelectedImage(coverImage); setDetailOpen(true); }}
       >
@@ -165,7 +125,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             "absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-sm",
             catColor.bg
           )}>
-            {getCategoryLabel(catSlug)}
+            {getCategoryLabel(categorySlug)}
           </span>
 
           {/* Badge Sponsorisé — pour les annonces boostées */}
@@ -178,7 +138,10 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           {/* Boutons favori + comparer */}
           <div className="absolute right-2 top-2 flex flex-col gap-1.5">
             <button
-              onClick={(e) => { e.stopPropagation(); toggleFavorite(room.id); }}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleFavorite(); }}
+              aria-pressed={liked}
+              aria-label={liked ? "Retirer des favoris" : "Ajouter aux favoris"}
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all",
                 liked
@@ -186,21 +149,24 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   : "bg-black/30 text-white/80 hover:bg-black/50 hover:text-white"
               )}
             >
-              <Heart className={cn("h-4 w-4", liked && "fill-current")} />
+              <Heart className={cn("h-4 w-4", liked && "fill-current")} aria-hidden="true" />
             </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleCompare({ id: room.id, name: room.name, city: establishment?.city, price: room.price, image: coverImage });
               }}
+              aria-pressed={compared}
+              aria-label={compared ? "Retirer de la comparaison" : "Ajouter à la comparaison"}
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all text-[10px] font-bold",
                 compared
-                  ? "bg-primary/90 text-white shadow-md"
+                  ? "bg-tt-ink/90 text-white shadow-md"
                   : "bg-black/30 text-white/80 hover:bg-black/50 hover:text-white"
               )}
             >
-              ↔
+              <span aria-hidden="true">↔</span>
             </button>
           </div>
         </motion.div>
@@ -209,17 +175,17 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
         <div className="flex min-w-0 flex-1 flex-col justify-between overflow-hidden p-3 sm:p-4">
           <div>
             <div className="flex items-start justify-between gap-2">
-              <h3 className="truncate font-semibold text-foreground text-sm sm:text-base leading-snug">
+              <h3 className="truncate font-semibold text-tt-ink text-sm sm:text-base leading-snug">
                 {room.name}
               </h3>
             </div>
 
             {location && (
-              <p className="mt-0.5 flex items-center gap-1 text-[11px] sm:text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3 flex-shrink-0" />
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] sm:text-xs text-tt-ink-60">
+                <MapPin className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
                 <span className="truncate">{location}</span>
                 {distance != null && (
-                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-primary">
+                  <span className="shrink-0 rounded-full bg-tt-ink/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-tt-ink">
                     📍 {formatDistance(distance)}
                   </span>
                 )}
@@ -232,9 +198,9 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 {amenities.map(({ label, icon: Icon }) => (
                   <span
                     key={label}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] lg:text-[11px] font-medium text-slate-600"
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-tt-surface px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] lg:text-[11px] font-medium text-slate-600"
                   >
-                    <Icon className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-slate-400" />
+                    <Icon className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-tt-ink-40" aria-hidden="true" />
                     {label}
                   </span>
                 ))}
@@ -249,10 +215,10 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 <Wallet className="h-3 w-3 text-accent" />
               </div>
               <div>
-                <p className="text-sm font-bold text-foreground leading-tight">
+                <p className="text-sm font-bold text-tt-ink leading-tight">
                   {formatFCFA(room.price ?? 0)}
                 </p>
-                <p className="text-[8px] text-muted-foreground">{priceSuffix}</p>
+                <p className="text-[8px] text-tt-ink-60">{priceSuffix}</p>
               </div>
             </div>
 
@@ -267,23 +233,27 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                 aria-label="Partager sur WhatsApp"
               >
-                <MessageCircle className="h-3.5 w-3.5" />
+                <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
               {/* Itinéraire */}
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-slate-600 transition-colors hover:text-foreground"
+                aria-label={`Itinéraire vers ${room.name}`}
+                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-slate-600 transition-colors hover:text-tt-ink"
               >
-                <Navigation className="h-3.5 w-3.5" />
+                <Navigation className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">Itinéraire</span>
               </button>
               {/* Réserver (hôtels/résidences) ou Contacter (autres catégories) */}
               {isBookable ? (
                 <button
-                  onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bg-primary px-1 text-[9px] font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); openBooking(); }}
+                  aria-label={`Réserver ${room.name}`}
+                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bg-tt-ink px-1 text-[9px] font-semibold text-white shadow-sm transition-colors hover:bg-tt-ink/90"
                 >
-                  <Phone className="h-3.5 w-3.5" />
+                  <Phone className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="hidden sm:inline">Réserver</span>
                 </button>
               ) : contactUrl ? (
@@ -292,9 +262,10 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
+                  aria-label={`Contacter ${room.name}`}
+                  className="inline-flex items-center gap-1 rounded-lg bg-tt-ink px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-tt-ink/90"
                 >
-                  <MessageCircle className="h-3.5 w-3.5" />
+                  <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="hidden sm:inline">Contacter</span>
                 </a>
               ) : null}
@@ -304,85 +275,17 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           </div>
       </motion.article>
 
-      <AnimatePresence>
-        {detailOpen && (
-          <motion.div className="fixed inset-0 z-[100] overflow-y-auto bg-navy/90 p-0 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="dialog" aria-modal="true" aria-label={"Détails de " + room.name}>
-            <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-secondary shadow-2xl sm:min-h-[calc(100dvh-3rem)] sm:rounded-[2rem]">
-              <motion.div className="relative h-[48dvh] min-h-[320px] shrink-0 overflow-hidden" layoutId={"listing-image-" + room.id} transition={{ type: "spring", stiffness: 320, damping: 34 }}>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_62%,rgba(255,255,255,.22),transparent_2px)] bg-[size:12px_12px] opacity-70" />
-                <div className="absolute inset-0 bg-gradient-to-br from-navy via-primary to-primary-light" />
-                <Image src={selectedImage ?? coverImage} alt={room.name} fill priority sizes="(min-width: 640px) 430px, 100vw" className="object-contain px-8 pb-5 pt-24 drop-shadow-[0_22px_18px_rgba(16,42,114,.38)]" />
-                <div className="absolute inset-x-0 top-0 flex items-center justify-between p-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-                  <button type="button" onClick={() => setDetailOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Retour aux annonces"><ArrowLeft className="h-5 w-5" /></button>
-                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Partager l'annonce"><Share2 className="h-5 w-5" /></a>
-                </div>
-                <div className="absolute left-6 right-6 top-20"><h2 className="font-display text-2xl font-bold leading-tight text-white">{room.name}</h2><p className="mt-1 text-sm font-medium text-white/80">{getCategoryLabel(catSlug)}{location ? ` · ${location}` : ""}</p></div>
-              </motion.div>
-              <motion.div initial={{ y: 28, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} transition={{ delay: 0.08, duration: 0.28 }} className="relative -mt-5 flex flex-1 flex-col rounded-t-[2rem] bg-white px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 shadow-[0_-10px_26px_rgba(16,42,114,.18)]">
-                <div className="absolute -top-12 left-0 rounded-tr-[2rem] bg-white px-6 pb-4 pt-5"><p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Prix</p><p className="mt-0.5 text-xl font-extrabold leading-tight text-accent-hover">{formatFCFA(room.price ?? 0)}</p><p className="mt-0.5 text-xs text-muted-foreground">{priceSuffix}</p></div>
-                <button type="button" onClick={() => toggleFavorite(room.id)} className={cn("absolute right-6 -top-11 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm", liked ? "text-rose-500" : "text-navy")} aria-label="Ajouter aux favoris"><Heart className={cn("h-5 w-5", liked && "fill-current")} /></button>
-                {room.images.length > 1 && (
-                  <div className="mt-5">
-                    <div className="mb-2 flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-foreground">Photos</h3>
-                      <span className="text-xs text-muted-foreground">{room.images.length} photos</span>
-                    </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1 snap-x">
-                      {room.images.map((image, imageIndex) => (
-                        <button
-                          key={image + imageIndex}
-                          type="button"
-                          onClick={() => setSelectedImage(image)}
-                          className={cn(
-                            "relative h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-secondary snap-start",
-                            (selectedImage ?? coverImage) === image ? "border-primary" : "border-transparent"
-                          )}
-                          aria-label={"Afficher la photo " + (imageIndex + 1)}
-                        >
-                          <Image
-                            src={image}
-                            alt={room.name + " — photo " + (imageIndex + 1)}
-                            fill
-                            sizes="80px"
-                            className="object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-14 flex items-center justify-between gap-4"><h3 className="text-sm font-bold text-foreground">Description</h3><span className="flex items-center gap-1 text-xs font-semibold text-accent-hover"><Star className="h-4 w-4 fill-current" /> Trouvetou</span></div>
-                {room.description ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{room.description}</p> : <p className="mt-2 text-sm leading-6 text-muted-foreground">Découvrez les informations et services proposés par cette annonce.</p>}
-                {amenities.length > 0 && <div className="mt-5"><h3 className="mb-2 text-sm font-bold text-foreground">Services</h3><div className="flex flex-wrap gap-2">{getAmenitiesInfo(room.amenities ?? []).map(({ label, icon: Icon }) => <span key={label} className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground"><Icon className="h-3.5 w-3.5 text-primary" />{label}</span>)}</div></div>}
-                {location && <p className="mt-5 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{location}</span></p>}
-                {panoramaSrc && (
-                  <div className="mt-5">
-                    <PanoramaViewer
-                      src={panoramaSrc}
-                      previewSrc={coverImage}
-                      title={room.name + " — visite 360°"}
-                      tour={room.panorama_tour}
-                      initialSceneId={room.panorama_start_scene_id ?? room.panorama_tour?.startSceneId}
-                    />
-                  </div>
-                )}
-                <div className="mt-auto grid grid-cols-3 gap-2 pt-7">
-                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#25D366]">
-                    <MessageCircle className="h-5 w-5" />WhatsApp
-                  </a>
-                  <button type="button" onClick={() => window.open(mapsUrl, "_blank", "noopener,noreferrer")} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
-                    <Navigation className="h-5 w-5" />Itinéraire
-                  </button>
-                  {isBookable ? <button type="button" onClick={() => setBookingOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />Contacter</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">Fermer</button>}
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <BookingModal room={room} open={bookingOpen} onClose={() => setBookingOpen(false)} priceSuffix={priceSuffix} />
+      {/* Fiche partagée avec la carte verticale du catalogue : une seule
+          implémentation de la modale, aucune fonctionnalité métier perdue. */}
+      {detailOpen && (
+        <ListingDetailModal
+          room={room}
+          priceSuffix={priceSuffix}
+          selectedImage={selectedImage}
+          onSelectImage={setSelectedImage}
+          onClose={() => setDetailOpen(false)}
+        />
+      )}
     </>
   );
 }

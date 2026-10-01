@@ -2,53 +2,109 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   TROUVETOU — Design Tokens (Charte Graphique v1)
-   Bleu profond #102A72 · Bleu principal #1769E8 · Orange accent #F5A400
-   Surface #F5F8FC · Texte #172033
-   Typo : Inter (interface produit) · Poppins (titres marketing)
+   TROUVETOU — Design Tokens
+
+   Palette de marque (décision du propriétaire) :
+   lime     #C6F02D   · encre #171C22 · blanc #FFFFFF
+
+   Contrastes mesurés (WCAG 2.1, luminance relative) :
+   - encre   #171C22 sur blanc  → 17,13:1  ✓ AAA
+   - encre   #171C22 sur lime   → 12,98:1  ✓ AAA  (le lime accepte donc le texte encre)
+   - lime    #C6F02D sur blanc  →  1,32:1  ✗     → le lime est une COULEUR DE FOND
+   - encre 60 #66717C sur blanc  →  4,98:1  ✓ AA (texte courant atténué)
+   - lime pale #F0F9D1 sur encre → 15,65:1  ✓ AAA
+   - lime survol #A9D51A sur encre → 9,97:1 ✓ AAA
+
+   Règle d'accessibilité : le citron ne porte jamais seul l'information
+   (un statut n'est jamais codé par la couleur uniquement) et n'est jamais
+   utilisé comme couleur de texte sur fond clair.
+
+   Les couleurs métier (WhatsApp vert, orange boost, bleu info) restent
+   indépendantes de l'identité : ce sont des couleurs fonctionnelles.
    ============================================================================ */
 
 :root {
-  --background: #f5f8fc;
-  --foreground: #172033;
+  --background: #f7f8f8;
+  --foreground: #171c22;
   --card: #ffffff;
-  --card-foreground: #172033;
+  --card-foreground: #171c22;
 
-  /* Brand primary — Bleu principal */
-  --primary: #1769e8;
+  /* Brand primary — Encre (actions, texte actif, focus) */
+  --primary: #171c22;
   --primary-foreground: #ffffff;
-  --primary-hover: #102a72;
-  --primary-light: #4f9bf5;
+  --primary-hover: #11161d;
+  --primary-light: #66717c;
 
-  /* Brand accent — Orange */
-  --accent: #f5a400;
-  --accent-foreground: #172033;
-  --accent-hover: #e8890c;
+  /* Brand accent — Lime (fonds d'accent et état actif ; texte TOUJOURS en encre) */
+  --accent: #c6f02d;
+  --accent-foreground: #171c22;
+  --accent-hover: #a9d51a;
+  --accent-soft: #f0f9d1;
 
-  /* Secondary — light blue tint */
-  --secondary: #eaf2fe;
-  --secondary-foreground: #102a72;
+  /* Secondary — gris très clair (surfacesElevées) */
+  --secondary: #f0f2f3;
+  --secondary-foreground: #171c22;
 
-  /* Navy — Bleu profond (marque, navigation) */
-  --navy: #102a72;
-  --navy-light: #162f7a;
+  /* Encre de marque (header, footer, zones sombres) */
+  --navy: #171c22;
+  --navy-light: #17202a;
 
   /* Semantic */
-  --muted: #eef3f9;
-  --muted-foreground: #5b6b84;
-  --border: #dce4ee;
-  --ring: #1769e8;
-  --destructive: #ef4444;
-  --success: #10b981;
-  --warning: #f5a400;
+  --muted: #f0f2f3;
+  --muted-foreground: #66717c;
+  --border: #e7eaec;
+  --ring: #171c22;
+  --destructive: #d92d20;
+  --success: #17915b;
+  --warning: #b26a00;
 
   --radius: 1rem;
 
   /* Gradient helpers */
-  --gradient-hero: linear-gradient(135deg, #102a72 0%, #1769e8 45%, #1d7fe9 100%);
-  --gradient-card-hotel: linear-gradient(135deg, #f5a400, #ffb733);
-  --gradient-card-school: linear-gradient(135deg, #102a72, #1769e8);
-  --gradient-card-clinic: linear-gradient(135deg, #1769e8, #0ea5e9);
+  --gradient-hero: linear-gradient(135deg, #11161d 0%, #17202a 100%);
+  --gradient-card-hotel: linear-gradient(135deg, #c6f02d, #f0f9d1);
+  --gradient-card-school: linear-gradient(135deg, #171c22, #17202a);
+  --gradient-card-clinic: linear-gradient(135deg, #17202a, #11161d);
+
+  /* -----------------------------------------------------------------------
+     Couche de marque `--tt-*`
+     ----------------------------------------------------------------------- */
+
+  /* Marque — lime de marque (#C6F02D) */
+  --tt-lime: #c6f02d; /* accent officiel */
+  --tt-lime-strong: #a9d51a; /* survol : seul citron lisible sur encre à 9,97:1 */
+  --tt-lime-soft: #f0f9d1;
+  --tt-lime-tint: #f7fbe4; /* fond lavis (barre « Près de vous ») */
+
+  /* Encre — texte et icônes */
+  --tt-ink: #171c22;
+  --tt-ink-80: #11161d;
+  --tt-ink-60: #66717c; /* 4,98:1 sur blanc — plancher AA */
+  --tt-ink-40: #8b949e; /* décoratif uniquement, jamais texte porteur de sens */
+
+  /* Surfaces */
+  --tt-surface: #f7f8f8;
+  --tt-card: #ffffff;
+  --tt-line: #e7eaec;
+  --tt-shell: #ffffff; /* conteneur blanc arrondi (mobile) */
+
+  /* Zone sombre — header mobile et desktop */
+  --tt-dark: #171c22;
+  --tt-dark-2: #17202a; /* champs de formulaire sur fond sombre */
+  --tt-dark-line: #2b333d;
+  --tt-dark-text: #ffffff;
+  --tt-dark-muted: #98a2ae; /* 7,1:1 sur encre */
+
+  /* Rayons */
+  --tt-radius-sm: 10px;
+  --tt-radius-card: 16px;
+  --tt-radius-lg: 20px;
+  --tt-radius-shell: 28px;
+  --tt-pill: 999px;
+
+  /* Élévation */
+  --tt-shadow-card: 0 1px 2px rgba(23, 28, 34, 0.06), 0 4px 12px rgba(23, 28, 34, 0.05);
+  --tt-shadow-pop: 0 8px 24px rgba(23, 28, 34, 0.12);
 }
 
 @theme inline {
@@ -77,6 +133,53 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-poppins: "Poppins", sans-serif;
   --radius: var(--radius);
+
+  /* Couche de marque — génère bg-tt-lime, text-tt-ink, rounded-tt-card… */
+  --color-tt-lime: var(--tt-lime);
+  --color-tt-lime-strong: var(--tt-lime-strong);
+  --color-tt-lime-soft: var(--tt-lime-soft);
+  --color-tt-lime-tint: var(--tt-lime-tint);
+  --color-tt-ink: var(--tt-ink);
+  --color-tt-ink-80: var(--tt-ink-80);
+  --color-tt-ink-60: var(--tt-ink-60);
+  --color-tt-ink-40: var(--tt-ink-40);
+  --color-tt-surface: var(--tt-surface);
+  --color-tt-card: var(--tt-card);
+  --color-tt-line: var(--tt-line);
+  --color-tt-shell: var(--tt-shell);
+  --color-tt-dark: var(--tt-dark);
+  --color-tt-dark-2: var(--tt-dark-2);
+  --color-tt-dark-line: var(--tt-dark-line);
+  --color-tt-dark-muted: var(--tt-dark-muted);
+  --color-tt-dark-text: var(--tt-dark-text);
+
+  /* -----------------------------------------------------------------------
+     Alias courts de la couche de marque.
+
+     Le header et la navigation basse consomment historiquement des classes
+     sans préfixe (`bg-dark`, `bg-lime`, `text-ink`…). Elles n'étaient
+     déclarées nulle part : Tailwind ne les générait pas, et la zone sombre
+     de marque s'affichait en gris au lieu de l'encre #171C22.
+
+     Ces alias ne créent aucune couleur : ils ré exposent les variables
+     `--tt-*` ci-dessus, qui restent l'unique source de vérité.
+     ----------------------------------------------------------------------- */
+  --color-dark: var(--tt-dark);
+  --color-dark-2: var(--tt-dark-2);
+  --color-dark-line: var(--tt-dark-line);
+  --color-dark-muted: var(--tt-dark-muted);
+  --color-ink: var(--tt-ink);
+  --color-ink-80: var(--tt-ink-80);
+  --color-lime: var(--tt-lime);
+  --color-lime-strong: var(--tt-lime-strong);
+  --color-lime-soft: var(--tt-lime-soft);
+  --color-lime-tint: var(--tt-lime-tint);
+  --radius-tt-sm: var(--tt-radius-sm);
+  --radius-tt-card: var(--tt-radius-card);
+  --radius-tt-lg: var(--tt-radius-lg);
+  --radius-tt-shell: var(--tt-radius-shell);
+  --shadow-tt-card: var(--tt-shadow-card);
+  --shadow-tt-pop: var(--tt-shadow-pop);
 }
 
 * {
@@ -171,6 +274,150 @@ h1 {
 }
 .safe-area-pt {
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ---------------------------------------------------------------------------
+   Coquille mobile — maquette validée
+
+   Le fond sombre du header doit rester visible tout autour d'un grand
+   conteneur blanc à coins arrondis qui descend jusqu'à la navigation basse.
+   --------------------------------------------------------------------------- */
+.tt-shell {
+  position: relative;
+  z-index: 10;
+  margin-top: -1.5rem; /* remonte sur la zone sombre : le fond reste visible */
+  background: var(--tt-shell);
+  border-radius: 1.75rem 1.75rem 0 0;
+  min-height: 60vh;
+  box-shadow: var(--tt-shadow-card);
+}
+
+/* Sur desktop, la coquille s'aplatit : pas de débordement arrondi. */
+@media (min-width: 768px) {
+  .tt-shell {
+    margin-top: 0;
+    border-radius: 0;
+    min-height: 0;
+    box-shadow: none;
+  }
+}
+
+/* Zone tactile minimale 44x44 (WCAG 2.5.5) : target size, not a hard floor. */
+.tt-tap {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Champ de formulaire de marque — hauteur 44px (cible tactile) et focus
+   EXPLICITE : on ne supprime jamais l'outline sans le remplacer par un
+   indicateur au moins aussi perceptible. Utilisée par le formulaire
+   d'alertes du profil ; le focus clavier doit rester visible. */
+.tt-field {
+  height: 2.75rem;
+  width: 100%;
+  min-width: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tt-line);
+  background: var(--tt-card);
+  padding: 0 0.875rem;
+  font-size: 0.875rem;
+  color: var(--tt-ink);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.tt-field::placeholder {
+  color: var(--tt-ink-60);
+}
+.tt-field:focus,
+.tt-field:focus-visible {
+  outline: 2px solid var(--tt-ink);
+  outline-offset: 2px;
+  border-color: var(--tt-ink);
+}
+
+/* Lien d'évitement — visible au focus clavier uniquement. */
+.tt-skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 100;
+}
+.tt-skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--tt-lime);
+  color: var(--tt-ink);
+  font-weight: 600;
+  border-radius: 0.75rem;
+}
+
+/* ==========================================================================
+   FOCUS CLAVIER — système global
+   Le produit n'avait qu'un focus posé composant par composant (Button,
+   .tt-field). Tout élément interactif sans style propre en dépendait, et les
+   `outline-none` posés ici et là le supprimaient sans remplacement.
+
+   On installe un focus global `:focus-visible` : il ne s'active qu'au clavier
+   (donc pas de halo au clic), et il est assez contrasté pour être repéré.
+   Les composants qui définissent déjà leur propre focus (Button via ring,
+   .tt-field via outline) conservent leur rendu : leur style local l'emporte.
+
+   POINT DE VIGILANCE — contraste sur fond sombre :
+   `--tt-dark` et `--tt-ink` valent tous deux #171c22. Un trait encre sur le
+   header ou le footer serait donc strictement INVISIBLE. Sur ces zones on
+   impose un double trait (blanc + encre) : le blanc reste visible sur fond
+   sombre, l'encre dédouble le trait si le fond s'éclaircit.
+   ========================================================================== */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--tt-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Zones de marque sombres (header, footer) : trait blanc + ombre encre. */
+:where(header, footer)
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--tt-ink);
+}
+
+/* Éléments de ces zones déjà posés sur un fond clair (champ de recherche
+   blanc, bouton lime) : on revient au trait encre, sinon le blanc serait
+   illisible. */
+:where(header, footer) .bg-white:focus-visible,
+:where(header, footer) .bg-lime:focus-visible {
+  outline: 2px solid var(--tt-ink);
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   PREFERS-REDUCED-MOTION — respect de la préférence système
+   `reduce` signifie « moins de mouvement », pas « pas de couleur » ni
+   « pas de fonction ». On neutralise donc le mouvement non essentiel
+   (transform, défilement, animations en boucle) et on garde les changements
+   d'état qui portent une information (couleur, bordure, opacité).
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  /* Défilement instantané : le scroll-behavior smooth devient pénible. */
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* Les animations de boucle (shimmer du skeleton, ping, pulse, spin) sont
+     purement décoratives : on les arrête sans masquer l'information. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Le skeleton garde sa forme mais sans balayage lumineux. */
+  .skeleton {
+    animation: none !important;
+  }
 }
 
 /* Bottom nav PWA en plein écran */

@@ -1,8 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Phase 6C — le squelette doit refléter la surface de `RoomCard` (migrée en
+// `tt-*`) sous peine de saut visuel au chargement : mêmes tokens, mêmes valeurs.
 export function RoomCardSkeleton() {
   return (
-    <div className="flex flex-row overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="flex flex-row overflow-hidden rounded-2xl border border-tt-line bg-tt-card">
       <Skeleton className="h-[130px] w-[130px] flex-shrink-0 rounded-none sm:h-[150px] sm:w-[200px] lg:w-[240px]" />
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <Skeleton className="h-4 w-2/3" />

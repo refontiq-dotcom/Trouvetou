@@ -399,7 +399,7 @@ export function BookingModal({
               Demandes particulières
             </span>
             <textarea
-              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus:border-ring"
               rows={3}
               placeholder="Berlingot au miel, heure d'arrivée tardive, ..."
               value={requests}

@@ -1,140 +1,293 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
+import { ArrowLeft, MapPin, Navigation, Phone, Scale } from "lucide-react";
 import { fetchListedListings } from "@/lib/supabase/hotels";
-import { buildGoogleMapsUrl, formatFCFA, PLACEHOLDER_IMAGE } from "@/lib/utils";
+import {
+  buildGoogleMapsUrl,
+  formatFCFA,
+  getPriceSuffix,
+  PLACEHOLDER_IMAGE,
+} from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ListingView } from "@/lib/supabase/listing-view";
+
+/**
+ * La comparaison porte sur les mêmes secteurs que les favoris : sans liste
+ * explicite, `fetchListedListings` ne filtre que sur hotel/residence et une
+ * école, une clinique ou un restaurant sélectionné serait introuvable.
+ */
+const COMPARE_CATEGORY_SLUGS = [
+  "hotel",
+  "residence",
+  "school",
+  "clinic",
+  "restaurant",
+];
+
+/** Nombre maximum d'établissements comparables — imposé par le métier. */
+const MAX_COMPARE = 2;
+
+/** Ligne de la table de comparaison : libellé + valeur par établissement. */
+interface CompareField {
+  label: string;
+  value: (room: ListingView) => string;
+}
+
+const COMPARE_FIELDS: CompareField[] = [
+  { label: "Ville", value: (r) => r.establishment?.city ?? "—" },
+  { label: "Adresse", value: (r) => r.establishment?.address ?? "—" },
+  { label: "Capacité", value: (r) => (r.capacity ? `${r.capacity} pers.` : "—") },
+  { label: "Services", value: (r) => (r.amenities ?? []).join(", ") || "—" },
+  { label: "Prix", value: (r) => (r.price ? formatFCFA(r.price) : "—") },
+];
+
+/** État vide réutilisé pour « aucun établissement » et « un seul » : même action. */
+function CompareEmptyState({ withSelection }: { withSelection: boolean }) {
+  // Le h1 de la page porte déjà « Comparer des établissements » : le titre ne
+  // doit pas le répéter, il doit seulement dire où en est la comparaison.
+  return (
+    <div className="mt-10 flex flex-col items-center px-4 text-center">
+      <span
+        aria-hidden="true"
+        className="flex h-16 w-16 items-center justify-center rounded-full bg-tt-lime-tint"
+      >
+        <Scale className="h-8 w-8 text-tt-ink" />
+      </span>
+      <h2 className="mt-5 font-display text-lg font-bold text-tt-ink">
+        {withSelection
+          ? "1 établissement sélectionné"
+          : "Aucune comparaison en cours"}
+      </h2>
+      <p className="mt-2 max-w-sm text-sm text-tt-ink-60">
+        {withSelection
+          ? "Il reste 1 emplacement pour ajouter un deuxième établissement."
+          : "Sélectionnez jusqu'à 2 établissements pour les comparer."}
+      </p>
+      <Link
+        href="/hotels"
+        className="tt-tap mt-6 inline-flex items-center justify-center rounded-full bg-tt-ink px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-tt-ink-80"
+      >
+        Choisir des établissements
+      </Link>
+    </div>
+  );
+}
+
+/** Squelettes de chargement — primitive `Skeleton` existante, pas de bespoke. */
+function CompareSkeleton() {
+  return (
+    <div className="mt-6 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+      {[0, 1].map((i) => (
+        <div
+          key={i}
+          className="overflow-hidden rounded-tt-card bg-tt-card ring-1 ring-tt-line"
+        >
+          <Skeleton className="h-44 w-full rounded-none sm:h-48" />
+          <div className="space-y-3 p-4">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function CompareContent() {
   const searchParams = useSearchParams();
-  const ids = searchParams.get("ids")?.split(",") ?? [];
+  // Signature stable : le paramètre `ids` change la comparaison, pas sa longueur.
+  const idsParam = searchParams.get("ids") ?? "";
+  const ids = useMemo(
+    () => (idsParam ? idsParam.split(",").filter(Boolean) : []),
+    [idsParam]
+  );
+
   const [rooms, setRooms] = useState<ListingView[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedFor, setLoadedFor] = useState("");
+  const [failedFor, setFailedFor] = useState("");
+
+  // Signature de la comparaison en cours. Elle sert de clé d'état : aucune
+  // donnée n'est réutilisée d'une URL à l'autre.
+  const signature = ids.join(",");
 
   useEffect(() => {
-    if (ids.length < 2) return;
+    // 0 ou 1 établissement : rien à charger. L'interface explique l'étape
+    // manquante au lieu d'afficher un écran vide (aucun setState ici).
+    if (ids.length < MAX_COMPARE) return;
+
     let cancelled = false;
 
-    fetchListedListings({ limit: 200 })
-      .then(({ data }) => {
-        if (!cancelled) {
-          setRooms(data.filter((r) => ids.includes(r.id)).slice(0, 2));
-          setLoading(false);
-        }
+    Promise.all(
+      COMPARE_CATEGORY_SLUGS.map((slug) =>
+        fetchListedListings({ limit: 200, categorySlugs: [slug] })
+      )
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const all = results.flatMap((result) => result.data);
+        const unique = new Map(all.map((room) => [room.id, room]));
+        setRooms(
+          ids
+            .map((id) => unique.get(id))
+            .filter((room): room is ListingView => room !== undefined)
+        );
+        setFailedFor(all.length === 0 ? signature : "");
+        setLoadedFor(signature);
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        if (cancelled) return;
+        setFailedFor(signature);
+        setLoadedFor(signature);
       });
 
-    return () => { cancelled = true; };
-  }, [ids.join(",")]);
+    return () => {
+      cancelled = true;
+    };
+    // `signature` identifie la requête ; `ids` en dépendre régénérerait le tableau.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature]);
 
-  if (ids.length < 2) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground">
-          Sélectionnez exactement 2 annonces à comparer depuis les résultats de recherche.
-        </p>
-        <Link href="/ecoles" className="mt-4 text-sm font-semibold text-primary hover:underline">
-          Retourner au catalogue
-        </Link>
-      </div>
-    );
+  // 0 ou 1 établissement : la comparaison n'a pas lieu d'être. On explique
+  // l'étape manquante au lieu d'afficher un écran vide sans sortie visible.
+  if (ids.length < MAX_COMPARE) {
+    return <CompareEmptyState withSelection={ids.length === 1} />;
   }
+
+  // `loadedFor` ne correspond pas tant que la requête courante n'est pas
+  // revenue : le chargement est donc DÉRIVÉ de l'état, pas stocké.
+  const loading = loadedFor !== signature;
 
   if (loading) {
+    return <CompareSkeleton />;
+  }
+
+  if (failedFor === signature) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {[1, 2].map((i) => (
-          <div key={i} className="animate-pulse rounded-2xl border bg-card p-6">
-            <div className="h-48 rounded-xl bg-muted" />
-            <div className="mt-4 h-6 w-3/4 rounded bg-muted" />
-            <div className="mt-2 h-4 w-1/2 rounded bg-muted" />
-            <div className="mt-4 h-4 w-full rounded bg-muted" />
-          </div>
-        ))}
-      </div>
+      <p
+        role="alert"
+        className="mt-6 rounded-tt-card bg-tt-card p-4 text-sm text-tt-ink-60 ring-1 ring-tt-line"
+      >
+        Impossible de charger les établissements à comparer. Vérifiez votre
+        connexion puis réessayez.
+      </p>
     );
   }
 
-  if (rooms.length < 2) {
+  if (rooms.length < MAX_COMPARE) {
+    // Des IDs sont présents mais introuvables : la comparaison ne peut pas
+    // être produite. Le compte exact est indiqué, sans inventer de données.
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground">Impossible de charger les annonces sélectionnées.</p>
-        <Link href="/ecoles" className="mt-4 text-sm font-semibold text-primary hover:underline">
+      <div className="mt-6 rounded-tt-card bg-tt-card p-5 ring-1 ring-tt-line">
+        <h2 className="font-display text-base font-bold text-tt-ink">
+          Établissements introuvables
+        </h2>
+        <p className="mt-1 text-sm text-tt-ink-60">
+          {rooms.length} établissement{rooms.length > 1 ? "s" : ""} sur{" "}
+          {MAX_COMPARE} n&apos;est plus disponible. Lancez à nouveau la
+          comparaison depuis le catalogue.
+        </p>
+        <Link
+          href="/hotels"
+          className="tt-tap mt-4 inline-flex items-center justify-center rounded-full bg-tt-ink px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-tt-ink-80"
+        >
           Retourner au catalogue
         </Link>
       </div>
     );
   }
 
-  const [a, b] = rooms;
-
-  const fields = [
-    { label: "Prix", a: a.price ? formatFCFA(a.price) : "—", b: b.price ? formatFCFA(b.price) : "—" },
-    { label: "Ville", a: a.establishment?.city ?? "—", b: b.establishment?.city ?? "—" },
-    { label: "Adresse", a: a.establishment?.address ?? "—", b: b.establishment?.address ?? "—" },
-    { label: "Capacité", a: a.capacity ? `${a.capacity} pers.` : "—", b: b.capacity ? `${b.capacity} pers.` : "—" },
-    { label: "Services", a: (a.amenities ?? []).join(", ") || "—", b: (b.amenities ?? []).join(", ") || "—" },
-  ];
-
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {[a, b].map((room, idx) => {
+    <div className="mt-6 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+      {rooms.map((room, index) => {
         const est = room.establishment;
-        const img = room.images[0] ?? PLACEHOLDER_IMAGE;
-        const mapsUrl = buildGoogleMapsUrl(est?.latitude, est?.longitude, est?.address ?? est?.city);
+        const img = room.cover_image_url ?? room.images[0] ?? PLACEHOLDER_IMAGE;
+        const mapsUrl = buildGoogleMapsUrl(
+          est?.latitude,
+          est?.longitude,
+          est?.address ?? est?.city
+        );
+        const contactPhone = est?.whatsapp ?? est?.contact_phone;
+        const suffix = getPriceSuffix(room.category_slug);
 
         return (
-          <motion.div
+          <motion.article
             key={room.id}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
+            transition={{ delay: index * 0.08 }}
+            className="flex flex-col overflow-hidden rounded-tt-card bg-tt-card shadow-tt-card ring-1 ring-tt-line"
           >
-            <div className="relative h-48 overflow-hidden">
-              <img src={img} alt={room.name} className="h-full w-full object-cover" />
+            <div className="relative h-44 w-full shrink-0 sm:h-48">
+              <Image
+                src={img}
+                alt={room.name}
+                fill
+                sizes="(min-width: 640px) 45vw, 100vw"
+                className="object-cover"
+              />
             </div>
-            <div className="p-5">
-              <h3 className="text-lg font-bold text-foreground">{room.name}</h3>
+
+            <div className="flex flex-1 flex-col p-4">
+              <h2 className="font-display text-base font-bold leading-snug text-tt-ink">
+                {room.name}
+              </h2>
               {est?.city && (
-                <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" /> {est.city}
+                <p className="mt-1 flex items-center gap-1 text-sm text-tt-ink-60">
+                  <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{est.city}</span>
                 </p>
               )}
-              <div className="mt-4 space-y-3">
-                {fields.map((f) => (
-                  <div key={f.label} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{f.label}</span>
-                    <span className="font-medium text-foreground text-right max-w-[60%] truncate">{idx === 0 ? f.a : f.b}</span>
+
+              <dl className="mt-4 space-y-2">
+                {COMPARE_FIELDS.map((field) => (
+                  <div
+                    key={field.label}
+                    className="border-b border-tt-line pb-2 last:border-0 last:pb-0"
+                  >
+                    <dt className="text-xs text-tt-ink-60">{field.label}</dt>
+                    <dd className="mt-0.5 text-sm font-medium text-tt-ink">
+                      {field.value(room)}
+                    </dd>
                   </div>
                 ))}
-              </div>
-              <div className="mt-5 flex gap-2">
+              </dl>
+
+              <p className="mt-3 text-xs text-tt-ink-60">
+                Prix affiché {suffix}
+              </p>
+
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <a
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="tt-tap inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-semibold text-tt-ink transition-colors ring-1 ring-tt-line hover:bg-tt-lime-tint"
                 >
-                  <Navigation className="h-3.5 w-3.5" /> Itinéraire
+                  <Navigation className="h-4 w-4" aria-hidden="true" />
+                  Itinéraire
                 </a>
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`${room.name} - ${est?.city ?? ""}\n${window.location.origin}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-[#25D366] hover:bg-[#25D366]/10 transition-colors"
-                >
-                  <Phone className="h-3.5 w-3.5" /> Contacter
-                </a>
+                {contactPhone ? (
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `${room.name} - ${est?.city ?? ""}\n${window.location.origin}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="tt-tap inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-semibold text-tt-ink transition-colors ring-1 ring-tt-line hover:bg-tt-lime-tint"
+                  >
+                    <Phone className="h-4 w-4" aria-hidden="true" />
+                    Contacter
+                  </a>
+                ) : null}
               </div>
             </div>
-          </motion.div>
+          </motion.article>
         );
       })}
     </div>
@@ -143,16 +296,25 @@ function CompareContent() {
 
 export default function ComparePage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
-        <ArrowLeft className="h-4 w-4" /> Retour
-      </Link>
-      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-8">
-        Comparer les annonces
-      </h1>
-      <Suspense fallback={<div className="text-muted-foreground">Chargement…</div>}>
+    // Coquille de marque partagée avec l'accueil, le catalogue, le profil et les favoris.
+    <div className="tt-shell">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
+        <Link
+          href="/"
+          className="tt-tap inline-flex items-center gap-1.5 rounded-full px-2 text-sm font-medium text-tt-ink-60 transition-colors hover:text-tt-ink"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Retour
+        </Link>
+        <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-tt-ink sm:text-4xl">
+          Comparer des établissements
+        </h1>
+      <Suspense
+        fallback={<p className="mt-6 text-sm text-tt-ink-60">Chargement…</p>}
+      >
         <CompareContent />
       </Suspense>
+      </div>
     </div>
   );
 }

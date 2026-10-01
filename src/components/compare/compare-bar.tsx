@@ -18,7 +18,7 @@ export function CompareBar() {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
-        className="fixed bottom-0 inset-x-0 z-50 border-t border-border bg-white/95 backdrop-blur-md shadow-lg"
+        className="fixed bottom-0 inset-x-0 z-50 border-t border-tt-line bg-white/95 backdrop-blur-md shadow-lg"
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 min-w-0">
@@ -29,20 +29,23 @@ export function CompareBar() {
               {items.map((item) => (
                 <span
                   key={item.id}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-tt-ink/30 bg-tt-ink/5 px-3 py-1 text-xs font-medium text-tt-ink"
                 >
                   <span className="truncate max-w-[120px]">{item.name}</span>
                   <button
+                    type="button"
                     onClick={() => toggleCompare(item)}
-                    className="shrink-0 rounded-full p-0.5 hover:bg-primary/10"
+                    aria-label={`Retirer ${item.name} de la comparaison`}
+                    className="shrink-0 rounded-full p-0.5 hover:bg-tt-ink/10"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3 w-3" aria-hidden="true" />
                   </button>
                 </span>
               ))}
               {count < 2 && (
                 <span className="text-xs text-muted-foreground self-center">
-                  Sélectionnez {2 - count} annonce{2 - count > 1 ? "s" : ""}
+                  Sélectionnez {2 - count} établissement
+                  {2 - count > 1 ? "s" : ""}
                 </span>
               )}
             </div>
@@ -50,6 +53,7 @@ export function CompareBar() {
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={clearCompare}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -58,10 +62,13 @@ export function CompareBar() {
             {count === 2 && (
               <Link
                 href={`/compare?ids=${query}`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                // `--primary` valait #171c22, identique à `--tt-ink` : rendu strictement
+                // identique. `text-white` est conservé : il n'existe pas de
+                // token `tt-white` dans le `@theme`.
+                className="inline-flex items-center gap-1.5 rounded-xl bg-tt-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-tt-ink-80"
               >
                 Comparer
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             )}
           </div>

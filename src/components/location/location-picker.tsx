@@ -126,7 +126,10 @@ export function LocationPicker({ onClose }: LocationPickerProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher une ville ou une adresse…"
-              className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              // `outline-none` retiré : le focus global `:focus-visible` fournit désormais
+              // l'indicateur (trait encre 2px). Le `ring-primary/20` local est
+              // conservé car il renforce le contraste sur fond blanc.
+              className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
               autoFocus
             />
           </div>

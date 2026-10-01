@@ -11,14 +11,32 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
+// Migration Phase 6B — tokens de marque TrouveTout, valeurs strictement
+// identiques aux tokens legacy remplacés :
+//   --primary          #171c22  -> --tt-ink     #171c22
+//   --primary-hover    #11161d  -> --tt-ink-80  #11161d
+//   --primary-foreground #ffffff -> blanc       #ffffff
+//   --foreground       #171c22  -> --tt-ink     #171c22
+//   --card             #ffffff  -> --tt-card    #ffffff
+//   --border           #e7eaec  -> --tt-line    #e7eaec
+//   --ring             #171c22  -> --tt-ink     #171c22
+//
+// CONSERVÉS volontairement :
+//   --secondary / --secondary-foreground : pas d'équivalent tt-* exact.
+//   --muted   #f0f2f3 : PAS d'équivalent tt-* exact (ni --tt-surface #f7f8f8,
+//                       ni --tt-lime-soft #f0f9d1 ne correspondent). Un token
+//                       ne doit pas être inventé ici.
+//   --muted-foreground #66717c -> --tt-ink-60 #66717c : rôle de texte
+//                       secondaire identique, valeur identique.
+//   --destructive : couleur d'ÉTAT fonctionnel, sémantique préservée.
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm hover:shadow-md",
+    "bg-tt-ink text-white hover:bg-tt-ink-80 shadow-sm hover:shadow-md",
   secondary:
     "bg-secondary text-secondary-foreground hover:brightness-95",
   outline:
-    "border border-border bg-card text-foreground hover:bg-muted",
-  ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
+    "border border-tt-line bg-tt-card text-tt-ink hover:bg-muted",
+  ghost: "text-tt-ink-60 hover:bg-muted hover:text-tt-ink",
   destructive: "bg-destructive text-white hover:opacity-90 shadow-sm",
 };
 
@@ -41,7 +59,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center font-medium transition-all",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          // `--ring` #171c22 -> `--tt-ink` #171c22 : valeur identique. Le mécanisme
+          // Phase 5 est INTACT : `focus-visible` reste le déclencheur, le ring
+          // et son offset 2px aussi. Seul le nom du token change.
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tt-ink focus-visible:ring-offset-2",
           variantClasses[variant],
           sizeClasses[size],
           className

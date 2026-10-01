@@ -168,7 +168,9 @@ export function CategoryBanner({ categorySlug }: CategoryBannerProps) {
         transition={{ duration: 0.3 }}
         className="overflow-hidden"
       >
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r shadow-md">
+        {/* Bannière publicitaire : pleine largeur dans sa zone, coins arrondis
+            alignés sur le token `tt-card`, sans padding superposé. */}
+        <div className="relative overflow-hidden rounded-tt-card bg-gradient-to-r shadow-tt-card">
           {/* Gradient background */}
           <div className={`absolute inset-0 bg-gradient-to-r ${ad.accent}`} />
 

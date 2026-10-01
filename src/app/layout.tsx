@@ -10,6 +10,7 @@ import { CompareProvider } from "@/contexts/compare-context";
 import { BookingsProvider } from "@/contexts/bookings-context";
 import { ArrivalTrackingProvider } from "@/contexts/arrival-tracking-context";
 import { CompareBar } from "@/components/compare/compare-bar";
+import { MotionPrefProvider } from "@/components/motion-pref-provider";
 import { PwaRegister } from "@/components/pwa-register";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { TrafficTracker } from "@/components/traffic-tracker";
@@ -40,7 +41,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#00215E",
+  themeColor: "#171C22",
   viewportFit: "cover",
 };
 
@@ -59,30 +60,37 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Trouvetou" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="min-h-full flex flex-col bg-surface text-foreground">
+        <a href="#contenu" className="tt-skip-link">
+          Aller au contenu principal
+        </a>
         <LocationProvider>
           <FavoritesProvider>
             <CompareProvider>
               <BookingsProvider>
               <ArrivalTrackingProvider>
-        {/* Header desktop — navigation complète */}
-        <div className="hidden md:block">
-          <Header />
-        </div>
-        {/* Barre de position — desktop uniquement (le mobile passe par la bottom-nav) */}
-        <div className="hidden md:block">
-          <LocationBar />
-        </div>
-              <main className="flex-1 pb-20 md:pb-0">{children}</main>
-              <BottomNav />
-              {/* Footer — uniquement sur desktop pour ne pas gêner la nav mobile */}
-              <div className="hidden md:block">
-                <Footer />
-              </div>
-              <CompareBar />
-              <PwaRegister />
-              <PwaInstallBanner />
-              <TrafficTracker />
+                {/* Respecte la préférence système « réduire les animations »
+                    pour toutes les animations framer-motion de l'app. */}
+                <MotionPrefProvider>
+                {/* Header — zone sombre de marque, visible sur mobile et desktop */}
+                <Header />
+                {/* Barre de position — desktop uniquement (le mobile passe par la bottom-nav) */}
+                <div className="hidden md:block">
+                  <LocationBar />
+                </div>
+                <main id="contenu" className="flex-1 pb-20 md:pb-0">
+                  {children}
+                </main>
+                <BottomNav />
+                {/* Footer — uniquement sur desktop pour ne pas gêner la nav mobile */}
+                <div className="hidden md:block">
+                  <Footer />
+                </div>
+                <CompareBar />
+                <PwaRegister />
+                <PwaInstallBanner />
+                <TrafficTracker />
+                </MotionPrefProvider>
               </ArrivalTrackingProvider>
               </BookingsProvider>
             </CompareProvider>

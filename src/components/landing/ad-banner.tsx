@@ -175,10 +175,15 @@ export function AdBanner() {
             transition={{ duration: 0.35, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            {/* Background image */}
+            {/* Image de fond purement DÉCORATIVE : le badge, le titre et le descriptif
+                sont déjà rendus en texte dans la carte. Un `alt` reprenant le
+                titre ferait doublon pour le lecteur d'écran — on le laisse vide.
+                Le `<img>` natif est conservé : la source est une URL distante
+                arbitraire, incompatible avec les domaines autorisés par
+                `next/image`. */}
             <img
               src={ad.image}
-              alt={ad.title}
+              alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
 

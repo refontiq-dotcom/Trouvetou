@@ -1,27 +1,20 @@
-"use client";
-
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
-  /** Variantes d'affichage */
+  /**
+   * `dark`  — logo encre, à poser sur surface claire (header, fond blanc)
+   * `light` — logo blanc, à poser sur surface sombre (footer, encre)
+   * `icon`  — symbole seul (favicon, avatar, app icon)
+   */
   variant?: "light" | "dark" | "icon";
-  /** Taille du logo */
+  /** Hauteur du rendu en pixels */
   size?: "sm" | "md" | "lg";
   /** Classes CSS supplémentaires */
   className?: string;
 }
 
-/**
- * Couleurs officielles — Charte graphique Trouvetou
- */
-const BRAND = {
-  blue: "#0066FF",
-  navy: "#00215E",
-  orange: "#FFA726",
-  white: "#FFFFFF",
-} as const;
-
-/** Hauteur du logo complet (mot + icône) par taille, en pixels. */
+/** Hauteur du logo par taille, en pixels. */
 const SIZE_CONFIG = {
   sm: { height: 28 },
   md: { height: 36 },
@@ -29,92 +22,45 @@ const SIZE_CONFIG = {
 } as const;
 
 /**
- * Icône Trouvetou — anneau bleu, point marine central, ruban orange.
- * Remplace le premier "o" du mot "trouvetou". Dessinée dans un viewBox
- * dédié (40 x 56) puis composée avec le texte dans un unique SVG pour
- * garantir un alignement pixel-perfect avec la typographie.
+ * Assets officiels (charte graphique) : logo fond clair, logo fond sombre et
+ * symbole extrait. Les dimensions sont celles des fichiers servis, afin que
+ * l'attribut ratio évite tout saut de mise en page au chargement.
  */
-function BrandMark({
-  x = 0,
-  y = 0,
-  scale = 1,
-}: {
-  x?: number;
-  y?: number;
-  scale?: number;
-}) {
-  return (
-    <g transform={`translate(${x}, ${y}) scale(${scale})`}>
-      <circle
-        cx="20"
-        cy="18"
-        r="14"
-        fill="none"
-        stroke={BRAND.blue}
-        strokeWidth="7.5"
-      />
-      <circle cx="20" cy="18" r="5.5" fill={BRAND.navy} />
-      <path
-        d="M13.5 32 L26.5 32 L26.5 47 L20 41.5 L13.5 47 Z"
-        fill={BRAND.orange}
-      />
-    </g>
-  );
-}
+const ASSETS = {
+  dark: {
+    src: "/brand/logo-on-light.webp",
+    width: 542,
+    height: 151,
+  },
+  light: {
+    src: "/brand/logo-on-dark.webp",
+    width: 1001,
+    height: 255,
+  },
+  icon: {
+    src: "/brand/symbol.webp",
+    width: 294,
+    height: 294,
+  },
+} as const;
 
 /**
- * Logo Trouvetou — wordmark officiel.
- * Rendu en un unique SVG (texte "tr" / icône / texte "uvetou") pour un
- * alignement fidèle à la charte, quelle que soit la police chargée.
+ * Logo Trouvetou — wordmark officiel (feuille + loupe, « tou » en vert citron).
+ * Sert les fichiers de marque plutôt qu'un tracé SVG : aucune approximation
+ * de la charte, et la couleur ne peut pas dériver de l'implémentation.
  */
 export function Logo({ variant = "dark", size = "md", className }: LogoProps) {
   const { height } = SIZE_CONFIG[size];
-
-  // ── Variante icône seule (favicon, app icon, avatar) ──
-  if (variant === "icon") {
-    return (
-      <svg
-        viewBox="0 0 40 56"
-        className={cn("shrink-0", className)}
-        style={{ height, width: height * (40 / 56) }}
-        aria-label="Trouvetou"
-      >
-        <BrandMark />
-      </svg>
-    );
-  }
-
-  const textColor = variant === "light" ? BRAND.white : BRAND.navy;
+  const asset = ASSETS[variant];
 
   return (
-    <svg
-      viewBox="0 0 340 90"
+    <Image
+      src={asset.src}
+      alt="Trouvetou"
+      width={asset.width}
+      height={asset.height}
       className={cn("shrink-0 select-none", className)}
-      style={{ height, width: height * (340 / 90) }}
-      aria-label="Trouvetou"
-      role="img"
-    >
-      <text
-        x="0"
-        y="60"
-        fontFamily="Poppins, sans-serif"
-        fontWeight="700"
-        fontSize="64"
-        fill={textColor}
-      >
-        tr
-      </text>
-      <BrandMark x={49} y={15.5} scale={1.236} />
-      <text
-        x="98"
-        y="60"
-        fontFamily="Poppins, sans-serif"
-        fontWeight="700"
-        fontSize="64"
-        fill={textColor}
-      >
-        uvetou
-      </text>
-    </svg>
+      style={{ height, width: "auto" }}
+    />
   );
 }

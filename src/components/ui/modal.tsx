@@ -5,6 +5,23 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Migration Phase 6B (couleurs) — valeurs strictement identiques :
+//   --card #ffffff           -> --tt-card   #ffffff
+//   --foreground #171c22     -> --tt-ink    #171c22
+//   --muted-foreground #66717c -> --tt-ink-60 #66717c
+//   --border #e7eaec         -> --tt-line   #e7eaec
+//
+// CONSERVÉS : `bg-slate-900/50` (overlay assombri, rôle propre — l'assombrissement
+// standard d'une modale ; `--tt-dark` n'a pas d'équivalent « voile »), et
+// `bg-muted` sur le survol des boutons de fermeture (pas d'équivalent tt-* exact).
+//
+// Deux AJOUTS d'accessibilité, signalés pour traçabilité (hors palette) :
+//   - `type="button"` sur les deux boutons de fermeture : sans cela, un Modal
+//     rendu dans un `<form>` déclenche une soumission au clic.
+//   - `aria-hidden="true"` sur la croix : le nom accessible vient du
+//     `aria-label="Fermer"` du bouton, la croix est décorative.
+// Comportement, structure DOM, aria, clavier et animations : INCHANGÉS.
+
 interface ModalProps {
   open: boolean;
   onClose: () => void;
@@ -133,8 +150,16 @@ export function Modal({
             aria-labelledby={title ? titleId : undefined}
             aria-describedby={description ? descriptionId : undefined}
             tabIndex={-1}
+            // `outline-none` VOLONTAIRE : le dialogue reçoit le focus par programme
+            // (`tabIndex={-1}`) afin de permettre la navigation clavier et la
+            // lecture d'écran. Un contour autour de la modale serait parasite :
+            // les éléments focusables à l'intérieur portent leur propre
+            // indicateur via le focus global.
             className={cn(
-              "relative w-full bg-card rounded-2xl shadow-2xl max-h-[90vh] flex flex-col outline-none",
+              // Migration Phase 6B — `--card` #ffffff -> `--tt-card` #ffffff,
+              // valeur identique. Le `outline-none` reste VOLONTAIRE (focus
+              // programmatique sur `tabIndex={-1}`, cf. commentaire ligne 136).
+              "relative w-full bg-tt-card rounded-2xl shadow-2xl max-h-[90vh] flex flex-col outline-none",
               sizeClasses[size]
             )}
             initial={{ opacity: 0, scale: 0.95, y: 16 }}
@@ -143,36 +168,38 @@ export function Modal({
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
           >
             {(title || description) && (
-              <div className="p-6 border-b border-border flex items-start justify-between shrink-0">
+              <div className="p-6 border-b border-tt-line flex items-start justify-between shrink-0">
                 <div>
                   {title && (
-                    <h2 id={titleId} className="text-xl font-semibold text-foreground">
+                    <h2 id={titleId} className="text-xl font-semibold text-tt-ink">
                       {title}
                     </h2>
                   )}
                   {description && (
-                    <p id={descriptionId} className="text-sm text-muted-foreground mt-1">
+                    <p id={descriptionId} className="text-sm text-tt-ink-60 mt-1">
                       {description}
                     </p>
                   )}
                 </div>
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                  className="p-2 rounded-lg text-tt-ink-60 hover:bg-muted transition-colors"
                   aria-label="Fermer"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
             )}
 
             {!title && !description && (
               <button
+                type="button"
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors z-10"
+                className="absolute top-4 right-4 p-2 rounded-lg text-tt-ink-60 hover:bg-muted transition-colors z-10"
                 aria-label="Fermer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             )}
 

@@ -2,24 +2,38 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Heart, ArrowRight } from "lucide-react";
 import { useFavorites } from "@/contexts/favorites-context";
 import { RoomCard } from "@/components/hotels/room-card";
 import { RoomCardSkeletonGrid } from "@/components/hotels/room-card-skeleton";
-import { Button } from "@/components/ui/button";
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { getPriceSuffix } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
+/**
+ * Catégories couvertes par les favoris.
+ *
+ * `fetchListedListings` ne filtre que sur `hotel` / `residence` par défaut :
+ * sans cette liste explicite, un favori école, clinique ou restaurant était
+ * invisible alors qu'il est bien enregistré. Les slugs sont ceux des portails
+ * du catalogue — aucune valeur métier inventée.
+ */
+const FAVORITE_CATEGORY_SLUGS = [
+  "hotel",
+  "residence",
+  "school",
+  "clinic",
+  "restaurant",
+];
+
 export default function FavorisPage() {
   const { favorites, count } = useFavorites();
   const [rooms, setRooms] = useState<ListingView[]>([]);
-  // Signature des favoris pour laquelle les annonces ont déjà été chargées.
+  // Signature des favoris pour lesquels les annonces ont été chargées.
   const [loadedSignature, setLoadedSignature] = useState("");
+  const [error, setError] = useState(false);
 
   const currentSignature = Array.from(favorites).sort().join("|");
-  // Le chargement est « vrai » tant que la liste affichée ne correspond pas aux favoris courants.
   const loading = count > 0 && loadedSignature !== currentSignature;
 
   useEffect(() => {
@@ -29,18 +43,27 @@ export default function FavorisPage() {
 
     let cancelled = false;
 
-    // On charge toutes les annonces (sans filtre) puis on filtre côté client
-    // pour ne garder que celles en favori. Pour un gros catalogue, on pourrait
-    // passer les IDs en paramètre SQL.
-    fetchListedListings({ limit: 100 })
-      .then(({ data }) => {
-        if (!cancelled) {
-          setRooms(data.filter((r) => favorites.has(r.id)));
-          setLoadedSignature(currentSignature);
-        }
+    // Chargement par secteur puis filtrage côté client sur les favoris.
+    // La déduplication par `id` évite qu'une annonce apparaisse deux fois si
+    // elle relevait de plusieurs slugs.
+    Promise.all(
+      FAVORITE_CATEGORY_SLUGS.map((slug) =>
+        fetchListedListings({ limit: 100, categorySlugs: [slug] })
+      )
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const all = results.flatMap((result) => result.data);
+        const unique = new Map(all.map((room) => [room.id, room]));
+        setRooms([...unique.values()].filter((room) => favorites.has(room.id)));
+        setError(results.some((result) => result.error !== null));
+        setLoadedSignature(currentSignature);
       })
       .catch(() => {
-        if (!cancelled) setLoadedSignature(currentSignature);
+        if (!cancelled) {
+          setError(true);
+          setLoadedSignature(currentSignature);
+        }
       });
 
     return () => {
@@ -49,56 +72,96 @@ export default function FavorisPage() {
   }, [favorites, count, currentSignature]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <p className="text-sm text-muted-foreground">
-          Accueil <span className="mx-1">/</span>
-          <span className="font-medium text-foreground">Mes favoris</span>
-        </p>
-        <h1 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center gap-3">
-          <Heart className="h-8 w-8 text-red-500 fill-red-500" />
-          Mes favoris
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          {count > 0
-            ? `${count} annonce${count > 1 ? "s" : ""} sauvegardée${count > 1 ? "s" : ""}`
-            : "Aucune annonce sauvegardée pour l'instant."}
-        </p>
-      </motion.div>
+    // Coquille de marque partagée avec l'accueil, le catalogue et le profil.
+    <div className="tt-shell">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
+        {/* 1. Titre + compteur réel uniquement */}
+        <header>
+          <p className="text-sm text-tt-ink-60">Mon espace</p>
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-tt-ink sm:text-4xl">
+            Mes favoris
+          </h1>
+          {count > 0 && (
+            <p className="mt-2 text-sm text-tt-ink-60">
+              {count} établissement{count > 1 ? "s" : ""} enregistré
+              {count > 1 ? "s" : ""}
+            </p>
+          )}
+        </header>
 
-      {loading ? (
-        <div className="mt-8">
-          <RoomCardSkeletonGrid count={3} />
-        </div>
-      ) : count === 0 ? (
-        <div className="mt-16 flex flex-col items-center justify-center text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
-            <Heart className="h-8 w-8 text-red-300" />
+        {/* 2. Chargement / vide / erreur / liste */}
+        {loading ? (
+          <div className="mt-6">
+            <RoomCardSkeletonGrid count={3} />
           </div>
-          <h3 className="mt-5 text-lg font-semibold text-foreground">
-            Aucun favori pour l&apos;instant
-          </h3>
-          <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Parcourez les annonces et appuyez sur le ❤️ pour les sauvegarder ici.
-          </p>
-          <Link href="/ecoles" className="mt-6">
-            <Button>
+        ) : count === 0 ? (
+          <div className="mt-10 flex flex-col items-center px-4 text-center">
+            <span
+              aria-hidden="true"
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-tt-lime-tint"
+            >
+              <Heart className="h-8 w-8 text-tt-ink" />
+            </span>
+            <h2 className="mt-5 font-display text-lg font-bold text-tt-ink">
+              Aucun favori pour l&apos;instant
+            </h2>
+            <p className="mt-2 max-w-sm text-sm text-tt-ink-60">
+              Touchez le cœur sur une annonce pour la retrouver ici.
+            </p>
+            <Link
+              href="/hotels"
+              className="tt-tap mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-tt-ink px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-tt-ink-80"
+            >
               Découvrir les annonces
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      ) : (
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {rooms.map((room, i) => (
-            <RoomCard key={room.id} room={room} index={i} priceSuffix={getPriceSuffix(room.category_slug)} />
-          ))}
-        </div>
-      )}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        ) : error && rooms.length === 0 ? (
+          <p
+            role="alert"
+            className="mt-6 rounded-tt-card bg-tt-card p-4 text-sm text-tt-ink-60 ring-1 ring-tt-line"
+          >
+            Impossible de charger vos favoris. Vérifiez votre connexion puis
+            réessayez.
+          </p>
+        ) : rooms.length === 0 ? (
+          // Favoris enregistrés mais introuvables : le compte ne doit jamais
+          // disparaître silencieusement.
+          <div className="mt-10 flex flex-col items-center px-4 text-center">
+            <span
+              aria-hidden="true"
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-tt-lime-tint"
+            >
+              <Heart className="h-8 w-8 text-tt-ink" />
+            </span>
+            <h2 className="mt-5 font-display text-lg font-bold text-tt-ink">
+              Vos favoris ne sont plus disponibles
+            </h2>
+            <p className="mt-2 max-w-sm text-sm text-tt-ink-60">
+              {count} annonce{count > 1 ? "s" : ""} enregistrée
+              {count > 1 ? "s" : ""} ne sont plus disponibles.
+            </p>
+            <Link
+              href="/hotels"
+              className="tt-tap mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-tt-ink px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-tt-ink-80"
+            >
+              Voir les annonces disponibles
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-6 space-y-3">
+            {rooms.map((room, i) => (
+              <RoomCard
+                key={room.id}
+                room={room}
+                index={i}
+                priceSuffix={getPriceSuffix(room.category_slug)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

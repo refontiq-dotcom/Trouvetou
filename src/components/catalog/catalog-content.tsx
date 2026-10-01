@@ -13,21 +13,21 @@ import {
   TrendingUp,
   MapPin,
   ArrowDownWideNarrow,
+  Stethoscope,
 } from "lucide-react";
-import { RoomCard } from "@/components/hotels/room-card";
-import { RoomCardSkeletonGrid } from "@/components/hotels/room-card-skeleton";
-import { BoostedCarousel } from "@/components/hotels/boosted-carousel";
+import { ListingCard } from "@/components/catalog/listing-card";
+import { ListingCardSkeletonGrid } from "@/components/hotels/listing-card-skeleton";
 import { Button } from "@/components/ui/button";
-import {
-  fetchBoostedRooms,
-  fetchListedListings,
-  sortRooms,
-} from "@/lib/supabase/hotels";
+import { fetchListedListings, sortRooms } from "@/lib/supabase/hotels";
 import { cn, getCategoryLabel } from "@/lib/utils";
 import { detectPortalSuggestion } from "@/lib/search-intent";
 import { useLocation } from "@/contexts/location-context";
-import { VoiceButton } from "@/components/ui/voice-button";
 import { CategoryBanner } from "@/components/catalog/category-banner";
+import { PopularCategoriesBlock } from "@/components/catalog/popular-categories-block";
+import {
+  NearbyLocationsBlock,
+  distanceToUser,
+} from "@/components/catalog/nearby-locations-block";
 import { FilterDrawer } from "@/components/catalog/filter-drawer";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
@@ -83,7 +83,6 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
   const [sort, setSort] = useState<string>(userLocation ? "distance" : "price_asc");
 
   const [rooms, setRooms] = useState<ListingView[]>([]);
-  const [boostedRooms, setBoostedRooms] = useState<ListingView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -98,22 +97,9 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
 
   const effectiveLoading = suggestion ? false : loading;
   const effectiveError = suggestion ? null : error;
-  const effectiveRooms = suggestion ? [] : rooms;
-
-  useEffect(() => {
-    if (suggestion) return;
-    let cancelled = false;
-
-    fetchBoostedRooms(config.categories)
-      .then(({ data }) => {
-        if (!cancelled) setBoostedRooms(data);
-      })
-      .catch(() => {
-        if (!cancelled) setBoostedRooms([]);
-      });
-
-    return () => { cancelled = true; };
-  }, [reloadKey, config, suggestion]);
+  // Mémoïsé : sans cela, chaque rendu produirait un nouveau tableau et
+  // invaliderait les `useMemo` dérivés (catégories, proximité).
+  const effectiveRooms = useMemo(() => (suggestion ? [] : rooms), [suggestion, rooms]);
 
   useEffect(() => {
     if (suggestion) return;
@@ -179,12 +165,52 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
     router.push(target);
   }
 
+  /**
+   * Colonne latérale desktop — alimentée par les annonces DÉJÀ chargées.
+   * Aucun appel réseau supplémentaire, aucune donnée inventée : les
+   * compteurs et les distances proviennent de `effectiveRooms`.
+   */
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const room of effectiveRooms) {
+      const slug = room.establishment?.type ?? room.category_slug;
+      counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    }
+    return Array.from(counts, ([slug, count]) => ({
+      slug,
+      name: getCategoryLabel(slug),
+      href: "",
+      count,
+      icon: Stethoscope,
+    }));
+  }, [effectiveRooms]);
+
+  const nearbyCities = useMemo(() => {
+    const byLabel = new Map<string, number>();
+    for (const room of effectiveRooms) {
+      const label = room.establishment?.city;
+      if (!label) continue;
+      const km = distanceToUser(userLocation, {
+        lat: room.establishment?.latitude ?? null,
+        lng: room.establishment?.longitude ?? null,
+      });
+      if (km == null) continue;
+      const known = byLabel.get(label);
+      if (known == null || km < known) byLabel.set(label, km);
+    }
+    return Object.fromEntries(byLabel);
+  }, [effectiveRooms, userLocation]);
+
   const hasActiveFilters = query !== "" || types.length > 0 || budget > 0 || sort !== "price_asc";
 
   const canLoadMore = !effectiveLoading && !effectiveError && effectiveRooms.length >= limit && limit < MAX_CLIENT_LIMIT;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    // Coquille blanche à coins arrondis (cf. `.tt-shell`) : sur mobile, le fond
+    // sombre du header reste visible sur les côtés et au-dessus, et le blanc
+    // descend jusqu'à la navigation basse, comme sur l'accueil.
+    <div className="tt-shell">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
       {/* Header — titre seul, pas de sous-titre */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -205,34 +231,20 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         <CategoryBanner categorySlug={config.categories[0] ?? ""} />
       </div>
 
-      {/* Zone sticky : barre de recherche + filtres restent visibles au scroll */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 bg-white/95 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-3 border-b border-slate-100">
+      {/* Recherche active : le champ de saisie vit dans le header sombre
+          (`SiteSearch`) — on ne duplique donc pas un second champ concurrent. */}
+      {debounced.trim() && (
+        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Search className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <span className="truncate">
+            Résultats pour{" "}
+            <span className="font-medium text-foreground">« {debounced.trim()} »</span>
+          </span>
+        </p>
+      )}
 
-      {/* Search bar — style identique à la home */}
-      <div className="mt-5 flex w-full items-stretch gap-0 rounded-xl bg-white shadow-sm border border-slate-200">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => { setLoading(true); setQuery(e.target.value); setLimit(PAGE_SIZE); }}
-            placeholder={config.searchPlaceholder}
-            className="h-12 w-full border-0 bg-transparent pl-10 pr-12 text-sm outline-none placeholder:text-slate-400"
-          />
-          <VoiceButton
-            onResult={(text) => { setLoading(true); setQuery(text); setLimit(PAGE_SIZE); }}
-            className="!right-1 !h-8 !w-8"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => { setLoading(true); setLimit(PAGE_SIZE); }}
-          className="inline-flex h-12 items-center gap-1.5 rounded-r-xl bg-[#102a72] px-4 text-xs font-semibold text-white hover:bg-[#1769e8] transition-colors"
-        >
-          <Search className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Rechercher</span>
-        </button>
-      </div>
+      {/* Zone sticky : les filtres restent visibles au scroll. */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 bg-white/95 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-3 border-b border-slate-100">
 
       {/* Category toggles + Filtres button — même ligne */}
       <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -296,117 +308,132 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
 
       </div> {/* fin sticky */}
 
-      <BoostedCarousel rooms={boostedRooms} priceSuffix={config.priceSuffix} />
-
-      {/* Results count */}
-      {!suggestion && (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {effectiveLoading ? (
-              "Chargement…"
-            ) : (
-              <>
-                <span className="font-semibold text-foreground">{effectiveRooms.length}</span>
-                {" "}
-                {canLoadMore
-                  ? "annonces affichées"
-                  : `annonce${effectiveRooms.length !== 1 ? "s" : ""} trouvée${effectiveRooms.length !== 1 ? "s" : ""}`}
-              </>
-            )}
-          </p>
-        </div>
-      )}
-
-      {/* Results */}
-      <div className="mt-4">
-        {effectiveLoading ? (
-          <RoomCardSkeletonGrid count={6} />
-        ) : effectiveError ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-destructive">
-              <CircleAlert className="h-7 w-7" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-foreground">
-              📡 Problème de connexion
-            </h3>
-            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              Impossible de charger les annonces. Vérifiez votre connexion et réessayez.
-            </p>
-            <div className="mt-5 flex gap-3">
-              <Button onClick={retry}>🔄 Réessayer</Button>
-              {hasActiveFilters && (
-                <Button variant="outline" onClick={resetFilters}>✕ Effacer les filtres</Button>
+      {/* Desktop : grille principale + colonne latérale (cf. maquette).
+          La colonne est masquée sous `lg` : le mobile garde ses 2 colonnes. */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
+        <div className="min-w-0">
+        {/* Results count */}
+        {!suggestion && (
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {effectiveLoading ? (
+                "Chargement…"
+              ) : (
+                <>
+                  <span className="font-semibold text-foreground">{effectiveRooms.length}</span>
+                  {" "}
+                  {canLoadMore
+                    ? "annonces affichées"
+                    : `annonce${effectiveRooms.length !== 1 ? "s" : ""} trouvée${effectiveRooms.length !== 1 ? "s" : ""}`}
+                </>
               )}
-            </div>
-          </div>
-        ) : suggestion ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-primary/50 bg-primary/5 px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <ArrowRightLeft className="h-7 w-7" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-foreground">
-              Vous cherchez {suggestion.matchedKeyword} ?
-            </h3>
-            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              « {query} » n&apos;a rien donné ici. Essayez sur {suggestion.targetLabel}.
             </p>
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Button onClick={handleSwitchPortal}>→ Voir sur {suggestion.targetLabel}</Button>
-              <Button variant="ghost" onClick={resetFilters}>Voir tout ici</Button>
-            </div>
-          </div>
-        ) : effectiveRooms.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-              <Search className="h-7 w-7" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-foreground">
-              🔍 Aucune annonce trouvée
-            </h3>
-            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              {budget > 0
-                ? "Aucune annonce dans cette plage de prix. Essayez un budget plus élevé."
-                : types.length > 0
-                ? "Aucune annonce dans cette catégorie."
-                : "Aucune annonce ne correspond à votre recherche."}
-            </p>
-            <div className="mt-5 flex flex-wrap justify-center gap-2">
-              <Button onClick={resetFilters}>🔄 Tout afficher</Button>
-              {budget > 0 && (
-                <Button variant="outline" onClick={() => { setLoading(true); setBudget(0); setLimit(PAGE_SIZE); }}>
-                  💰 Supprimer le budget
-                </Button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 2xl:grid-cols-3">
-            {effectiveRooms.map((room, i) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                index={i}
-                priceSuffix={config.priceSuffix}
-              />
-            ))}
           </div>
         )}
-      </div>
 
-      {canLoadMore && (
-        <div className="mt-6 flex justify-center">
-          <Button variant="outline" onClick={loadMore}>
-            Voir plus d&apos;annonces
-          </Button>
+        {/* Results */}
+        <div className="mt-4">
+          {effectiveLoading ? (
+            <ListingCardSkeletonGrid count={6} />
+          ) : effectiveError ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-destructive">
+                <CircleAlert className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-foreground">
+                📡 Problème de connexion
+              </h3>
+              <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                Impossible de charger les annonces. Vérifiez votre connexion et réessayez.
+              </p>
+              <div className="mt-5 flex gap-3">
+                <Button onClick={retry}>🔄 Réessayer</Button>
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={resetFilters}>✕ Effacer les filtres</Button>
+                )}
+              </div>
+            </div>
+          ) : suggestion ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-primary/50 bg-primary/5 px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                <ArrowRightLeft className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-foreground">
+                Vous cherchez {suggestion.matchedKeyword} ?
+              </h3>
+              <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                « {query} » n&apos;a rien donné ici. Essayez sur {suggestion.targetLabel}.
+              </p>
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                <Button onClick={handleSwitchPortal}>→ Voir sur {suggestion.targetLabel}</Button>
+                <Button variant="ghost" onClick={resetFilters}>Voir tout ici</Button>
+              </div>
+            </div>
+          ) : effectiveRooms.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                <Search className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-foreground">
+                🔍 Aucune annonce trouvée
+              </h3>
+              <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                {budget > 0
+                  ? "Aucune annonce dans cette plage de prix. Essayez un budget plus élevé."
+                  : types.length > 0
+                  ? "Aucune annonce dans cette catégorie."
+                  : "Aucune annonce ne correspond à votre recherche."}
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <Button onClick={resetFilters}>🔄 Tout afficher</Button>
+                {budget > 0 && (
+                  <Button variant="outline" onClick={() => { setLoading(true); setBudget(0); setLimit(PAGE_SIZE); }}>
+                    💰 Supprimer le budget
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 2xl:grid-cols-4">
+              {effectiveRooms.map((room) => (
+                <ListingCard
+                  key={room.id}
+                  room={room}
+                  priceSuffix={config.priceSuffix}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {!effectiveLoading && !effectiveError && effectiveRooms.length > 0 && (
-        <p className="mt-6 flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-accent" />
-          {config.footerNote}
-        </p>
-      )}
+        {canLoadMore && (
+          <div className="mt-6 flex justify-center">
+            <Button variant="outline" onClick={loadMore}>
+              Voir plus d&apos;annonces
+            </Button>
+          </div>
+        )}
+
+        {!effectiveLoading && !effectiveError && effectiveRooms.length > 0 && (
+          <p className="mt-6 flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+            <Sparkles className="h-4 w-4 text-accent" />
+            {config.footerNote}
+          </p>
+        )}
+        </div>
+
+        {/* Colonne latérale — desktop uniquement. */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-24 space-y-4">
+            <PopularCategoriesBlock categories={categoryCounts} />
+            <NearbyLocationsBlock
+              listingCount={effectiveRooms.length}
+              cities={nearbyCities}
+            />
+          </div>
+        </aside>
+      </div>
+    </div>
     </div>
   );
 }

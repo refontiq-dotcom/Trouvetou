@@ -68,83 +68,140 @@ export function AlertSubscribe({ variant = "inline" }: AlertSubscribeProps) {
   }
 
   return (
-    <section id="alert-subscribe-form" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-      <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-            <Bell className="h-6 w-6" />
-          </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold text-foreground">
-              Soyez les premiers informés
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Recevez une alerte quand de nouvelles annonces correspondent à vos critères.
-            </p>
+    <section
+      id="alert-subscribe-form"
+      aria-labelledby="alert-subscribe-title"
+      className="rounded-tt-card bg-tt-card p-4 shadow-tt-card ring-1 ring-tt-line sm:p-6"
+    >
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-tt-lime-soft text-tt-ink"
+        >
+          <Bell className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2
+            id="alert-subscribe-title"
+            className="font-display text-lg font-bold text-tt-ink"
+          >
+            Soyez les premiers informés
+          </h2>
+          <p className="mt-1 text-sm text-tt-ink-60">
+            Recevez une alerte quand de nouvelles annonces correspondent à vos
+            critères.
+          </p>
 
-            <AnimatePresence mode="wait">
-              {status === "success" ? (
-                <motion.div
-                  key="success"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700"
-                >
-                  <Check className="h-5 w-5" />
-                  Alerte enregistrée ! Vous serez notifié de nouvelles annonces.
-                </motion.div>
-              ) : (
-                <motion.form
-                  key="form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onSubmit={handleSubmit}
-                  className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"
-                >
-                  <div className="flex-1 flex flex-col gap-3 sm:flex-row">
+          <AnimatePresence mode="wait">
+            {status === "success" ? (
+              <motion.div
+                key="success"
+                role="status"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
+              >
+                <Check className="h-5 w-5 shrink-0" aria-hidden="true" />
+                Alerte enregistrée ! Vous serez notifié de nouvelles annonces.
+              </motion.div>
+            ) : (
+              <motion.form
+                key="form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onSubmit={handleSubmit}
+                className="mt-4 space-y-3"
+              >
+                {/* Labels visibles : le placeholder ne fait plus office de libellé. */}
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="min-w-0 flex-1">
+                    <label
+                      htmlFor="alert-email"
+                      className="block text-xs font-medium text-tt-ink"
+                    >
+                      Adresse email
+                    </label>
                     <input
+                      id="alert-email"
+                      name="email"
                       type="email"
                       required
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Votre email"
-                      className="h-11 flex-1 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      placeholder="vous@exemple.com"
+                      className="tt-field mt-1"
                     />
+                  </div>
+
+                  <div className="min-w-0 sm:w-48">
+                    <label
+                      htmlFor="alert-category"
+                      className="block text-xs font-medium text-tt-ink"
+                    >
+                      Catégorie
+                    </label>
+                    {/* `w-full` : sans lui, le select déborde du conteneur
+                        en flex sur les small screens. */}
                     <select
+                      id="alert-category"
+                      name="category"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                      className="tt-field mt-1 w-full"
                     >
-                      <option value="all">Toutes les catégories</option>
+                      <option value="all">Toutes</option>
                       {CATEGORIES.map((c) => (
-                        <option key={c.slug} value={c.slug}>{c.label}</option>
+                        <option key={c.slug} value={c.slug}>
+                          {c.label}
+                        </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="min-w-0 flex-1">
+                    <label
+                      htmlFor="alert-city"
+                      className="block text-xs font-medium text-tt-ink"
+                    >
+                      Ville{" "}
+                      <span className="font-normal text-tt-ink-60">
+                        (optionnel)
+                      </span>
+                    </label>
                     <input
+                      id="alert-city"
+                      name="city"
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      placeholder="Ville (optionnel)"
-                      className="h-11 w-full sm:w-40 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      placeholder="Abidjan"
+                      className="tt-field mt-1"
                     />
                   </div>
+
                   <button
                     type="submit"
                     disabled={status === "loading"}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+                    className="tt-tap inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-tt-ink px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-tt-ink-80 disabled:opacity-60"
                   >
                     {status === "loading" ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <Bell className="h-4 w-4" />
+                      <Bell className="h-4 w-4" aria-hidden="true" />
                     )}
                     M&apos;abonner
                   </button>
-                </motion.form>
-              )}
-            </AnimatePresence>
-          </div>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </section>

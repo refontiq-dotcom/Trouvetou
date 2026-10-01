@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { SiteSearch, CategoryTabs } from "@/components/layout/site-header-parts";
 
 const NAV_LINKS = [
   { href: "/", label: "Accueil" },
@@ -15,120 +16,129 @@ const NAV_LINKS = [
   { href: "/restaurants", label: "Restaurants" },
 ];
 
+/**
+ * Header — zone sombre de marque (encre), conforme à la maquette :
+ * logo, puis recherche, puis catégories.
+ *
+ * Le fond sombre est conservé sur toute la largeur pour que la coquille
+ * blanche de la page reste encadrée (cf. `.tt-shell`).
+ */
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-white/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full bg-dark text-white safe-area-pt">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative flex h-16 items-center justify-between gap-4">
-          {/* Groupe gauche : hamburger (mobile) + logo (desktop) */}
-          <div className="flex items-center gap-2">
-            {/* Hamburger — visible on mobile only, bottom nav handles mobile navigation */}
-            <button
-              onClick={() => setMobileOpen((v) => !v)}
-              className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted"
-              aria-label="Menu"
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-
-            {/* Logo — desktop (gauche) */}
-            <Link href="/" className="hidden md:flex items-center gap-2 group">
-              <Logo variant="dark" size="sm" className="transition-transform group-hover:scale-105" />
-            </Link>
-          </div>
-
-          {/* Logo — mobile (centré absolu) */}
+        {/* Rangée 1 — logo, navigation, actions */}
+        <div className="flex h-16 items-center justify-between gap-3">
           <Link
             href="/"
-            className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 group"
+            className="flex items-center"
+            aria-label="Trouvetou — accueil"
           >
-            <Logo variant="dark" size="sm" className="transition-transform group-hover:scale-105" />
+            <Logo variant="light" size="sm" />
           </Link>
 
           {/* Navigation desktop */}
-          <nav className="hidden md:flex items-center gap-1 mx-auto flex-1 justify-center">
+          <nav
+            aria-label="Navigation principale"
+            className="hidden md:flex items-center gap-1"
+          >
             {NAV_LINKS.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  aria-current={isActive ? "page" : undefined}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-lime text-ink"
+                      : "text-dark-muted hover:bg-dark-2 hover:text-white"
                   }`}
                 >
                   {link.label}
-                  {isActive && (
-                    <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-primary" />
-                  )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Actions droite */}
-          <div className="flex items-center gap-2">
-            {/* Favoris — chip desktop (sans badge) */}
+          {/* Actions */}
+          <div className="flex items-center gap-1">
             <Link
               href="/favoris"
-              className="relative hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-white px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/5"
-              aria-label="Mes favoris"
+              className="tt-tap inline-flex items-center gap-2 rounded-full px-3 text-sm font-medium text-dark-muted transition-colors hover:bg-dark-2 hover:text-white"
             >
-              <Heart className="h-4 w-4" />
+              <Heart aria-hidden="true" className="h-5 w-5" />
               <span className="hidden lg:inline">Favoris</span>
+              <span className="sr-only lg:hidden">Favoris</span>
             </Link>
 
-            {/* Favoris — mobile (icône seule, sans badge) */}
-            <Link
-              href="/favoris"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted sm:hidden"
-              aria-label="Mes favoris"
-            >
-              <Heart className="h-5 w-5" />
-            </Link>
-
-            {/* Profil */}
             <Link
               href="/profil"
-              className="hidden md:inline-flex items-center rounded-full bg-gradient-to-r from-[#102a72] to-[#1769e8] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
+              className="hidden md:inline-flex h-10 items-center rounded-full bg-lime px-4 text-sm font-semibold text-ink transition-colors hover:bg-lime-strong"
             >
               Mon espace
             </Link>
+
+            <button
+              type="button"
+              onClick={() => setMobileOpen((value) => !value)}
+              className="tt-tap inline-flex items-center justify-center rounded-xl text-white transition-colors hover:bg-dark-2 md:hidden"
+              aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-expanded={mobileOpen}
+              aria-controls="menu-mobile"
+            >
+              {mobileOpen ? (
+                <X aria-hidden="true" className="h-6 w-6" />
+              ) : (
+                <Menu aria-hidden="true" className="h-6 w-6" />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Rangée 2 — recherche (mobile : sous le logo) */}
+        <SiteSearch className="pb-3 md:max-w-2xl" />
+
+        {/* Rangée 3 — catégories */}
+        <CategoryTabs className="pb-3" />
       </div>
 
-      {/* Menu mobile */}
+      {/* Menu mobile dépliant */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.nav
+            id="menu-mobile"
+            aria-label="Menu"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="overflow-hidden border-t border-border bg-white md:hidden"
+            className="overflow-hidden border-t border-dark-line bg-dark md:hidden"
           >
-            <div className="mx-auto max-w-7xl px-4 py-3 space-y-1 sm:px-6 lg:px-8">
+            <ul className="space-y-1 px-4 py-3">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
                 return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`block rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      onClick={() => setMobileOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`tt-tap flex items-center rounded-xl px-4 text-sm font-medium transition-colors ${
+                        isActive
+                          ? "bg-lime text-ink"
+                          : "text-dark-muted hover:bg-dark-2 hover:text-white"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </motion.nav>
         )}
       </AnimatePresence>

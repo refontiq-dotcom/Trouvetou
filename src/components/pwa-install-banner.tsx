@@ -57,14 +57,14 @@ export function PwaInstallBanner() {
   return (
     <div className="fixed bottom-20 md:bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-5">
       <div className="mx-auto max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 flex items-center gap-3">
-        <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-          <Download className="w-5 h-5 text-primary" />
+        <div className="flex-shrink-0 w-10 h-10 bg-tt-ink/10 rounded-xl flex items-center justify-center">
+          <Download className="w-5 h-5 text-tt-ink" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-semibold text-tt-ink">
             Installer Trouvetou
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-tt-ink-60">
             Accédez hors ligne depuis votre écran d&apos;accueil
           </p>
         </div>
@@ -78,10 +78,10 @@ export function PwaInstallBanner() {
           </Button>
           <button
             onClick={handleDismiss}
-            className="p-1.5 hover:bg-muted rounded-full transition-colors"
+            className="p-1.5 hover:bg-tt-lime-tint rounded-full transition-colors"
             aria-label="Fermer"
           >
-            <X className="w-4 h-4 text-muted-foreground" />
+            <X className="w-4 h-4 text-tt-ink-60" />
           </button>
         </div>
       </div>

@@ -2,37 +2,42 @@ import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import { Stethoscope, GraduationCap, UtensilsCrossed, Building2 } from "lucide-react";
 
+// Pastilles d'icônes : le code couleur par secteur (sky/blue/orange/amber)
+// n'apportait aucune information — chaque pastille porte déjà SON icône et
+// SON libellé texte. On aligne donc sur la convention de marque déjà en place
+// dans `alert-subscribe` et `popular-categories-block` :
+// fond `tt-lime-soft` + glyphe `tt-ink` (contraste 15:1, largement lisible).
 const CATEGORIES = [
   {
     slug: "clinic",
     label: "Cliniques",
     href: "/cliniques",
-    iconBg: "bg-sky-100",
-    iconText: "text-sky-600",
+    iconBg: "bg-tt-lime-soft",
+    iconText: "text-tt-ink",
     icon: Stethoscope,
   },
   {
     slug: "school",
     label: "Écoles",
     href: "/ecoles",
-    iconBg: "bg-blue-100",
-    iconText: "text-blue-600",
+    iconBg: "bg-tt-lime-soft",
+    iconText: "text-tt-ink",
     icon: GraduationCap,
   },
   {
     slug: "restaurant",
     label: "Restaurants",
     href: "/restaurants",
-    iconBg: "bg-orange-100",
-    iconText: "text-orange-600",
+    iconBg: "bg-tt-lime-soft",
+    iconText: "text-tt-ink",
     icon: UtensilsCrossed,
   },
   {
     slug: "residence",
     label: "Résidences & Hôtels",
     href: "/hotels",
-    iconBg: "bg-amber-100",
-    iconText: "text-amber-600",
+    iconBg: "bg-tt-lime-soft",
+    iconText: "text-tt-ink",
     icon: Building2,
   },
 ];
