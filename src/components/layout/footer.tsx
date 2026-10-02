@@ -24,7 +24,7 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Logo variant="light" size="sm" />
+            <Logo size="sm" />
             <p className="mt-4 max-w-md text-sm text-white/60">
               L&apos;endroit qu&apos;il vous faut, au moment qu&apos;il le faut.
               Trouvetou vous aide à trouver rapidement ce que vous cherchez,

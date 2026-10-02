@@ -8,6 +8,7 @@ import { useFavorites } from "@/contexts/favorites-context";
 import { RoomCard } from "@/components/hotels/room-card";
 import { RoomCardSkeletonGrid } from "@/components/hotels/room-card-skeleton";
 import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { getPriceSuffix } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
@@ -55,10 +56,23 @@ export default function FavorisPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <p className="text-sm text-muted-foreground">
-          Accueil <span className="mx-1">/</span>
+        {/* Retour sur mobile — le header global n'existe pas sur ce format */}
+        <BackLink />
+
+        {/* Fil d'Ariane — « Accueil » est cliquable */}
+        <nav
+          aria-label="Fil d'Ariane"
+          className="mt-2 flex items-center gap-1 text-sm text-muted-foreground"
+        >
+          <Link
+            href="/"
+            className="-ml-1 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Accueil
+          </Link>
+          <span className="mx-1">/</span>
           <span className="font-medium text-foreground">Mes favoris</span>
-        </p>
+        </nav>
         <h1 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center gap-3">
           <Heart className="h-8 w-8 text-red-500 fill-red-500" />
           Mes favoris

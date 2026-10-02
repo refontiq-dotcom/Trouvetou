@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/", label: "Accueil", icon: Home },
+  { href: "__autour__", label: "À proximité", icon: MapPin },
   { href: "/favoris", label: "Favoris", icon: Heart },
-  { href: "__autour__", label: "Près de moi", icon: MapPin },
   { href: "/profil", label: "Profil", icon: User },
 ];
 
@@ -39,7 +39,8 @@ export function BottomNav() {
                   className="relative flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors text-muted-foreground"
                 >
                   <Icon className="h-5 w-5" />
-                  <span className="text-[10px] font-medium">Près de moi</span>
+                  <span className="text-[10px] font-medium">À proximité</span>
+                  <span className="h-0.5 w-8 rounded-full bg-transparent" />
                 </button>
               );
             }
@@ -50,13 +51,20 @@ export function BottomNav() {
                 href={item.href}
                 className={cn(
                   "relative flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  isActive ? "text-lime" : "text-muted-foreground"
                 )}
               >
-                <Icon className={cn("h-5 w-5", isActive && "fill-primary/10")} />
-                <span className={cn("text-[10px] font-medium", isActive && "text-primary")}>
+                <Icon className={cn("h-5 w-5", isActive && "fill-lime/15")} />
+                <span className={cn("text-[10px] font-semibold", isActive && "text-lime")}>
                   {item.label}
                 </span>
+                {/* Souligné de l'item actif (maquette) */}
+                <span
+                  className={cn(
+                    "h-0.5 w-8 rounded-full transition-colors",
+                    isActive ? "bg-lime" : "bg-transparent"
+                  )}
+                />
               </Link>
             );
           })}

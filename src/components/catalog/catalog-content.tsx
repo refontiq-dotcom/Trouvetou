@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -29,6 +30,7 @@ import { useLocation } from "@/contexts/location-context";
 import { VoiceButton } from "@/components/ui/voice-button";
 import { CategoryBanner } from "@/components/catalog/category-banner";
 import { FilterDrawer } from "@/components/catalog/filter-drawer";
+import { BackLink } from "@/components/layout/back-link";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
 
@@ -191,10 +193,20 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <p className="text-sm text-muted-foreground hidden sm:block">
-          Accueil <span className="mx-1">/</span>
+        {/* Retour sur mobile — le header global n'existe pas sur ce format */}
+        <BackLink />
+
+        {/* Fil d'Ariane — visible sur mobile et desktop, « Accueil » est cliquable */}
+        <nav aria-label="Fil d'Ariane" className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+          <Link
+            href="/"
+            className="-ml-1 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Accueil
+          </Link>
+          <span className="mx-1">/</span>
           <span className="font-medium text-foreground">{config.breadcrumbLabel}</span>
-        </p>
+        </nav>
         <h1 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
           {config.title}
         </h1>

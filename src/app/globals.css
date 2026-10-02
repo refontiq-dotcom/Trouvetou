@@ -42,6 +42,11 @@
   --success: #10b981;
   --warning: #f5a400;
 
+  /* Maquette accueil mobile — fond encre & accent vert lime */
+  --ink: #0b0f14;
+  --ink-soft: #1f2630;
+  --lime: #b5e04b;
+
   --radius: 1rem;
 
   /* Gradient helpers */
@@ -74,6 +79,9 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-lime: var(--lime);
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-poppins: "Poppins", sans-serif;
   --radius: var(--radius);
@@ -136,6 +144,14 @@ h1 {
 }
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out both;
+}
+
+/* Masque la scrollbar des rangées de chips horizontales */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Hero blobs */

@@ -7,6 +7,7 @@ import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
 import { useBookings } from "@/contexts/bookings-context";
 import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
+import { BackLink } from "@/components/layout/back-link";
 
 const MENU_ITEMS = [
   { href: "/favoris", label: "Mes favoris", icon: Heart, color: "text-red-500" },
@@ -25,6 +26,9 @@ export default function ProfilPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
+        {/* Retour sur mobile — le header global n'existe pas sur ce format */}
+        <BackLink />
+
         {/* Avatar + info */}
         <div className="flex items-center gap-4 mb-8">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
