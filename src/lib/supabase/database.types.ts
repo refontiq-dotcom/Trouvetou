@@ -1,371 +1,776 @@
-// ============================================================================
-// TROUVETOU — Types TypeScript de la base Supabase autonome Trouvetou
-// Base DÉDIÉE (distincte de Séjoura). Tables : categories, providers,
-// listings (polymorphe), sync_logs.
-// ============================================================================
-
-// ---------------------------------------------------------------------------
-// Table `categories` — Secteurs isolés par slug ('hotel', 'clinic', 'school', ...)
-// ---------------------------------------------------------------------------
-export type Category = {
-  id: string;
-  slug: string;
-  name: string;
-  created_at: string;
-};
-
-// ---------------------------------------------------------------------------
-// Type `provider_type` — identité technique du logiciel métier
-// ---------------------------------------------------------------------------
-
-/**
- * Vocabulaire de `providers.type`.
- *
- * `'unknown'` signifie « le logiciel métier n'est pas établi » : c'est l'état
- * par défaut d'une ligne existante dont l'identité n'a pas été confirmée. Un
- * provider dans cet état ne doit être considéré comme réservable par AUCUN
- * connecteur.
- *
- * Ajouter un connecteur revient à étendre l'enum en base
- * (`alter type ... add value`) puis cette union : le modèle n'est pas à
- * réécrire.
- */
-export type ProviderType = "unknown" | "sejoura";
-
-// ---------------------------------------------------------------------------
-// Table `providers` — Sources d'alimentation (logiciels métiers partenaires)
-// ---------------------------------------------------------------------------
-export type Provider = {
-  id: string;
-  name: string;
-  category_id: string;
-  /**
-   * Identité technique du connecteur. Ne jamais dériver cette valeur de
-   * `name` (texte libre) ni de la catégorie (secteur, pas logiciel).
-   */
-  type: ProviderType;
-  api_key_hash: string;
-  webhook_url: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-// ---------------------------------------------------------------------------
-// Table `listings` — Annonces polymorphes (tous secteurs confondus)
-// ---------------------------------------------------------------------------
-export type Listing = {
-  id: string;
-  provider_id: string;
-  category_id: string;
-  /** ID stable côté fournisseur — clé d'UPSERT avec provider_id. */
-  external_id: string;
-  title: string;
-  description: string | null;
-  city: string | null;
-  /** Prix de base en FCFA (nuit / consultation / scolarité / ...). */
-  base_price: number | null;
-  /** Tableau de liens d'images (CDN/Storage). */
-  images: string[];
-  /**
-   * Spécificités du secteur :
-   *   hôtel    : { "beds": 3, "wifi": true }
-   *   clinique : { "specialties": ["Cardiologie"] }
-   *   école    : { "levels": ["Primaire"] }
-   */
-  attributes: Record<string, unknown>;
-  is_available: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-export type ListingInsert = {
-  provider_id: string;
-  category_id: string;
-  external_id: string;
-  title: string;
-  description?: string | null;
-  city?: string | null;
-  base_price?: number | null;
-  images?: string[];
-  attributes?: Record<string, unknown>;
-  is_available?: boolean;
-};
-
-// ---------------------------------------------------------------------------
-// Table `sync_logs` — Journal des synchronisations entrantes
-// ---------------------------------------------------------------------------
-export type SyncLog = {
-  id: string;
-  provider_id: string | null;
-  status: "success" | "partial" | "error";
-  items_count: number;
-  inserted: number;
-  updated: number;
-  message: string | null;
-  ip_address: string | null;
-  created_at: string;
-};
-
-// ============================================================================
-// TYPES HÉRITÉS (compatibilité) — lecture du schéma Séjoura partagé legacy.
-// Ces types ne font plus partie du schéma dédié Trouvetou ; ils sont conservés
-// pour ne pas casser la section Hôtels existante tant qu'elle lit la base
-// Séjoura. À migrer vers `listings` via `src/lib/supabase/listings.ts`.
-// ============================================================================
-
-export type SubscriptionStatus =
-  | "trial"
-  | "active"
-  | "overdue"
-  | "suspended"
-  | "cancelled";
-
-export type SubscriptionPlan = "standard" | "pro" | "entreprise" | string;
-
-export type EstablishmentType =
-  | "hotel"
-  | "residence"
-  | "appartements"
-  | "villa"
-  | "guesthouse"
-  | "other";
-
-/** Table `establishments` — alimentée par le logiciel Séjoura. */
-export type Establishment = {
-  id: string;
-  name: string;
-  address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  subscription_status: SubscriptionStatus;
-  /** Plan d'abonnement : 'entreprise' = annonces systématiquement boostées. */
-  subscription_plan?: SubscriptionPlan | null;
-  type?: EstablishmentType | null;
-  city?: string | null;
-  country?: string | null;
-  cover_image?: string | null;
-  contact_phone?: string | null;
-  contact_email?: string | null;
-  whatsapp?: string | null;
-  website?: string | null;
-};
-
-/** Table `rooms` — alimentée par le logiciel Séjoura. */
-export type Room = {
-  id: string;
-  establishment_id: string;
-  name: string;
-  /** Prix de la chambre (FCFA par nuit). */
-  price: number;
-  amenities: string[];
-  /** Tableau de liens d'images (Cloudinary/CDN/Storage). */
-  images: string[];
-  /** Interrupteur d'affichage sur Trouvetou activé par le gérant. */
-  is_listed_on_trouvetou: boolean;
-  /** Option "Boost" : la chambre est sponsorisée individuellement. */
-  is_boosted?: boolean;
-  description?: string | null;
-  capacity?: number;
-};
-
-/**
- * Chambre affichée sur le catalogue public, avec son établissement joint.
- * `establishment` est mappé depuis la ressource embarquée `establishments`
- * retournée par PostgREST.
- */
-export type ListedRoom = Room & {
-  establishment: Establishment;
-  is_boosted: boolean;
-};
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       categories: {
-        Row: Category;
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
         Insert: {
-          id?: string;
-          slug: string;
-          name: string;
-          created_at?: string;
-        };
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
         Update: {
-          slug?: string;
-          name?: string;
-        };
-        Relationships: [];
-      };
-      providers: {
-        Row: Provider;
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string
+          listing_id: string
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          name: string;
-          category_id: string;
-          /** Requis explicitement : on n'hérite pas d'un `'unknown'` silencieux. */
-          type: ProviderType;
-          outbound_api_key_encrypted?: string | null;
-          api_key_hash: string;
-          webhook_url?: string | null;
-          is_active?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
+          created_at?: string
+          listing_id: string
+          user_id: string
+        }
         Update: {
-          name?: string;
-          category_id?: string;
-          type?: ProviderType;
-          outbound_api_key_encrypted?: string | null;
-          api_key_hash?: string;
-          webhook_url?: string | null;
-          is_active?: boolean;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_credentials: {
+        Row: {
+          created_at: string
+          credential_hash: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          provider_id: string
+          scope_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credential_hash: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          provider_id: string
+          scope_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credential_hash?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          provider_id?: string
+          scope_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_credentials_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_credentials_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "integration_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_scopes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          provider_id: string
+          scope_type: string
+          tenant_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_id: string
+          scope_type: string
+          tenant_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_id?: string
+          scope_type?: string
+          tenant_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_scopes_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_tenant_scopes: {
+        Row: {
+          created_at: string
+          listing_id: string
+          provider_id: string
+          tenant_ref: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          provider_id: string
+          tenant_ref: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          provider_id?: string
+          tenant_ref?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_tenant_scopes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_tenant_scopes_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
-        Row: Listing;
-        Insert: ListingInsert & { id?: string; created_at?: string };
-        Update: {
-          category_id?: string;
-          title?: string;
-          description?: string | null;
-          city?: string | null;
-          base_price?: number | null;
-          images?: string[];
-          attributes?: Record<string, unknown>;
-          is_available?: boolean;
-        };
-        Relationships: [];
-      };
-      sync_logs: {
-        Row: SyncLog;
+        Row: {
+          attributes: Json
+          base_price: number | null
+          category_id: string
+          city: string | null
+          created_at: string
+          description: string | null
+          external_id: string
+          id: string
+          images: Json
+          is_available: boolean
+          provider_id: string
+          tenant_ref: string | null
+          title: string
+          updated_at: string
+        }
         Insert: {
-          provider_id?: string | null;
-          status?: string;
-          items_count?: number;
-          inserted?: number;
-          updated?: number;
-          message?: string | null;
-          ip_address?: string | null;
-          created_at?: string;
-        };
+          attributes?: Json
+          base_price?: number | null
+          category_id: string
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          external_id: string
+          id?: string
+          images?: Json
+          is_available?: boolean
+          provider_id: string
+          tenant_ref?: string | null
+          title: string
+          updated_at?: string
+        }
         Update: {
-          message?: string | null;
-        };
-        Relationships: [];
-      };
+          attributes?: Json
+          base_price?: number | null
+          category_id?: string
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          external_id?: string
+          id?: string
+          images?: Json
+          is_available?: boolean
+          provider_id?: string
+          tenant_ref?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       provider_api_key_aliases: {
         Row: {
-          id: string;
-          legacy_provider_id: string;
-          canonical_provider_id: string;
-          api_key_hash: string;
-          is_active: boolean;
-          created_at: string;
-        };
+          api_key_hash: string
+          canonical_provider_id: string
+          created_at: string
+          is_active: boolean
+          legacy_provider_id: string
+          updated_at: string
+        }
         Insert: {
-          id?: string;
-          legacy_provider_id: string;
-          canonical_provider_id: string;
-          api_key_hash: string;
-          is_active?: boolean;
-          created_at?: string;
-        };
+          api_key_hash: string
+          canonical_provider_id: string
+          created_at?: string
+          is_active?: boolean
+          legacy_provider_id: string
+          updated_at?: string
+        }
         Update: {
-          canonical_provider_id?: string;
-          api_key_hash?: string;
-          is_active?: boolean;
-        };
-        Relationships: [];
-      };
-      // --- Tables héritées Séjoura (compatibilité section Hôtels) ---
-      rooms: {
-        Row: Room;
-        Insert: Omit<Room, "id">;
-        Update: Partial<Omit<Room, "id">>;
-        Relationships: [];
-      };
-      establishments: {
-        Row: Establishment;
-        Insert: Omit<Establishment, "id">;
-        Update: Partial<Omit<Establishment, "id">>;
-        Relationships: [];
-      };
-      room_types: {
+          api_key_hash?: string
+          canonical_provider_id?: string
+          created_at?: string
+          is_active?: boolean
+          legacy_provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_api_key_aliases_canonical_provider_id_fkey"
+            columns: ["canonical_provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      providers: {
         Row: {
-          id: string;
-          name: string | null;
-          description: string | null;
-          base_price: number | null;
-          capacity: number | null;
-          amenities: string[] | null;
-          created_at: string | null;
-          updated_at: string | null;
-        };
-        Insert: Record<string, unknown>;
-        Update: Record<string, unknown>;
-        Relationships: [];
-      };
-      accommodations: {
+          api_key_hash: string
+          category_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          outbound_api_key_encrypted: string | null
+          type: Database["public"]["Enums"]["provider_type"]
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_hash: string
+          category_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          outbound_api_key_encrypted?: string | null
+          type?: Database["public"]["Enums"]["provider_type"]
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_hash?: string
+          category_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          outbound_api_key_encrypted?: string | null
+          type?: Database["public"]["Enums"]["provider_type"]
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "providers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schooly_grade_levels: {
         Row: {
-          id: string;
-          name: string | null;
-          description: string | null;
-          address: string | null;
-          city: string | null;
-          country: string | null;
-          latitude: number | null;
-          longitude: number | null;
-          contact_phone: string | null;
-          is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Record<string, unknown>;
-        Update: Record<string, unknown>;
-        Relationships: [];
-      };
-      tenants: {
-        Row: Record<string, unknown>;
-        Insert: Record<string, unknown>;
-        Update: Record<string, unknown>;
-        Relationships: [];
-      };
-      subscriptions: {
-        Row: Record<string, unknown>;
-        Insert: Record<string, unknown>;
-        Update: Record<string, unknown>;
-        Relationships: [];
-      };
-      trouvetou_listings: {
-        Row: Record<string, unknown>;
-        Insert: Record<string, unknown>;
-        Update: Record<string, unknown>;
-        Relationships: [];
-      };
-    };
-    Views: Record<never, never>;
+          capacity: number
+          created_at: string
+          id: string
+          label: string
+          last_sync_at: string
+          places_disponibles: number
+          prix_max: number | null
+          prix_min: number | null
+          schooly_school_id: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          id: string
+          label: string
+          last_sync_at?: string
+          places_disponibles?: number
+          prix_max?: number | null
+          prix_min?: number | null
+          schooly_school_id: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          label?: string
+          last_sync_at?: string
+          places_disponibles?: number
+          prix_max?: number | null
+          prix_min?: number | null
+          schooly_school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schooly_grade_levels_schooly_school_id_fkey"
+            columns: ["schooly_school_id"]
+            isOneToOne: false
+            referencedRelation: "schooly_schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schooly_schools: {
+        Row: {
+          created_at: string
+          description_publique: string | null
+          grille_tarifaire_publique: Json | null
+          id: string
+          itineraire: string | null
+          last_sync_at: string
+          latitude: number | null
+          longitude: number | null
+          nom: string
+          photos_360: Json | null
+          published: boolean
+          schooly_instance_url: string
+          updated_at: string
+          video_url: string | null
+          ville: string | null
+        }
+        Insert: {
+          created_at?: string
+          description_publique?: string | null
+          grille_tarifaire_publique?: Json | null
+          id: string
+          itineraire?: string | null
+          last_sync_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          nom: string
+          photos_360?: Json | null
+          published?: boolean
+          schooly_instance_url: string
+          updated_at?: string
+          video_url?: string | null
+          ville?: string | null
+        }
+        Update: {
+          created_at?: string
+          description_publique?: string | null
+          grille_tarifaire_publique?: Json | null
+          id?: string
+          itineraire?: string | null
+          last_sync_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          nom?: string
+          photos_360?: Json | null
+          published?: boolean
+          schooly_instance_url?: string
+          updated_at?: string
+          video_url?: string | null
+          ville?: string | null
+        }
+        Relationships: []
+      }
+      schooly_sync_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          message: string | null
+          payload: Json | null
+          schooly_school_id: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          schooly_school_id?: string | null
+          status?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          schooly_school_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schooly_sync_log_schooly_school_id_fkey"
+            columns: ["schooly_school_id"]
+            isOneToOne: false
+            referencedRelation: "schooly_schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_logs: {
+        Row: {
+          created_at: string
+          id: string
+          inserted: number
+          ip_address: unknown
+          items_count: number
+          message: string | null
+          provider_id: string | null
+          status: string
+          updated: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inserted?: number
+          ip_address?: unknown
+          items_count?: number
+          message?: string | null
+          provider_id?: string | null
+          status: string
+          updated?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inserted?: number
+          ip_address?: unknown
+          items_count?: number
+          message?: string | null
+          provider_id?: string | null
+          status?: string
+          updated?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_logs_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trouvetou_traffic_daily: {
+        Row: {
+          created_at: string
+          day: string
+          unique_visitors: number
+          updated_at: string
+          visits: number
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          unique_visitors?: number
+          updated_at?: string
+          visits?: number
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          unique_visitors?: number
+          updated_at?: string
+          visits?: number
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
+      apply_soft_removal: {
+        Args: {
+          p_external_ids: string[]
+          p_provider_id: string
+          p_tenant_ref: string
+        }
+        Returns: number
+      }
+      create_provider: {
+        Args: {
+          p_api_key_hash: string
+          p_category: string
+          p_name: string
+          p_type?: string
+          p_webhook_url?: string
+        }
+        Returns: {
+          api_key_hash: string
+          category_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          outbound_api_key_encrypted: string | null
+          type: Database["public"]["Enums"]["provider_type"]
+          updated_at: string
+          webhook_url: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "providers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      increment_trouvetou_traffic: {
+        Args: { p_day: string; p_unique_visitors: number }
+        Returns: {
+          day: string
+          unique_visitors: number
+          visits: number
+        }[]
+      }
       ingest_listings: {
         Args: {
-          p_provider_id: string;
-          p_category_id: string;
-          p_items: Array<Record<string, unknown>>;
-        };
-        Returns: Array<{ inserted: number; updated: number }>;
-      };
-      increment_trouvetou_traffic: {
-        Args: {
-          p_day: string;
-          p_unique_visitors: number;
-        };
-        Returns: Array<{
-          day: string;
-          visits: number;
-          unique_visitors: number;
-        }>;
-      };
-    };
-  };
-};
+          p_category_id: string
+          p_items: Json
+          p_provider_id: string
+          p_tenant_ref?: string
+        }
+        Returns: {
+          inserted: number
+          updated: number
+        }[]
+      }
+      purge_provider_listings: {
+        Args: { p_provider_id: string }
+        Returns: number
+      }
+      resolve_integration_scope: {
+        Args: { p_credential_hash: string; p_provider_id: string }
+        Returns: {
+          provider_matches: boolean
+          scope_id: string
+          scope_is_active: boolean
+          scope_type: string
+          tenant_ref: string
+        }[]
+      }
+      schooly_sync_school: {
+        Args: { p_levels: Json; p_school: Json }
+        Returns: Json
+      }
+    }
+    Enums: {
+      provider_type: "unknown" | "sejoura"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      provider_type: ["unknown", "sejoura"],
+    },
+  },
+} as const

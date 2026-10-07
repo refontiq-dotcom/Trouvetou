@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 import { findAdapter, registerAdapter, resetRegistry } from "@/lib/providers/registry";
 import type { ProviderAdapter } from "@/lib/providers/contract";
-import type { ProviderType } from "@/lib/supabase/database.types";
+import type { ProviderType } from "@/lib/supabase/provider-type";
 
 // ============================================================================
 // Invariants du modèle d'identité des providers.
@@ -137,11 +137,34 @@ describe("Règle 4 — le sync reconnaît un provider, il ne le crée pas", () =
 });
 
 describe("Règle 5 — identité d'une annonce", () => {
-  it("s'appuie sur (provider_id, external_id), garanti par la base", () => {
-    // La contrainte est la garantie finale contre le doublon.
-    expect(readRepoFile("supabase/schema.sql")).toMatch(
-      /UNIQUE \(provider_id, external_id\)/
+  it("s'appuie sur le TRIPLET (provider_id, tenant_ref, external_id)", () => {
+    // Phase 2D.39 : le provider est une CONNEXION SaaS, pas un tenant. Deux
+    // tenants du même provider peuvent légitimement utiliser le même
+    // external_id, donc l'identité doit porter le tenant.
+    //
+    // La garantie finale reste une CONTRAINTE DE BASE, pas une convention
+    // applicative : c'est ce qui protège contre le doublon en cas de
+    // régression ou d'écriture concurrente.
+    const migration = readRepoFile(
+      "supabase/migrations/20261005000000_multi_tenant_integration_scopes.sql"
     );
+    expect(migration).toMatch(
+      /create unique index if not exists uq_listings_tenant_external\s*\n\s*on public\.listings \(provider_id, tenant_ref, external_id\)/,
+    );
+    // NULLS NOT DISTINCT : sans lui, deux listings legacy (tenant_ref NULL)
+    // cesseraient d'être uniques et perdraient l'unicité d'avant la bascule.
+    expect(migration).toMatch(/nulls not distinct/);
+  });
+
+  it("n'expose pas tenant_ref au catalogue public", () => {
+    // La colonne vit dans `listings`, mais le catalogue énumère ses colonnes :
+    // `tenant_ref` n'y figure pas, donc il n'est pas retourné.
+    const listingsSelect = readRepoFile("src/lib/supabase/listings.ts");
+    const block = listingsSelect.slice(
+      listingsSelect.indexOf("LISTINGS_SELECT"),
+      listingsSelect.indexOf("`;", listingsSelect.indexOf("LISTINGS_SELECT"))
+    );
+    expect(block).not.toMatch(/tenant_ref/);
   });
 
   it("considère deux providers de même type comme deux annonces distinctes", () => {

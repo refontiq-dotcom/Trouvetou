@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateApiKey, hashApiKey } from "@/lib/sync/api-key";
+import { asRotationAdmin, resolveRotationTarget } from "@/lib/control-center/resolve-rotation-target";
 
 const PRODUCTION_SEJOURA_WEBHOOK = "https://sejoura.app/sync-callback";
 
@@ -40,26 +41,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { data: provider, error: providerError } = await admin
-    .from("providers")
-    .select("id, name, webhook_url, is_active")
-    .eq("name", "Séjoura")
-    .eq("webhook_url", PRODUCTION_SEJOURA_WEBHOOK)
-    .eq("is_active", true)
-    .maybeSingle();
+  // Ciblage explicite : `providerId` dans le corps JSON. Absent, on retombe sur
+  // la recherche historique (nom + webhook) — mais celle-ci renvoie désormais
+  // un conflit EXPLICITE si plusieurs providers Séjour@ correspondent, au lieu
+  // d'échouer en 500 via `.maybeSingle()` dès la création des 4 providers.
+  let payload: { providerId?: unknown } = {};
+  try {
+    payload = await req.json();
+  } catch {
+    // Corps optionnel : la route reste appelable sans body.
+  }
+  const requestedProviderId = typeof payload.providerId === "string" ? payload.providerId : null;
 
-  if (providerError) {
-    console.error("[control-center key rotation] provider lookup failed", providerError);
-    return NextResponse.json({ error: "Impossible de trouver Séjoura." }, { status: 500 });
+  const resolution = await resolveRotationTarget({
+    admin: asRotationAdmin(admin),
+    providerId: requestedProviderId,
+    expectedType: "sejoura",
+    fallback: { name: "Séjoura", webhookUrl: PRODUCTION_SEJOURA_WEBHOOK },
+  });
+
+  if (!resolution.ok) {
+    console.error("[control-center key rotation]", resolution.code);
+    return NextResponse.json({ error: resolution.error }, { status: resolution.status });
   }
 
-  if (!provider) {
-    return NextResponse.json(
-      { error: "Le fournisseur Séjoura de production est introuvable." },
-      { status: 404 },
-    );
-  }
-
+  const provider = resolution.provider;
   const newApiKey = generateApiKey(provider.id);
   const newHash = hashApiKey(newApiKey);
 

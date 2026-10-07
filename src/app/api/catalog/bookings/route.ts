@@ -15,7 +15,7 @@ import type { ProviderContext } from "@/lib/providers/context";
 import { findAdapter, findTrackingAdapter, registerAdapter, registerTrackingAdapter } from "@/lib/providers/registry";
 import { SejouraBookingAdapter } from "@/connectors/sejoura/sejoura-booking-adapter";
 import { SejouraArrivalTrackingAdapter } from "@/connectors/sejoura/sejoura-arrival-tracking-adapter";
-import type { ProviderType } from "@/lib/supabase/database.types";
+import type { ProviderType } from "@/lib/supabase/provider-type";
 
 /**
  * Enregistrement des connecteurs au chargement du module.

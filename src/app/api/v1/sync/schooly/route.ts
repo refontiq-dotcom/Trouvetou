@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/database.types";
 import { safeHttpUrl, safeHttpUrlList } from "@/lib/http/url";
 import { normalizePanoramaTour, type PanoramaTour } from "@/types/panorama";
 import {
@@ -336,9 +337,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           photos_360: panorama360Url ? [panorama360Url] : [],
           panorama_360_url: panorama360Url,
           panorama_start_scene_id: panoramaStartSceneId,
-          panorama_tour: panoramaTour,
+          // `PanoramaTour` est une interface TypeScript sans index signature :
+          // elle n'est pas assignable à `Json`. Le tour a été normalisé par
+          // `normalizePanoramaTour` (URLs http(s) uniquement) et reste
+          // JSON-sérialisable — le cast n'assouplit aucune validation.
+          panorama_tour: (panoramaTour as unknown as Json) ?? null,
           video_url: school.video_url ?? null,
-          grille_tarifaire_publique: school.grille_tarifaire_publique ?? null,
+          // `unknown[]` du payload Schooly → `Json` : la valeur provient du
+          // JSON décodé du corps de requête, donc déjà JSON-sérialisable.
+          grille_tarifaire_publique: (school.grille_tarifaire_publique as unknown as Json) ?? null,
           levels: levels.map((level) => ({
             id: level.id,
             label: level.label,

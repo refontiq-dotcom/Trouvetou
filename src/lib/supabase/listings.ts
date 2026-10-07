@@ -1,4 +1,27 @@
-import type { Listing } from "./database.types";
+/**
+ * Ligne `listings` telle que produite par `mapRow`.
+ *
+ * Le fichier généré `database.types.ts` ne fournit plus d'alias `Listing`
+ * : on redéfinit ici la forme réellement lue depuis le catalogue, ce qui
+ * reste la source de vérité de ce module (les colonnes sélectionnées par
+ * `LISTINGS_SELECT`). `images`/`attributes` sont normalisés par `mapRow`
+ * (tableau / objet), d'où les types plus stricts que `Json`.
+ */
+export interface Listing {
+  id: string;
+  provider_id: string;
+  category_id: string;
+  external_id: string;
+  title: string;
+  description: string | null;
+  city: string | null;
+  base_price: number | null;
+  images: string[];
+  attributes: Record<string, unknown>;
+  is_available: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 // ============================================================================
 // TROUVETOU — Lecture du catalogue public (base autonome Trouvetou)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/database.types";
 import { safeHttpUrl, safeHttpUrlList } from "@/lib/http/url";
 import { normalizePanoramaTour } from "@/types/panorama";
 import {
@@ -7,6 +8,13 @@ import {
   parseProviderIdFromKey,
   secureCompare,
 } from "@/lib/sync/api-key";
+import {
+  canCreateListing,
+  resolveScope,
+  ScopeError,
+  type ResolvedScope,
+  type ScopeAdminLike,
+} from "@/lib/integration/scope";
 
 /**
  * Nombre maximal d'images synchronisées par annonce.
@@ -121,6 +129,37 @@ interface SyncItem {
 
 interface SyncPayload {
   items?: SyncItem[];
+  /**
+   * Portée DÉCLARÉE par le client.
+   *
+   * Ce n'est PAS une source d'autorité : elle est confrontée au scope
+   * authentifié, et tout écart vaut 403. Un client qui déclare le tenant d'un
+   * autre se voit refuser — il ne peut ni élargir son périmètre, ni écrire
+   * chez autrui.
+   */
+  scope?: { tenant_ref?: string | null } | null;
+}
+
+/**
+ * Trace un refus de scope dans `sync_logs`.
+ *
+ * Aucun secret n'est journalisé : ni la clé, ni son empreinte — seulement le
+ * code d'erreur, qui suffit à diagnostiquer sans rien révéler.
+ */
+async function logAuthFailure(providerId: string, code: string): Promise<void> {
+  try {
+    const admin = getAdminClient();
+    if (!admin) return;
+    await admin.from("sync_logs").insert({
+      provider_id: providerId,
+      status: "error",
+      items_count: 0,
+      message: `SCOPE_DENIED: ${code}`,
+      ip_address: null,
+    });
+  } catch {
+    // Un journal ne doit jamais faire échouer une réponse d'autorisation.
+  }
 }
 
 function jsonError(message: string, status: number, code?: string): NextResponse {
@@ -244,6 +283,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Clé API invalide.", 401, "INVALID_API_KEY");
   }
 
+  // ── 2.bis RÉSOLUTION DU SCOPE D'INTÉGRATION ────────────────────────────
+  //
+  // Le provider est authentifié, mais ce n'est PAS lui qui dit quel tenant est
+  // visé : c'est le SCOPE. Un même provider sert plusieurs tenants, et c'est la
+  // credential qui porte cette distinction.
+  //
+  // Le `tenant_ref` éventuellement fourni par le client est une ASSERTION DE
+  // COHÉRENCE : il est comparé au scope authentifié, et tout écart est un 403.
+  // Il ne peut JAMAIS élargir l'autorisation.
+  let scope: ResolvedScope;
+  try {
+    scope = await resolveScope({
+      admin: admin as unknown as ScopeAdminLike,
+      providerId: provider.id,
+      apiKey,
+      claimedTenantRef: payload.scope?.tenant_ref ?? null,
+    });
+  } catch (e) {
+    if (e instanceof ScopeError) {
+      await logAuthFailure(provider.id, e.code);
+      return jsonError(e.message, e.status, e.code);
+    }
+    throw e;
+  }
+
   // 3. Validation du payload
   const items = payload.items;
   if (!Array.isArray(items) || items.length === 0) {
@@ -312,11 +376,89 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError(errors.join(" "), 400, "INVALID_ITEMS");
   }
 
+  // ── Garde cross-tenant ──────────────────────────────────────────────────────
+  //
+  // Pour chaque item, on relève le tenant déjà associé. Un item existant dont
+  // le `tenant_ref` DIFFÈRE du scope est un refus (403) : le tenant A ne peut
+  // pas réécrire le listing de B, même si ce listing partage son external_id.
+  // `listing_tenant_scopes` est une table PRIVEE introduite par la migration
+  // 2D.39 : absente de `database.types.ts` tant que la migration n'a pas ete
+  // appliquee. Le cast est donc delimite a CET appel et Retire des que la
+  // migration sera appliquee et les types regeneres.
+  const privateAdmin = admin as unknown as {
+    from(t: "listing_tenant_scopes"): {
+      select(cols: string): {
+        eq(col: string, val: unknown): {
+          in(col: string, vals: readonly string[]): PromiseLike<{
+            data: unknown;
+            error: unknown;
+          }>;
+        };
+      };
+    };
+  };
+
+  const { data: scopedRows, error: scopedError } = await privateAdmin
+    .from("listing_tenant_scopes")
+    .select("tenant_ref, listings!inner(external_id)")
+    .eq("provider_id", provider.id)
+    .in("listings.external_id", cleanItems.map((item) => item.external_id));
+
+  if (scopedError) {
+    return jsonError("Vérification du routage tenant impossible.", 500, "SCOPE_ROUTING_LOOKUP_FAILED");
+  }
+
+  const tenantByExternalId = new Map<string, string>();
+  for (const row of (scopedRows ?? []) as Array<{
+    tenant_ref: string;
+    listings: { external_id: string } | null;
+  }>) {
+    const externalId = (row.listings as { external_id?: string } | null)?.external_id;
+    if (externalId) tenantByExternalId.set(externalId, row.tenant_ref);
+  }
+
+  for (const item of cleanItems) {
+    const owner = tenantByExternalId.get(item.external_id);
+    if (owner !== undefined && scope.tenantRef !== null && owner !== scope.tenantRef) {
+      return jsonError(
+        "Cette annonce appartient à un autre tenant du provider.",
+        403,
+        "CROSS_TENANT_CONFLICT",
+      );
+    }
+  }
+
+  // external_id connus et déjà routés : GLOBAL peut les mettre à jour, pas les créer.
+  const existingScopedIds = new Set(tenantByExternalId.keys());
+
+  // Un scope GLOBAL est une compatibilité legacy : il met à jour ce qui
+  // existe, mais ne CRÉE pas de listing orphelin. Un listing sans `tenant_ref`
+  // échouerait à tout soft-removal tenant-scoped ultérieur — il deviendrait
+  // indéfini. Le refus est explicite, jamais silencieux.
+  if (!canCreateListing(scope)) {
+    const unknownExternalIds = cleanItems.filter((item) => !existingScopedIds.has(item.external_id));
+    if (unknownExternalIds.length > 0) {
+      return jsonError(
+        "Portée globale : impossible de créer une annonce sans tenant. " +
+          "Utilisez une credential de portée tenant.",
+        403,
+        "GLOBAL_CANNOT_CREATE",
+      );
+    }
+  }
+
   // 4. UPSERT atomique (INSERT ... ON CONFLICT) via la fonction SQL `ingest_listings`
+  //
+  // `p_items` est déclaré `Json` par la signature RPC : le lot est déjà
+  // normalisé (URLs filtrées, attributs sanitizés) et JSON-sérialisable —
+  // le cast ne fait qu'aligner les types, sans assouplir la validation.
+  // `p_tenant_ref` accepte `NULL` (portée GLOBAL) : `?? undefined` traduit
+  // simplement `string | null` vers l'argument optionnel du générérateur.
   const { data, error: upsertError } = await admin.rpc("ingest_listings", {
     p_provider_id: provider.id,
     p_category_id: provider.category_id,
-    p_items: cleanItems,
+    p_items: cleanItems as unknown as Json,
+    p_tenant_ref: scope.tenantRef ?? undefined,
   });
 
   const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? null;
@@ -336,17 +478,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const inserted = Number(data?.[0]?.inserted ?? 0);
   const updated = Number(data?.[0]?.updated ?? 0);
 
-  // 5. Soft-removal : toute annonce du provider absente du lot courant devient
-  // indisponible (elle disparaît du catalogue public sans être supprimée,
-  // l'historique reste consultable).
+  // 5. Soft-removal BORNÉ AU SCOPE.
+  //
+  // L'ancien code faisait `.eq("provider_id", …)` : sur un provider multi-tenant,
+  // un POST du tenant A désactivait les listings de B. `apply_soft_removal`
+  // porte le bornage dans la fonction SQL, seule à connaître le routage privé.
   const externalIds = cleanItems.map((item) => item.external_id);
-  if (externalIds.length > 0) {
-    await admin
-      .from("listings")
-      .update({ is_available: false })
-      .eq("provider_id", provider.id)
-      .filter("external_id", "not.in", `(${externalIds.join(",")})`);
-  }
+  await (admin as unknown as {
+    rpc(fn: string, args: Record<string, unknown>): Promise<unknown>;
+  }).rpc("apply_soft_removal", {
+    p_provider_id: provider.id,
+    // NULL = portee GLOBAL : seuls les listings SANS routage tenant sont
+    // concernes. Les listings scopes restent hors de portee de GLOBAL.
+    p_tenant_ref: scope.tenantRef,
+    p_external_ids: externalIds,
+  });
 
   await admin.from("sync_logs").insert({
     provider_id: provider.id,

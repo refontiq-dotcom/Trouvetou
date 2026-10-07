@@ -9,7 +9,48 @@
 --   2. le verdict global : 'TOUT EST OK' ou le nombre de contrôles en échec
 -- ============================================================================
 
-with checks(ordre, categorie, libelle, ok) as (
+-- ----------------------------------------------------------------------------
+-- CONFIGURATION DES PROVIDERS SÉJOUR@ ATTENDUS
+--
+-- La liste `expected_sejoura` est VOLONTAIREMENT VIDE tant que la séparation des
+-- tenants n'a pas eu lieu. Aucun UUID de provider futur n'est connu, et en
+-- deviner un produirait un contrôle qui échoue par construction.
+--
+-- Comportement du contrôle [13] selon cette liste :
+--   • liste VIDE      → exigence structurelle : au moins UN provider Séjour@
+--                        actif. L'absence de `a510` n'est donc PAS une erreur ;
+--                        la présence de 4 providers non plus.
+--   • liste REMPLIE   → EXIGENCE STRICTE : tous les providers listés doivent
+--                        être actifs. C'est le mode à utiliser après la
+--                        séparation, pour garantir qu'aucun tenant attendu n'a
+--                        été oublié.
+--
+-- Au moment de la séparation, compléter ainsi (une ligne par provider) :
+--
+--   expected_sejoura(provider_id) as (
+--     values ('<uuid-provider-gage>'::uuid),
+--            ('<uuid-provider-le-monde>'::uuid),
+--            ('<uuid-provider-dady>'::uuid),
+--            ('<uuid-provider-plazza>'::uuid)
+--   ),
+--
+-- `retired` liste les providers EXPLICITEMENT retirés. Un provider retiré ne
+-- doit jamais être actif : le laisser actif réconcilierait deux games de clés
+-- et pourrait ré-ingérer des annonces en double. Seul le provider issu de la
+-- fusion historique 20260925 y figure ; aucun autre n'est inventé ici.
+-- ----------------------------------------------------------------------------
+with expected_sejoura(provider_id) as (
+  select null::uuid where false
+),
+retired_provider(provider_id) as (
+  values ('7a358385-6a88-4c8e-8e93-ef743a5ff218'::uuid)  -- fusion 20260925
+),
+sejoura_actif as (
+  select p.id
+  from public.providers p
+  where p.type = 'sejoura' and p.is_active
+),
+checks(ordre, categorie, libelle, ok) as (
   values
     -- ---------------------------------------------------------------- SÉCURITÉ
     (1, 'securite', 'anon ne peut pas lire listings.attributes (secret fournisseur)',
@@ -55,12 +96,22 @@ with checks(ordre, categorie, libelle, ok) as (
                   and p.proconfig @> array['search_path=public'])),
 
     -- ------------------------------------------------------------------ DONNÉES
-    (13, 'donnees', 'Séjoura canonique actif, ancien provider désactivé ou supprimé',
-        exists (select 1 from public.providers
-                where id = 'a5101284-2d97-46e0-a0f2-fa6a008588f2'::uuid and is_active)
+    (13, 'donnees', 'Séjour@ : providers attendus actifs, aucun provider retiré actif',
+        -- (a) si une liste attendu est fournie, TOUS ses providers doivent être actifs
+        (not exists (select 1 from expected_sejoura)
+         or not exists (
+           select 1 from expected_sejoura e
+           where not exists (select 1 from sejoura_actif s where s.id = e.provider_id)))
+        -- (b) sinon, exigence structurelle : au moins un provider Séjour@ actif.
+        --     Ni l'absence de a510, ni la présence de plusieurs providers
+        --     Séjour@ ne sont considérées comme des erreurs.
+        and (case when exists (select 1 from expected_sejoura) then true
+                  else exists (select 1 from sejoura_actif) end)
+        -- (c) aucun provider explicitement retiré ne doit rester actif
         and not exists (
-          select 1 from public.providers p
-          where p.id = '7a358385-6a88-4c8e-8e93-ef743a5ff218'::uuid and p.is_active)),
+          select 1 from retired_provider r
+          join public.providers p on p.id = r.provider_id
+          where p.is_active)),
 
     (14, 'donnees', 'aucune annonce publicly visible rattachée à un provider inactif',
         not exists (
@@ -107,7 +158,17 @@ with checks(ordre, categorie, libelle, ok) as (
             and p.prosecdef
             and (p.proconfig is null
                  or not exists (select 1 from unnest(p.proconfig) cfg
-                                where cfg like 'search_path=%'))))
+                                where cfg like 'search_path=%')))),
+
+    -- ------------------------------------------------- DIAGNOSTIC (non bloquant)
+    -- Volontairement toujours « OK » : ce contrôle INFORME, il ne peut pas faire
+    -- echouer la verification. Il affiche la composition reelle des providers
+    -- Sejour@ pour eviter une interrogation manuelle avant une bascule. Aucun
+    -- UUID attendu n'y est code.
+    (21, 'diagnostic', sprintf('Sejour@ : %s provider(s) actif(s), %s attendu(s) configure(s)',
+        (select count(*)::text from sejoura_actif),
+        (select count(*)::text from expected_sejoura)),
+        true)
 )
 select ordre,
        categorie,

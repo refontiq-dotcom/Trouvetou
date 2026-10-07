@@ -16,7 +16,22 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
-import type { EstablishmentType } from "./supabase/database.types";
+
+/**
+ * Type d'établissement affiché par le portail.
+ *
+ * Union dérivée des libellés de `ESTABLISHMENT_TYPE_LABELS` (ci-dessous) :
+ * le fichier généré `database.types.ts` ne fournit plus cet alias. La
+ * cohérence est garantie par `Record<EstablishmentType, string>` — toute
+ * valeur ajoutée ou retirée des libellés fait échouer la compilation.
+ */
+export type EstablishmentType =
+  | "hotel"
+  | "residence"
+  | "appartements"
+  | "villa"
+  | "guesthouse"
+  | "other";
 
 export function cn(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");

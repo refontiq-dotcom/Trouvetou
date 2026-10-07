@@ -148,18 +148,30 @@ jamais d'identité supplémentaire.
 
 ## 6. Identité d'un listing
 
-L'identité est le couple :
+L'identité est le TRIPLET :
 
 ```
-(provider_id, external_id)
+(provider_id, tenant_ref, external_id)
 ```
 
-et **jamais** `external_id` seul.
+et **jamais** `external_id` seul, ni le couple `(provider_id, external_id)`.
+
+> **Phase 2D.39.** `provider` est une **connexion SaaS authentifiée**, pas un
+> établissement. Un même provider sert donc plusieurs tenants, et deux tenants
+> peuvent légitimement utiliser le même `external_id`. La contrainte
+> `UNIQUE (provider_id, external_id)` a été remplacée par
+> `UNIQUE (provider_id, tenant_ref, external_id)`, en `NULLS NOT DISTINCT`
+> afin qu'un listing legacy sans `tenant_ref` reste unique par
+> `(provider_id, external_id)`.
+>
+> `tenant_ref` est un identifiant **technique** fourni par le SaaS source. Il
+> n'est pas retourné par le catalogue : `LISTINGS_SELECT` énumère ses colonnes.
 
 | Cas | Résultat |
 |---|---|
-| Provider A + `"123"` puis Provider A + `"123"` | **Un** seul listing, mis à jour |
+| Mêmes provider ET tenant + `"123"` | **Un** seul listing, mis à jour |
 | Provider A + `"123"` puis Provider B + `"123"` | **Deux** listings distincts |
+| Provider P, tenant A + `"X"` puis Provider P, tenant B + `"X"` | **Deux** listings distincts |
 
 Deux providers différents peuvent légitimement utiliser le même
 `external_id`. C'est `provider_id` qui les sépare.
@@ -178,7 +190,7 @@ Rejouer un snapshot identique est sans effet :
 SYNC #1 → SYNC #1 → SYNC #1
 ```
 
-ne crée pas de nouveaux listings. La contrainte `UNIQUE (provider_id,
+ne crée pas de nouveaux listings. La contrainte `UNIQUE (provider_id, tenant_ref,
 external_id)` est la garantie finale : un doublon est **rejeté par la base**,
 pas évité par convention applicative.
 

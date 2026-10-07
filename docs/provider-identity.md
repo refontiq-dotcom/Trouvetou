@@ -40,18 +40,24 @@ et deux providers peuvent porter le même `name`.
 
 ---
 
-## Règle 2 — Plusieurs providers partagent le même `type`
+## Règle 2 — Un provider SaaS peut servir plusieurs tenants (scopes)
 
-C'est **normal**, pas une anomalie :
+Un provider est **une connexion SaaS authentifiée**, pas un établissement.
+Un même provider sert donc plusieurs tenants : la séparation passe par
+`integration_scopes` / `integration_credentials`, jamais par la
+multiplication des providers (le split « 1 provider par établissement »
+2D.15/2D.19 est **abandonné — P0-5**).
 
 ```text
-provider A → type = 'sejoura'   (hôtel GAGE)
-provider B → type = 'sejoura'   (hôtel Dady)
-provider C → type = 'schooly'   (école X)
+provider unique → type = 'sejoura'   (connexion SaaS Séjoura)
+├── scope TENANT 'gage'      → listings du tenant GAGE
+├── scope TENANT 'dady'      → listings du tenant Dady
+└── scope GLOBAL             → lecture seule, ne crée jamais (legacy)
 ```
 
 `type` sert à choisir un **adapter** (`ProviderRegistry`). `id` sert à identifier
-une **connexion**. Les deux se répètent indépendamment.
+une **connexion**. `tenant_ref` (via `listing_tenant_scopes`) sert à router un
+**tenant**. Les trois se combinent indépendamment.
 
 Aucun `UNIQUE` n'est posé sur `type` : c'est délibéré.
 
@@ -102,23 +108,29 @@ Un sync ne peut donc pas créer d'instance par inadvertance — mais il peut
 ## Règle 5 — l'identité d'une annonce
 
 ```text
-(provider_id, external_id)
+(provider_id, tenant_ref, external_id)
 ```
 
-garanti par la contrainte `UNIQUE (provider_id, external_id)`.
+garanti par la contrainte `UNIQUE (provider_id, tenant_ref, external_id)`
+(`NULLS NOT DISTINCT` — un listing legacy sans `tenant_ref` reste unique par
+`(provider_id, external_id)`). Voir `docs/sync-contract.md` et la migration
+2D.39.
 
-- Même provider + même `external_id` → mise à jour, jamais de doublon.
-- Provider différent + même `external_id` → **deux annonces distinctes** (légitime :
-  deux établissements peuvent utiliser le même identifiant métier chez eux).
+- Mêmes provider + tenant + même `external_id` → mise à jour, jamais de doublon.
+- Même provider, tenant différent + même `external_id` → **deux annonces
+  distinctes** (légitime : deux tenants peuvent utiliser le même identifiant
+  métier chez eux).
+- Provider différent + même `external_id` → **deux annonces distinctes**.
 
 ---
 
-## ⚠️ Piège connu : un provider avec plusieurs credentials sortants
+## ⚠️ Piège connu : plusieurs credentials sortants sur un même provider
 
-Le modèle veut **un credential sortant par provider**. Un état où un même
-provider porte plusieurs `sejoura_api_key` distincts dans ses listings est donc
-**anormal** — mais il ne doit pas être traité comme un bug de données tant que
-la règle métier n'est pas connue.
+Le modèle veut **un credential sortant par scope TENANT**. Un provider SaaS
+multi-tenant porte donc normalement plusieurs credentials — un par tenant,
+via `integration_credentials`. Un état où un même **scope** porte plusieurs
+`sejoura_api_key` distincts est **anormal** — mais il ne doit pas être traité
+comme un bug de données tant que la règle métier n'est pas connue.
 
 Vérifier l'état d'un provider (aucun secret affiché) :
 
