@@ -9,6 +9,13 @@ import { getSupabase } from "@/lib/supabase/client";
 
 export const revalidate = 60;
 
+/**
+ * Les annonces de démonstration ne s'affichent que si `NEXT_PUBLIC_DEMO=1`.
+ * Par défaut, une base vide ou non configurée donne un accueil sans annonce :
+ * jamais de fausses annonces présentées comme un vrai catalogue.
+ */
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO === "1";
+
 /** Catégories proposées à la nuitée (prix affiché « / nuit »). */
 const STAY_SLUGS = new Set(["hotel", "residence"]);
 
@@ -165,7 +172,8 @@ export default async function HomePage() {
     getHomeCategories(),
   ]);
 
-  const visibleListings = listings.length > 0 ? listings : FALLBACK_LISTINGS;
+  const visibleListings =
+    listings.length > 0 ? listings : DEMO_MODE ? FALLBACK_LISTINGS : [];
 
   return (
     <HomeScreen

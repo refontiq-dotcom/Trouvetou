@@ -22,6 +22,12 @@ export const dynamic = "force-dynamic";
 
 const MAX_CATALOG_LIMIT = 100;
 
+/** Plafond d'identifiants acceptés dans `?ids=` (favoris, comparateur). */
+const MAX_IDS = 100;
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const admin = getAdminClient();
   if (!admin) {
@@ -48,6 +54,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       : 0;
   const boosted = sp.get("boosted") === "1";
   const maxPrice = Number(sp.get("maxPrice") ?? 0);
+
+  // `ids` : chargement ciblé (favoris, comparateur). Les valeurs non-UUID sont
+  // ignorées plutôt que rejetées — le paramètre vient d'une URL partageable,
+  // une entrée malformée ne doit pas casser la page.
+  const rawIds = sp.get("ids");
+  const ids = rawIds
+    ? rawIds
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => UUID_PATTERN.test(id))
+        .slice(0, MAX_IDS)
+    : [];
 
   // Service-role bypasses RLS, so explicitly restrict the public catalogue to
   // listings belonging to active providers.
@@ -91,6 +109,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (categorySlugs.length > 0) {
     query = query.in("categories.slug", categorySlugs);
+  }
+
+  // `?ids=` présent (même vide) restreint explicitement le lot demandé.
+  if (rawIds !== null) {
+    query = query.in("id", ids);
   }
 
   if (boosted) {

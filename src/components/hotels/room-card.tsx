@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -16,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
+import { useAuth } from "@/contexts/auth-context";
 import { useLocation } from "@/contexts/location-context";
 import { useFavorites } from "@/contexts/favorites-context";
 import { useCompare } from "@/contexts/compare-context";
@@ -52,6 +54,9 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
   const [bookingOpen, setBookingOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const { location: userLocation } = useLocation();
+  const { user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { toggleCompare, isSelected: isCompared } = useCompare();
 
@@ -90,6 +95,16 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
     userLocation && establishment?.latitude != null && establishment?.longitude != null
       ? haversineDistance(userLocation, { lat: establishment.latitude, lng: establishment.longitude })
       : null;
+
+  // Un compte est requis pour réserver : la réservation est rattachée au
+  // client et archivée dans son historique.
+  const openBooking = () => {
+    if (!user) {
+      router.push(`/auth?returnTo=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    setBookingOpen(true);
+  };
 
   const listingUrl =
     typeof window !== "undefined"
@@ -254,7 +269,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               {/* Réserver (hôtels/résidences) ou Contacter (autres catégories) */}
               {isBookable ? (
                 <button
-                  onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
+                  onClick={(e) => { e.stopPropagation(); openBooking(); }}
                   className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bg-primary px-1 text-[9px] font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
                 >
                   <Phone className="h-3.5 w-3.5" />
@@ -306,7 +321,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   <button type="button" onClick={() => window.open(mapsUrl, "_blank", "noopener,noreferrer")} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
                     <Navigation className="h-5 w-5" />Itinéraire
                   </button>
-                  {isBookable ? <button type="button" onClick={() => setBookingOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />Contacter</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">Fermer</button>}
+                  {isBookable ? <button type="button" onClick={openBooking} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />Contacter</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">Fermer</button>}
                 </div>
               </motion.div>
             </div>

@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { User, MapPin, Heart, Compass, CalendarCheck } from "lucide-react";
+import { User, MapPin, Heart, Compass, CalendarCheck, LogOut } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
 import { useFavorites } from "@/contexts/favorites-context";
 import { useLocation } from "@/contexts/location-context";
 import { useBookings } from "@/contexts/bookings-context";
@@ -15,6 +16,7 @@ const MENU_ITEMS = [
 ];
 
 export default function ProfilPage() {
+  const { user, signOut } = useAuth();
   const { count: favCount } = useFavorites();
   const { location } = useLocation();
   const { bookings, count: bookingCount } = useBookings();
@@ -34,9 +36,12 @@ export default function ProfilPage() {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
             <User className="h-8 w-8" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl font-bold text-foreground">Mon profil</h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="truncate text-sm text-muted-foreground">
+              {user?.email ?? "Session non active"}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {location ? location.label : "Position non définie"}
             </p>
           </div>
@@ -100,6 +105,16 @@ export default function ProfilPage() {
               ))}
             </div>
           </div>
+        )}
+
+        {user && (
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" /> Se déconnecter
+          </button>
         )}
 
         {/* Position */}

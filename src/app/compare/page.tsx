@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -11,7 +11,16 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 
 function CompareContent() {
   const searchParams = useSearchParams();
-  const ids = searchParams.get("ids")?.split(",") ?? [];
+  const idsParam = searchParams.get("ids") ?? "";
+  // Tableau stable tant que le paramètre d'URL ne change pas.
+  const ids = useMemo(
+    () =>
+      idsParam
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    [idsParam]
+  );
   const [rooms, setRooms] = useState<ListingView[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,10 +28,12 @@ function CompareContent() {
     if (ids.length < 2) return;
     let cancelled = false;
 
-    fetchListedListings({ limit: 200 })
+    // Chargement ciblé : le comparateur ne demande que les deux annonces
+    // comparées, quels que soient leurs secteurs.
+    fetchListedListings({ ids, limit: ids.length })
       .then(({ data }) => {
         if (!cancelled) {
-          setRooms(data.filter((r) => ids.includes(r.id)).slice(0, 2));
+          setRooms(data.slice(0, 2));
           setLoading(false);
         }
       })
@@ -31,7 +42,7 @@ function CompareContent() {
       });
 
     return () => { cancelled = true; };
-  }, [ids.join(",")]);
+  }, [ids]);
 
   if (ids.length < 2) {
     return (

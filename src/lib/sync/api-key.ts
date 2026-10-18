@@ -23,9 +23,30 @@ export function parseProviderIdFromKey(apiKey: string): string | null {
   return match ? match[1] : null;
 }
 
-/** Empreinte HMAC-SHA256 d'une clé API brute. */
+/**
+ * Vrai si le pepper d'empreinte est configuré.
+ *
+ * À vérifier AVANT toute rotation de clé : une empreinte calculée sans pepper
+ * serait définitivement inutilisable par /api/v1/sync, qui exige sa présence.
+ */
+export function isApiKeyPepperConfigured(): boolean {
+  return Boolean(process.env.TROUVETOU_API_KEY_PEPPER);
+}
+
+/**
+ * Empreinte HMAC-SHA256 d'une clé API brute.
+ *
+ * Lève une erreur si le pepper est absent plutôt que de calculer une empreinte
+ * avec une clé vide : mieux vaut échouer bruyamment que produire un hash
+ * silencieusement incomparable.
+ */
 export function hashApiKey(apiKey: string): string {
-  const pepper = process.env.TROUVETOU_API_KEY_PEPPER ?? "";
+  const pepper = process.env.TROUVETOU_API_KEY_PEPPER;
+  if (!pepper) {
+    throw new Error(
+      "TROUVETOU_API_KEY_PEPPER absent : empreinte de clé API impossible.",
+    );
+  }
   return createHmac("sha256", pepper).update(apiKey, "utf8").digest("hex");
 }
 

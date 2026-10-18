@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import { generateApiKey, hashApiKey } from "@/lib/sync/api-key";
+import {
+  generateApiKey,
+  hashApiKey,
+  isApiKeyPepperConfigured,
+} from "@/lib/sync/api-key";
 
 const PRODUCTION_SEJOURA_WEBHOOK = "https://sejoura.app/sync-callback";
 
@@ -57,6 +61,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       { error: "Le fournisseur Séjoura de production est introuvable." },
       { status: 404 },
+    );
+  }
+
+  // Sans pepper, l'empreinte serait calculée avec une clé vide et la nouvelle
+  // clé ne pourrait jamais être validée par /api/v1/sync.
+  if (!isApiKeyPepperConfigured()) {
+    return NextResponse.json(
+      { error: "Configuration serveur incomplète (TROUVETOU_API_KEY_PEPPER) : rotation impossible." },
+      { status: 500 },
     );
   }
 

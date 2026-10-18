@@ -4,115 +4,140 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useSyncExternalStore,
+  useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { getBrowserSupabase } from "@/lib/supabase/browser";
+
+/**
+ * TROUVETOU — Réservations.
+ *
+ * Un compte est requis : chaque réservation est enregistrée dans la table
+ * `bookings` (RLS `auth.uid() = user_id`). L'ancienne version ne gardait
+ * l'historique que dans le navigateur, donc le client le perdait en changeant
+ * d'appareil — alors que la réservation, elle, existe côté établissement.
+ */
 
 export interface BookingRecord {
-  booking_code?: string;
+  id?: string;
+  listing_id?: string | null;
+  booking_code?: string | null;
   listing_name: string;
   check_in_date: string;
   check_out_date: string;
   number_of_guests: number;
-  total_amount?: number;
+  total_amount?: number | null;
   created_at: string;
 }
 
 interface BookingsContextValue {
   bookings: BookingRecord[];
+  /** N'enregistre que pour un utilisateur connecté (no-op sinon). */
   addBooking: (booking: BookingRecord) => void;
   count: number;
+  loading: boolean;
 }
 
 const BookingsContext = createContext<BookingsContextValue | null>(null);
-const STORAGE_KEY = "trouvetou_bookings";
-
-// Snapshot stable réutilisé par getServerSnapshot() : renvoyer un nouveau
-// tableau à chaque appel fait boucler React (« getServerSnapshot should be
-// cached to avoid an infinite loop »). Même pattern que favorites-context.
-const EMPTY_SNAPSHOT: BookingRecord[] = [];
-
-let snapshot: BookingRecord[] = readEmptyOrStored();
-const listeners = new Set<() => void>();
-
-function readEmptyOrStored(): BookingRecord[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as BookingRecord[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function emit() {
-  snapshot = readEmptyOrStored();
-  listeners.forEach((l) => l());
-}
-
-function subscribe(callback: () => void): () => void {
-  listeners.add(callback);
-
-  // Après l'hydratation, on recharge les réservations persistées sans
-  // modifier l'instantané utilisé par le serveur. Même pattern que
-  // favorites-context.
-  const stored = readEmptyOrStored();
-  if (stored.length !== snapshot.length) {
-    snapshot = stored;
-    callback();
-  }
-
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === STORAGE_KEY) emit();
-  };
-  if (typeof window !== "undefined") {
-    window.addEventListener("storage", onStorage);
-  }
-  return () => {
-    listeners.delete(callback);
-    if (typeof window !== "undefined") {
-      window.removeEventListener("storage", onStorage);
-    }
-  };
-}
-
-function getSnapshot(): BookingRecord[] {
-  return snapshot;
-}
-
-function getServerSnapshot(): BookingRecord[] {
-  // La référence doit rester stable pendant le SSR et l'hydratation : un
-  // `[]` littéral ici provoquerait une boucle de rendu infinie.
-  return EMPTY_SNAPSHOT;
-}
-
-function persist(next: BookingRecord[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // stockage indisponible
-  }
-  emit();
-}
 
 export function BookingsProvider({ children }: { children: ReactNode }) {
-  const bookings = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
 
-  const addBooking = useCallback((booking: BookingRecord) => {
-    const next = [...snapshot, booking];
-    persist(next);
-  }, []);
+  // Les réservations sont indexées par utilisateur : au changement de compte
+  // (ou à la déconnexion) la valeur retombe à vide sans setState synchrone
+  // dans l'effet. `loading` se déduit de l'absence de chargement pour cet id.
+  const [entry, setEntry] = useState<{
+    userId: string | null;
+    bookings: BookingRecord[];
+  }>({ userId: null, bookings: [] });
+
+  const bookings = useMemo(
+    () => (entry.userId === userId ? entry.bookings : []),
+    [entry, userId]
+  );
+  const loading = userId !== null && entry.userId !== userId;
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const supabase = getBrowserSupabase();
+    if (!supabase) return;
+
+    let active = true;
+
+    void supabase
+      .from("bookings")
+      .select(
+        "id, listing_id, booking_code, listing_name, check_in_date, check_out_date, number_of_guests, total_amount, created_at"
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (!active) return;
+        setEntry({ userId, bookings: (data ?? []) as BookingRecord[] });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  const addBooking = useCallback(
+    (booking: BookingRecord) => {
+      if (!userId) return;
+
+      // Affichage immédiat, puis confirmation par la base.
+      const optimistic: BookingRecord = { ...booking };
+      const current = entry.userId === userId ? entry.bookings : [];
+      setEntry({ userId, bookings: [optimistic, ...current] });
+
+      const supabase = getBrowserSupabase();
+      if (!supabase) return;
+
+      void (async () => {
+        const { data, error } = await supabase
+          .from("bookings")
+          .insert({
+            user_id: userId,
+            listing_id: booking.listing_id ?? null,
+            booking_code: booking.booking_code ?? null,
+            listing_name: booking.listing_name,
+            check_in_date: booking.check_in_date,
+            check_out_date: booking.check_out_date,
+            number_of_guests: booking.number_of_guests,
+            total_amount: booking.total_amount ?? null,
+          })
+          .select("id")
+          .single();
+
+        if (error) {
+          // La réservation existe côté établissement : on retire seulement la
+          // ligne locale qui n'a pas pu être archivée.
+          setEntry((previous) => ({
+            ...previous,
+            bookings: previous.bookings.filter((item) => item !== optimistic),
+          }));
+          return;
+        }
+
+        setEntry((previous) => ({
+          ...previous,
+          bookings: previous.bookings.map((item) =>
+            item === optimistic ? { ...item, id: data.id } : item
+          ),
+        }));
+      })();
+    },
+    [userId, entry]
+  );
 
   const value = useMemo<BookingsContextValue>(
-    () => ({
-      bookings,
-      addBooking,
-      count: bookings.length,
-    }),
-    [bookings, addBooking]
+    () => ({ bookings, addBooking, count: bookings.length, loading }),
+    [bookings, addBooking, loading]
   );
 
   return (
@@ -125,11 +150,7 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
 export function useBookings(): BookingsContextValue {
   const ctx = useContext(BookingsContext);
   if (!ctx) {
-    return {
-      bookings: [],
-      addBooking: () => {},
-      count: 0,
-    };
+    return { bookings: [], addBooking: () => {}, count: 0, loading: false };
   }
   return ctx;
 }

@@ -30,13 +30,13 @@ export default function FavorisPage() {
 
     let cancelled = false;
 
-    // On charge toutes les annonces (sans filtre) puis on filtre côté client
-    // pour ne garder que celles en favori. Pour un gros catalogue, on pourrait
-    // passer les IDs en paramètre SQL.
-    fetchListedListings({ limit: 100 })
+    // Chargement ciblé : seuls les favoris sont demandés à l'API. Charger le
+    // catalogue puis filtrer côté client faisait disparaître sans message les
+    // favoris situés au-delà de la limite.
+    fetchListedListings({ ids: Array.from(favorites) })
       .then(({ data }) => {
         if (!cancelled) {
-          setRooms(data.filter((r) => favorites.has(r.id)));
+          setRooms(data);
           setLoadedSignature(currentSignature);
         }
       })

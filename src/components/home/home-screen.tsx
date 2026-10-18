@@ -21,6 +21,24 @@ import { ListingCard, type HomeListing } from "@/components/home/listing-card";
 /** Ressort doux utilisé pour l'effacement du logo / de la cloche au scroll. */
 const SPRING = { type: "spring" as const, stiffness: 380, damping: 34, mass: 0.6 };
 
+/**
+ * Accueil sans aucune annonce (base vide ou non configurée).
+ * On l'affiche explicitement plutôt que de laisser une grille muette, et on
+ * n'affiche jamais d'annonces fictives à la place.
+ */
+function EmptyCatalog() {
+  return (
+    <div className="col-span-full rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10 text-center">
+      <p className="text-sm font-semibold text-neutral-800">
+        Le catalogue arrive bientôt
+      </p>
+      <p className="mt-1 text-xs text-neutral-500">
+        Aucune annonce n&apos;est publiée pour le moment. Revenez dans quelques jours.
+      </p>
+    </div>
+  );
+}
+
 export function HomeScreen({
   listings,
   categories,
@@ -83,6 +101,7 @@ export function HomeScreen({
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-4 2xl:grid-cols-3">
+                {listings.length === 0 && <EmptyCatalog />}
                 {listings.map((listing) => (
                   <ListingCard key={listing.id} listing={listing} />
                 ))}
@@ -193,6 +212,7 @@ export function HomeScreen({
           <section className="mt-4 rounded-[28px] bg-white p-3 shadow-2xl">
             <PubBanner />
             <div className="mt-3 grid grid-cols-2 gap-3">
+              {listings.length === 0 && <EmptyCatalog />}
               {listings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
