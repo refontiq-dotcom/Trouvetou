@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
+import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { buildGoogleMapsUrl, formatFCFA, PLACEHOLDER_IMAGE } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
@@ -161,7 +162,17 @@ export default function ComparePage() {
       <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-8">
         Comparer les annonces
       </h1>
-      <Suspense fallback={<div className="text-muted-foreground">Chargement…</div>}>
+      <Suspense
+        fallback={
+          <div aria-busy="true">
+            <AnimatedLoader
+              label="Chargement en cours"
+              delayMs={300}
+              className="py-16"
+            />
+          </div>
+        }
+      >
         <CompareContent />
       </Suspense>
     </div>

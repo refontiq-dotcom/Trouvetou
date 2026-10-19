@@ -10,6 +10,7 @@ import { CompareProvider } from "@/contexts/compare-context";
 import { BookingsProvider } from "@/contexts/bookings-context";
 import { CompareBar } from "@/components/compare/compare-bar";
 import { PwaRegister } from "@/components/pwa-register";
+import { PwaSplash } from "@/components/pwa-splash";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { TrafficTracker } from "@/components/traffic-tracker";
 
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#00215E",
+  themeColor: "#F5F3EC",
   viewportFit: "cover",
 };
 
@@ -50,7 +51,9 @@ export default function RootLayout({
     <html lang="fr" className="h-full antialiased">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" type="image/png" href="/brand/TrouveTout_logo_fond_transparent.png" />
+        {/* Symbole officiel (feuille + loupe) — PAS le logo horizontal complet. */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -58,6 +61,9 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        {/* Splash PWA (crème + logo + REFONTIQ) : visible uniquement en mode
+            installé, s'efface tout seul après le premier paint (cf. globals.css). */}
+        <PwaSplash />
         {/* AuthProvider enveloppe favoris et réservations : ils lisent la session. */}
         <AuthProvider>
         <LocationProvider>
