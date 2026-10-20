@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
-import { Bell, MapPin, Search } from "lucide-react";
+import { motion } from "framer-motion";
+import { MapPin, Search } from "lucide-react";
 import { detectTargetPortal } from "@/lib/search-intent";
 import { LocationPicker } from "@/components/location/location-picker";
 import { Logo } from "@/components/logo";
@@ -17,7 +17,7 @@ import { NearbyBar } from "@/components/home/nearby-bar";
 import { PubBanner } from "@/components/home/pub-banner";
 import { ListingCard, type ListingView } from "@/components/home/listing-card";
 
-/** Ressort doux utilisé pour l'effacement du logo / de la cloche au scroll. */
+/** Ressort doux utilisé pour l'effacement du logo au scroll. */
 const SPRING = { type: "spring" as const, stiffness: 380, damping: 34, mass: 0.6 };
 
 /**
@@ -32,7 +32,7 @@ function EmptyCatalog() {
         Le catalogue arrive bientôt
       </p>
       <p className="mt-1 text-xs text-neutral-500">
-        Aucune annonce n'est publiée pour le moment. Revenez dans quelques jours.
+        Aucune annonce n&apos;est publiée pour le moment. Revenez dans quelques jours.
       </p>
     </div>
   );
@@ -51,31 +51,30 @@ export function HomeScreen({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [stuck, setStuck] = useState(false);
-  const [filteredListings, setFilteredListings] = useState<ListingView[]>(listings);
 
-  // Au scroll, le logo et la cloche s'effacent : seule la barre de recherche
+  // Liste dérivée : la catégorie sélectionnée filtre les annonces reçues du
+  // serveur, sans état dupliqué ni rendu en cascade.
+  const filteredListings = useMemo(
+    () =>
+      selectedCategory === null
+        ? listings
+        : listings.filter(
+            (listing) => listing.category_slug === selectedCategory
+          ),
+    [listings, selectedCategory]
+  );
+
+  // Au scroll, le logo s'efface : seule la barre de recherche
   // reste plaquée en haut de l'écran, sans rien d'autre sur le bord.
   useEffect(() => {
     const onScroll = () => {
       setStuck(window.scrollY > 8);
-      if (window.scrollY > 8) setNotifOpen(false);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    let filtered: ListingView[];
-    if (selectedCategory === null) {
-      filtered = listings;
-    } else {
-      filtered = listings.filter((listing) => listing.category_slug === selectedCategory);
-    }
-    setFilteredListings(filtered);
-  }, [selectedCategory, listings]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -95,22 +94,30 @@ export function HomeScreen({
         />
 
         <div className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
-          <aside className="hidden w-[280px] shrink-0 lg:block xl:w-[320px]">
-            <HomeSidebar selectedCategory={selectedCategory} onCategorySelect={setSelectedCategory} nearbyCount={nearbyCount} />
-          </aside>
+          <div className="flex items-start gap-6">
+            {/* Barre latérale gauche : catégories */}
+            <aside className="sticky top-24 w-[240px] shrink-0 xl:w-[260px]">
+              <HomeSidebar
+                selectedCategory={selectedCategory}
+                onCategorySelect={setSelectedCategory}
+                nearbyCount={nearbyCount}
+              />
+            </aside>
 
-          <div className="min-w-0 flex-1">
-            <NearbyBar count={nearbyCount} />
+            {/* Zone principale : proximité, publicité, annonces */}
+            <div className="min-w-0 flex-1">
+              <NearbyBar count={nearbyCount} />
 
-            <div className="mt-4">
-              <PubBanner variant="desktop" />
-            </div>
+              <div className="mt-4">
+                <PubBanner variant="desktop" />
+              </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-4 2xl:grid-cols-3">
-              {filteredListings.length === 0 && <EmptyCatalog />}
-              {filteredListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
+              <div className="mt-4 grid grid-cols-2 gap-4 2xl:grid-cols-3">
+                {filteredListings.length === 0 && <EmptyCatalog />}
+                {filteredListings.map((listing) => (
+                  <ListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -119,7 +126,7 @@ export function HomeScreen({
       {/* ─────────────── Mobile et tablette ─────────────── */}
       <div className="lg:hidden -mb-20 min-h-[70dvh] bg-ink pb-20 md:mb-0 md:pb-0">
         <div className="mx-auto w-full max-w-md sm:max-w-2xl lg:max-w-3xl">
-          {/* En-tête collant : au scroll, le logo et la cloche s'effacent et
+          {/* En-tête collant : au scroll, le logo s'efface et
             seule la barre de recherche reste plaquée en haut de l'écran. */}
           <motion.div
             initial={false}
@@ -130,30 +137,16 @@ export function HomeScreen({
               stuck && "shadow-[0_12px_28px_-14px_rgba(0,0,0,0.95)]"
             )}
           >
-            {/* Logo + cloche */}
+            {/* Logo — mobile uniquement (le header desktop l'affiche déjà) */}
             <motion.div
               initial={false}
               animate={{ height: stuck ? 0 : 40, opacity: stuck ? 0 : 1, marginBottom: stuck ? 0 : 12 }}
               transition={SPRING}
-              className="flex items-center justify-between overflow-hidden"
+              className="flex items-center justify-between overflow-hidden md:hidden"
             >
-              {/* Logo — mobile uniquement (le header desktop l'affiche déjà) */}
-              <Link href="/" aria-label="Trouvetou — Accueil" className="md:hidden">
+              <Link href="/" aria-label="Trouvetou — Accueil">
                 <Logo size="sm" />
               </Link>
-
-              {/* Cloche de notification */}
-              <div className="relative md:ml-auto">
-                <button
-                  type="button"
-                  onClick={() => setNotifOpen((v) => !v)}
-                  aria-label="Notifications"
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-                >
-                  <Bell className="h-6 w-6" />
-                  <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-lime ring-2 ring-ink" />
-                </button>
-              </div>
             </motion.div>
 
             {/* Barre de recherche + pin de localisation */}
@@ -179,22 +172,6 @@ export function HomeScreen({
                 <MapPin className="h-6 w-6 text-lime" />
               </button>
             </form>
-
-            {/* Bulle de notifications — ancrée au conteneur pour ne pas être
-              coupée quand la rangée du logo s'efface. */}
-            <AnimatePresence>
-              {notifOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18 }}
-                  className="absolute right-4 top-[52px] z-40 w-60 rounded-2xl bg-white p-3.5 text-sm text-neutral-700 shadow-xl"
-                >
-                  Aucune nouvelle notification pour le moment.
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
 
           <div className="px-4">
