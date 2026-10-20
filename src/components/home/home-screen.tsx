@@ -15,6 +15,7 @@ import { HomeHeader } from "@/components/home/home-header";
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { NearbyBar } from "@/components/home/nearby-bar";
 import { PubBanner } from "@/components/home/pub-banner";
+import { PublishPromo } from "@/components/home/publish-promo";
 import { ListingCard, type ListingView } from "@/components/home/listing-card";
 
 /** Ressort doux utilisé pour l'effacement du logo au scroll. */
@@ -102,6 +103,9 @@ export function HomeScreen({
                 onCategorySelect={setSelectedCategory}
                 nearbyCount={nearbyCount}
               />
+
+              {/* Appel à l'action : publier une annonce */}
+              <PublishPromo className="mt-3" />
             </aside>
 
             {/* Zone principale : proximité, publicité, annonces */}
@@ -191,6 +195,9 @@ export function HomeScreen({
                 ))}
               </div>
             </section>
+
+            {/* Appel à l'action : publier une annonce */}
+            <PublishPromo className="mt-4" />
           </div>
         </div>
       </div>
