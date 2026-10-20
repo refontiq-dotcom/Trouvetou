@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { GraduationCap, Home, Plus } from "lucide-react";
+import { GraduationCap, Home, Plus, UtensilsCrossed } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Raccourcis vers les portails, affichés sur desktop sous l'en-tête. */
@@ -10,6 +10,7 @@ const DESKTOP_CHIPS = [
   { label: "École", href: "/ecoles", icon: GraduationCap },
   { label: "Clinique", href: "/cliniques", icon: Plus },
   { label: "Résidence", href: "/hotels", icon: Home },
+  { label: "Restaurant", href: "/restaurants", icon: UtensilsCrossed },
 ];
 
 /** Rangée de puces desktop — sur mobile, le menu « Catégories » la remplace. */

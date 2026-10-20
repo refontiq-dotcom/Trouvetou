@@ -108,7 +108,7 @@ function mapRow(row: ListingRow): ListedListing | null {
   };
 }
 
-function mapRows(data: unknown): ListedListing[] {
+export function mapRows(data: unknown): ListedListing[] {
   const rows = (data as unknown as ListingRow[]) ?? [];
   return rows
     .map(mapRow)

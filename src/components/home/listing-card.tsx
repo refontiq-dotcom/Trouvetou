@@ -1,49 +1,86 @@
 "use client";
 
-import Link from "next/link";
-import { Heart, MapPin, Star } from "lucide-react";
+import type { ListingView } from "@/lib/supabase/listing-view";
+import { Heart, MapPin } from "lucide-react";
 import { useFavorites } from "@/contexts/favorites-context";
-import { cn } from "@/lib/utils";
+import {
+  formatFCFA,
+  getCategoryLabel,
+  getPriceSuffix,
+  PLACEHOLDER_IMAGE,
+  cn,
+} from "@/lib/utils";
+export type { ListingView } from "@/lib/supabase/listing-view";
 
-/** Annonce affichée sur l'accueil (données réelles ou cartes de démonstration). */
-export interface HomeListing {
-  id: string;
-  title: string;
-  subtitle?: string;
-  city?: string;
-  /** Note déjà formatée en français, ex. « 4,8 ». */
-  ratingLabel?: string;
-  /** Prix déjà formaté, ex. « 85 000 FCFA / nuit ». */
-  priceLabel?: string;
-  image: string;
-  href: string;
+/** Couleur du badge de catégorie, cohérente avec les portails. */
+const CATEGORY_BADGES: Record<string, string> = {
+  hotel: "bg-[#f5a400]",
+  residence: "bg-[#f5a400]",
+  school: "bg-[#1769e8]",
+  clinic: "bg-[#0ea5e9]",
+  restaurant: "bg-[#f97316]",
+};
+
+interface ListingCardProps {
+  listing: ListingView;
+  /** Ouvre le détail de l'annonce dans le modal partagé. */
+  onOpen?: (listing: ListingView) => void;
+  /** Position dans la grille (les premières images sont chargées en priorité). */
+  index?: number;
 }
 
-export function ListingCard({ listing }: { listing: HomeListing }) {
+/**
+ * Carte d'annonce de l'accueil.
+ *
+ * Toute la surface est cliquable et ouvre le modal de détail ; le bouton
+ * favori reste indépendant (z-index supérieur). Les informations affichées
+ * proviennent uniquement des champs réellement disponibles en base : pas de
+ * note inventée, pas de date affichée.
+ */
+export function ListingCard({ listing, onOpen, index = 0 }: ListingCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const isFav = isFavorite(listing.id);
+  const image =
+    listing.images.find(
+      (src) => typeof src === "string" && src.trim().length > 0
+    ) ?? PLACEHOLDER_IMAGE;
+  const categoryLabel = getCategoryLabel(listing.category_slug);
+  const city = listing.establishment.city;
+  const hasPrice = listing.price != null && listing.price > 0;
 
   return (
-    <div className="relative rounded-2xl bg-white p-2 pb-3 shadow-sm ring-1 ring-neutral-200/70 transition-shadow hover:shadow-md">
-      {/* Overlay cliquable sous le bouton favori */}
-      <Link
-        href={listing.href}
-        aria-label={listing.title}
-        className="absolute inset-0 z-0 rounded-2xl"
+    <article className="relative rounded-2xl bg-white p-2 pb-3 shadow-sm ring-1 ring-neutral-200/70 transition-shadow hover:shadow-md">
+      {/* Surface cliquable : ouvre directement le détail, sans passer par un portail. */}
+      <button
+        type="button"
+        onClick={() => onOpen?.(listing)}
+        aria-label={`Voir le détail de ${listing.name}`}
+        className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1769e8] focus-visible:ring-offset-2"
       />
 
       <div className="relative">
         <img
-          src={listing.image}
-          alt={listing.title}
+          src={image}
+          alt={listing.name}
+          loading={index < 4 ? "eager" : "lazy"}
           className="h-36 w-full rounded-xl object-cover sm:h-44"
         />
+
+        <span
+          className={cn(
+            "pointer-events-none absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[10px] font-bold text-white shadow-sm",
+            CATEGORY_BADGES[listing.category_slug] ?? "bg-neutral-800"
+          )}
+        >
+          {categoryLabel}
+        </span>
+
         <button
           type="button"
           onClick={() => toggleFavorite(listing.id)}
           aria-pressed={isFav}
           aria-label={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md transition-transform active:scale-90"
+          className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md transition-transform active:scale-90"
         >
           <Heart
             className={cn(
@@ -55,40 +92,25 @@ export function ListingCard({ listing }: { listing: HomeListing }) {
       </div>
 
       <div className="px-1 pt-2.5">
-        <h3 className="text-[15px] font-bold leading-snug text-neutral-900">
-          {listing.title}
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-[15px] font-bold leading-snug text-neutral-900">
+          {listing.name}
         </h3>
-        {listing.subtitle && (
-          <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">
-            {listing.subtitle}
+        {city && (
+          <p className="mt-1 flex items-center gap-1 text-xs text-neutral-600">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{city}</span>
           </p>
         )}
       </div>
 
-      <div className="mt-2 flex min-h-[20px] items-center gap-1 px-1">
-        {listing.city && (
-          <>
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-neutral-700" />
-            <span className="text-xs font-medium text-neutral-700">
-              {listing.city}
-            </span>
-          </>
-        )}
-        {listing.ratingLabel && (
-          <span className="ml-auto flex items-center gap-1">
-            <Star className="h-4 w-4 fill-lime text-lime" />
-            <span className="text-xs font-bold text-neutral-900">
-              {listing.ratingLabel}
-            </span>
-          </span>
-        )}
-      </div>
-
-      {listing.priceLabel && (
+      {hasPrice && (
         <p className="mt-2 px-1 text-[15px] font-extrabold tracking-tight text-neutral-900">
-          {listing.priceLabel}
+          {formatFCFA(listing.price as number)}
+          <span className="ml-1 text-[11px] font-medium text-neutral-500">
+            {getPriceSuffix(listing.category_slug)}
+          </span>
         </p>
       )}
-    </div>
+    </article>
   );
 }
