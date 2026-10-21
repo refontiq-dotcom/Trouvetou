@@ -5,21 +5,15 @@ import { Heart, MapPin } from "lucide-react";
 import { useFavorites } from "@/contexts/favorites-context";
 import {
   formatFCFA,
-  getCategoryLabel,
-  getPriceSuffix,
   PLACEHOLDER_IMAGE,
   cn,
 } from "@/lib/utils";
+import {
+  getCategoryBadgeClass,
+  getCategoryLabel,
+  getPriceSuffix,
+} from "@/lib/categories";
 export type { ListingView } from "@/lib/supabase/listing-view";
-
-/** Couleur du badge de catégorie, cohérente avec les portails. */
-const CATEGORY_BADGES: Record<string, string> = {
-  hotel: "bg-[#f5a400]",
-  residence: "bg-[#f5a400]",
-  school: "bg-[#1769e8]",
-  clinic: "bg-[#0ea5e9]",
-  restaurant: "bg-[#f97316]",
-};
 
 interface ListingCardProps {
   listing: ListingView;
@@ -69,7 +63,7 @@ export function ListingCard({ listing, onOpen, index = 0 }: ListingCardProps) {
         <span
           className={cn(
             "pointer-events-none absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[10px] font-bold text-white shadow-sm",
-            CATEGORY_BADGES[listing.category_slug] ?? "bg-neutral-800"
+            getCategoryBadgeClass(listing.category_slug)
           )}
         >
           {categoryLabel}

@@ -10,7 +10,7 @@ import { RoomCardSkeletonGrid } from "@/components/hotels/room-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/layout/back-link";
 import { fetchListedListings } from "@/lib/supabase/hotels";
-import { getPriceSuffix } from "@/lib/utils";
+import { getPriceSuffix } from "@/lib/categories";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 export default function FavorisPage() {

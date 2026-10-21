@@ -1,8 +1,10 @@
 import { HomeScreen } from "@/components/home/home-screen";
 import {
+  CATEGORIES,
   FALLBACK_CATEGORIES,
+  NAVIGABLE_CATEGORY_SLUGS,
   type HomeCategoryItem,
-} from "@/lib/home-categories";
+} from "@/lib/categories";
 import { getSupabase } from "@/lib/supabase/client";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import {
@@ -103,41 +105,47 @@ const FALLBACK_LISTINGS: ListingView[] = [
 interface CategoryRow {
   id: string;
   slug: string;
-  name: string;
 }
 
 /**
- * Catégories disponibles avec leur nombre d'annonces — alimente le menu
- * déroulant de l'accueil. Repli sur une liste statique sans base configurée.
+ * Catégories disponibles avec leur nombre d'annonces — alimente les menus de
+ * l'accueil.
+ *
+ * Les libellés viennent du registre canonique (jamais de la base, dont le nom
+ * pouvait diverger : « Résidences meublées » vs « Résidences ») ; seule la base
+ * apporte le compteur. Seules les catégories possédant un portail sont
+ * proposées : une catégorie sans page ne peut pas être cliquée.
+ * Repli sur une liste statique sans base configurée.
  */
 async function getHomeCategories(): Promise<HomeCategoryItem[]> {
   const supabase = getSupabase();
   if (!supabase) return FALLBACK_CATEGORIES;
 
   try {
-    const { data } = await supabase.from("categories").select("id, slug, name");
+    const { data } = await supabase.from("categories").select("id, slug");
     const rows = (data ?? []) as unknown as CategoryRow[];
-    if (rows.length === 0) return FALLBACK_CATEGORIES;
+
+    const idBySlug = new Map(rows.map((row) => [row.slug, row.id]));
 
     const counts = await Promise.all(
-      rows.map(async (row) => {
+      NAVIGABLE_CATEGORY_SLUGS.map(async (slug) => {
+        const categoryId = idBySlug.get(slug);
+        if (!categoryId) return [slug, 0] as const;
         const { count } = await supabase
           .from("listings")
           .select("id", { count: "exact", head: true })
-          .eq("category_id", row.id)
+          .eq("category_id", categoryId)
           .eq("is_available", true);
-        return [row.slug, count ?? 0] as const;
+        return [slug, count ?? 0] as const;
       })
     );
     const countBySlug = new Map(counts);
 
-    return rows
-      .map((row) => ({
-        slug: row.slug,
-        label: row.name,
-        count: countBySlug.get(row.slug) ?? 0,
-      }))
-      .sort((a, b) => b.count - a.count);
+    return NAVIGABLE_CATEGORY_SLUGS.map((slug) => ({
+      slug,
+      label: CATEGORIES[slug].plural,
+      count: countBySlug.get(slug) ?? 0,
+    })).sort((a, b) => b.count - a.count);
   } catch {
     return FALLBACK_CATEGORIES;
   }

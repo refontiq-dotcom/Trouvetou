@@ -3,6 +3,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { safeSecretEqual } from "@/lib/http/request-guard";
 import { isEmailConfigured, sendEmail } from "@/lib/alerts/resend";
 import { newListingsEmail, siteUrl } from "@/lib/alerts/templates";
+import { categoryHref, getCategoryPluralLabel } from "@/lib/categories";
 
 /**
  * TROUVETOU — Envoi des alertes email.
@@ -25,21 +26,6 @@ const WINDOW_HOURS = 24;
 const MAX_ALERTS_PER_RUN = 100;
 const MAX_LISTINGS_PER_EMAIL = 5;
 
-const PORTAL_BY_SLUG: Record<string, string> = {
-  hotel: "/hotels",
-  residence: "/hotels",
-  school: "/ecoles",
-  clinic: "/cliniques",
-  restaurant: "/restaurants",
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  hotel: "Hôtels",
-  residence: "Résidences meublées",
-  school: "Écoles",
-  clinic: "Cliniques",
-  restaurant: "Restaurants",
-};
 
 interface ListingRow {
   id: string;
@@ -147,14 +133,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         title: listing.title,
         city: listing.city,
         price: listing.base_price,
-        href: `${siteUrl()}${PORTAL_BY_SLUG[slug] ?? "/hotels"}`,
+        href: `${siteUrl()}${categoryHref(slug)}`,
       };
     });
 
     const message = newListingsEmail({
       items,
       categoryLabel: alert.category_slug
-        ? CATEGORY_LABELS[alert.category_slug] ?? alert.category_slug
+        ? getCategoryPluralLabel(alert.category_slug)
         : null,
       city: alert.city,
     });

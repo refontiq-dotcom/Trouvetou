@@ -6,13 +6,15 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { PORTALS } from "@/lib/categories";
 
+/** Navigation principale : un lien par univers (libellés du registre). */
 const NAV_LINKS = [
   { href: "/", label: "Accueil" },
-  { href: "/hotels", label: "Hôtels" },
-  { href: "/ecoles", label: "Écoles" },
-  { href: "/cliniques", label: "Cliniques" },
-  { href: "/restaurants", label: "Restaurants" },
+  ...Object.values(PORTALS).map((portal) => ({
+    href: portal.path,
+    label: portal.shortLabel,
+  })),
 ];
 
 export function Header() {

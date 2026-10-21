@@ -13,8 +13,17 @@ interface HotelsPageProps {
 }
 
 export default async function HotelsPage({ searchParams }: HotelsPageProps) {
-  const { q } = await searchParams;
+  const { q, type } = await searchParams;
   const initialQuery = typeof q === "string" ? q : "";
+  // `?type=hotel` ou `?type=residence` : la page s'ouvre filtrée sur la
+  // catégorie demandée (lien depuis l'accueil, partage d'annonce).
+  const initialType = typeof type === "string" ? type : undefined;
 
-  return <CatalogContent config={HOTELS_CONFIG} initialQuery={initialQuery} />;
+  return (
+    <CatalogContent
+      config={HOTELS_CONFIG}
+      initialQuery={initialQuery}
+      initialType={initialType}
+    />
+  );
 }

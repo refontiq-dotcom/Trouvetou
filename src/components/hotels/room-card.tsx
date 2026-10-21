@@ -26,20 +26,15 @@ import {
   cn,
   formatFCFA,
   getAmenitiesInfo,
-  getCategoryLabel,
   PLACEHOLDER_IMAGE,
 } from "@/lib/utils";
+import {
+  categorySearchHref,
+  getCategoryBadgeClass,
+  getCategoryLabel,
+} from "@/lib/categories";
 import { isListingBookable, resolveCategorySlug } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
-
-/** Couleurs par catégorie pour les badges */
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
-  clinic: { bg: "bg-[#0ea5e9]", text: "text-[#0284c7]", ring: "ring-sky-500/20" },
-  school: { bg: "bg-[#1769e8]", text: "text-[#1769e8]", ring: "ring-[#1769e8]/20" },
-  restaurant: { bg: "bg-[#f97316]", text: "text-orange-600", ring: "ring-orange-500/20" },
-  hotel: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
-  residence: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
-};
 
 interface RoomCardProps {
   room: ListingView;
@@ -68,7 +63,6 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
   const liked = isFavorite(room.id);
   const compared = isCompared(room.id);
   const catSlug = resolveCategorySlug(room);
-  const catColor = CATEGORY_COLORS[catSlug] ?? CATEGORY_COLORS.hotel;
 
   // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
   // Source de vérité partagée avec le BookingModal (sinon : clic sans effet).
@@ -103,9 +97,11 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
     setBookingOpen(true);
   };
 
+  // Lien de partage : il mène à la catégorie exacte de l'annonce (et non au
+  // portail entier), grâce au registre canonique des catégories.
   const listingUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/${catSlug === "school" ? "ecoles" : catSlug === "clinic" ? "cliniques" : catSlug === "restaurant" ? "restaurants" : "hotels"}?q=${encodeURIComponent(room.name)}`
+      ? `${window.location.origin}${categorySearchHref(catSlug, room.name)}`
       : "";
 
   const whatsappUrl = buildWhatsAppShareUrl({
@@ -149,7 +145,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           {/* Badge catégorie coloré */}
           <span className={cn(
             "absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-sm",
-            catColor.bg
+            getCategoryBadgeClass(catSlug)
           )}>
             {getCategoryLabel(catSlug)}
           </span>

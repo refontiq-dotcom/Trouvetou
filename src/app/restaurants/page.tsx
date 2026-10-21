@@ -9,12 +9,19 @@ export const metadata: Metadata = {
 };
 
 interface RestaurantsPageProps {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; type?: string }>;
 }
 
 export default async function RestaurantsPage({ searchParams }: RestaurantsPageProps) {
-  const { q } = await searchParams;
+  const { q, type } = await searchParams;
   const initialQuery = typeof q === "string" ? q : "";
+  const initialType = typeof type === "string" ? type : undefined;
 
-  return <CatalogContent config={RESTAURANTS_CONFIG} initialQuery={initialQuery} />;
+  return (
+    <CatalogContent
+      config={RESTAURANTS_CONFIG}
+      initialQuery={initialQuery}
+      initialType={initialType}
+    />
+  );
 }

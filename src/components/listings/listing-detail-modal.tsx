@@ -18,7 +18,6 @@ import { PanoramaViewer } from "@/components/media/panorama-viewer";
 import { Modal } from "@/components/ui/modal";
 import { useAuth } from "@/contexts/auth-context";
 import { useFavorites } from "@/contexts/favorites-context";
-import { PORTAL_BY_SLUG } from "@/lib/home-categories";
 import { buildWhatsAppShareUrl } from "@/lib/whatsapp";
 import {
   buildGoogleMapsUrl,
@@ -26,10 +25,14 @@ import {
   cn,
   formatFCFA,
   getAmenitiesInfo,
-  getCategoryLabel,
-  getPriceSuffix,
   PLACEHOLDER_IMAGE,
 } from "@/lib/utils";
+import {
+  categorySearchHref,
+  getCategoryChipClass,
+  getCategoryLabel,
+  getPriceSuffix,
+} from "@/lib/categories";
 import { isListingBookable, resolveCategorySlug } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
@@ -40,14 +43,6 @@ interface ListingDetailModalProps {
   /** Libellé de prix du portail d'origine (défaut : selon la catégorie). */
   priceSuffix?: string;
 }
-
-const CATEGORY_CHIPS: Record<string, string> = {
-  hotel: "bg-amber-100 text-amber-700",
-  residence: "bg-violet-100 text-violet-700",
-  school: "bg-blue-100 text-blue-700",
-  clinic: "bg-sky-100 text-sky-700",
-  restaurant: "bg-orange-100 text-orange-700",
-};
 
 /**
  * Détail d'une annonce, partagé par l'accueil et les portails.
@@ -146,9 +141,10 @@ function ListingDetailContent({
         )
       : null;
 
+  // Lien de partage : il mène à la catégorie exacte de l'annonce.
   const listingUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}${PORTAL_BY_SLUG[categorySlug] ?? "/hotels"}?q=${encodeURIComponent(room.name)}`
+      ? `${window.location.origin}${categorySearchHref(categorySlug, room.name)}`
       : "";
   const whatsappShareUrl = buildWhatsAppShareUrl({
     name: room.name,
@@ -269,7 +265,7 @@ function ListingDetailContent({
               <span
                 className={cn(
                   "rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide",
-                  CATEGORY_CHIPS[categorySlug] ?? "bg-neutral-100 text-neutral-700"
+                  getCategoryChipClass(categorySlug)
                 )}
               >
                 {categoryLabel}

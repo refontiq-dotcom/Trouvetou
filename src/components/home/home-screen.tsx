@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -9,7 +9,7 @@ import { detectTargetPortal } from "@/lib/search-intent";
 import { LocationPicker } from "@/components/location/location-picker";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
-import type { HomeCategoryItem } from "@/lib/home-categories";
+import type { HomeCategoryItem } from "@/lib/categories";
 import { CategoryMenu } from "@/components/home/category-menu";
 import { HomeHeader } from "@/components/home/home-header";
 import { HomeSidebar } from "@/components/home/home-sidebar";
@@ -53,22 +53,9 @@ export function HomeScreen({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   /** Annonce ouverte dans la modale de détail (null = fermée). */
   const [selectedListing, setSelectedListing] = useState<ListingView | null>(null);
   const [stuck, setStuck] = useState(false);
-
-  // Liste dérivée : la catégorie sélectionnée filtre les annonces reçues du
-  // serveur, sans état dupliqué ni rendu en cascade.
-  const filteredListings = useMemo(
-    () =>
-      selectedCategory === null
-        ? listings
-        : listings.filter(
-            (listing) => listing.category_slug === selectedCategory
-          ),
-    [listings, selectedCategory]
-  );
 
   // Au scroll, le logo s'efface : seule la barre de recherche
   // reste plaquée en haut de l'écran, sans rien d'autre sur le bord.
@@ -101,11 +88,7 @@ export function HomeScreen({
           <div className="flex items-start gap-6">
             {/* Barre latérale gauche : catégories */}
             <aside className="sticky top-24 w-[240px] shrink-0 xl:w-[260px]">
-              <HomeSidebar
-                selectedCategory={selectedCategory}
-                onCategorySelect={setSelectedCategory}
-                nearbyCount={nearbyCount}
-              />
+              <HomeSidebar categories={categories} />
 
               {/* Appel à l'action : publier une annonce */}
               <PublishPromo className="mt-3" />
@@ -120,8 +103,8 @@ export function HomeScreen({
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-4 2xl:grid-cols-3">
-                {filteredListings.length === 0 && <EmptyCatalog />}
-                {filteredListings.map((listing, index) => (
+                {listings.length === 0 && <EmptyCatalog />}
+                {listings.map((listing, index) => (
                   <ListingCard
                     key={listing.id}
                     listing={listing}
@@ -197,8 +180,8 @@ export function HomeScreen({
             <section className="mt-4 rounded-[28px] bg-white p-3 shadow-2xl">
               <PubBanner />
               <div className="mt-3 grid grid-cols-2 gap-3">
-                {filteredListings.length === 0 && <EmptyCatalog />}
-                {filteredListings.map((listing, index) => (
+                {listings.length === 0 && <EmptyCatalog />}
+                {listings.map((listing, index) => (
                   <ListingCard
                     key={listing.id}
                     listing={listing}

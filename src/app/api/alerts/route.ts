@@ -7,6 +7,7 @@ import {
 } from "@/lib/http/request-guard";
 import { isEmailConfigured, sendEmail } from "@/lib/alerts/resend";
 import { alertConfirmationEmail } from "@/lib/alerts/templates";
+import { CATEGORIES, NAVIGABLE_CATEGORY_SLUGS } from "@/lib/categories";
 
 /**
  * TROUVETOU — Inscription à une alerte email.
@@ -29,14 +30,11 @@ const MAX_CITY_LENGTH = 80;
 /** Une inscription par minute et par IP : 5, pour un formulaire humain. */
 const RATE_LIMIT = { limit: 5, windowMs: 60_000 };
 
-/** Libellé affiché dans l'email, par slug de catégorie. */
-const CATEGORY_LABELS: Record<string, string> = {
-  hotel: "Hôtels",
-  residence: "Résidences meublées",
-  school: "Écoles",
-  clinic: "Cliniques",
-  restaurant: "Restaurants",
-};
+/** Catégories acceptées pour une alerte (libellés du registre canonique). */
+const ALERT_CATEGORIES = NAVIGABLE_CATEGORY_SLUGS.map((slug) => ({
+  slug,
+  label: CATEGORIES[slug].plural,
+}));
 
 interface AlertRequestBody {
   email?: unknown;
@@ -104,7 +102,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     typeof body.category === "string" ? body.category.trim().toLowerCase() : "";
   const categorySlug =
     rawCategory && rawCategory !== "all" ? rawCategory : null;
-  if (categorySlug !== null && !(categorySlug in CATEGORY_LABELS)) {
+  if (
+    categorySlug !== null &&
+    !ALERT_CATEGORIES.some((category) => category.slug === categorySlug)
+  ) {
     return NextResponse.json(
       { success: false, error: "Catégorie inconnue." },
       { status: 400 }
@@ -155,7 +156,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const message = alertConfirmationEmail({
-    categoryLabel: categorySlug ? CATEGORY_LABELS[categorySlug] : null,
+    categoryLabel: categorySlug
+      ? (ALERT_CATEGORIES.find((category) => category.slug === categorySlug)
+          ?.label ?? categorySlug)
+      : null,
     city,
   });
 
