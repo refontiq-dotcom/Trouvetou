@@ -17,6 +17,7 @@ import { NearbyBar } from "@/components/home/nearby-bar";
 import { PubBanner } from "@/components/home/pub-banner";
 import { PublishPromo } from "@/components/home/publish-promo";
 import { ListingCard, type ListingView } from "@/components/home/listing-card";
+import { ListingDetailModal } from "@/components/listings/listing-detail-modal";
 
 /** Ressort doux utilisé pour l'effacement du logo au scroll. */
 const SPRING = { type: "spring" as const, stiffness: 380, damping: 34, mass: 0.6 };
@@ -53,6 +54,8 @@ export function HomeScreen({
   const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  /** Annonce ouverte dans la modale de détail (null = fermée). */
+  const [selectedListing, setSelectedListing] = useState<ListingView | null>(null);
   const [stuck, setStuck] = useState(false);
 
   // Liste dérivée : la catégorie sélectionnée filtre les annonces reçues du
@@ -118,8 +121,13 @@ export function HomeScreen({
 
               <div className="mt-4 grid grid-cols-2 gap-4 2xl:grid-cols-3">
                 {filteredListings.length === 0 && <EmptyCatalog />}
-                {filteredListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+                {filteredListings.map((listing, index) => (
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    index={index}
+                    onOpen={setSelectedListing}
+                  />
                 ))}
               </div>
             </div>
@@ -190,8 +198,13 @@ export function HomeScreen({
               <PubBanner />
               <div className="mt-3 grid grid-cols-2 gap-3">
                 {filteredListings.length === 0 && <EmptyCatalog />}
-                {filteredListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+                {filteredListings.map((listing, index) => (
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    index={index}
+                    onOpen={setSelectedListing}
+                  />
                 ))}
               </div>
             </section>
@@ -201,6 +214,12 @@ export function HomeScreen({
           </div>
         </div>
       </div>
+
+      {/* Détail de l'annonce — ouvert au clic sur une carte. */}
+      <ListingDetailModal
+        room={selectedListing}
+        onClose={() => setSelectedListing(null)}
+      />
 
       {pickerOpen && <LocationPicker onClose={() => setPickerOpen(false)} />}
     </>
