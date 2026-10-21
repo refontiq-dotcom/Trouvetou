@@ -11,7 +11,15 @@ interface ModalProps {
   title?: string;
   description?: string;
   children: ReactNode;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "detail";
+  /** Classes supplémentaires du panneau (largeur, hauteur…). */
+  className?: string;
+  /** Classes du conteneur de contenu (remplace le padding par défaut). */
+  contentClassName?: string;
+  /** Id du titre rendu par l'appelant quand `title` n'est pas fourni. */
+  labelledBy?: string;
+  /** Masque le bouton de fermeture interne (l'appelant en fournit un). */
+  showClose?: boolean;
 }
 
 const sizeClasses = {
@@ -19,10 +27,25 @@ const sizeClasses = {
   md: "max-w-lg",
   lg: "max-w-2xl",
   xl: "max-w-4xl",
+  /** Grande présentation desktop (galerie + informations). */
+  detail: "max-w-[1400px] h-[88dvh]",
 };
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Seule la modale du dessus répond au clavier. Indispensable quand une modale
+ * en ouvre une autre (ex. réservation depuis le détail d'une annonce) :
+ * Échap ne doit fermer que la plus récente, et le piège de focus ne doit pas
+ * ramener le focus dans la modale du dessous.
+ */
+function isTopmostDialog(dialog: HTMLElement): boolean {
+  const dialogs = document.querySelectorAll<HTMLElement>(
+    '[role="dialog"][aria-modal="true"]'
+  );
+  return dialogs.length === 0 || dialogs[dialogs.length - 1] === dialog;
+}
 
 export function Modal({
   open,
@@ -31,19 +54,23 @@ export function Modal({
   description,
   children,
   size = "md",
+  className,
+  contentClassName,
+  labelledBy,
+  showClose = true,
 }: ModalProps) {
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
 
+  // Verrou de scroll : restaure la valeur précédente (et non « ») pour que
+  // deux modales empilées ne déverrouillent pas la page prématurément.
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previous;
     };
   }, [open]);
 
@@ -66,6 +93,9 @@ export function Modal({
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
     function handleKeyDown(e: KeyboardEvent) {
+      const dialog = dialogRef.current;
+      if (!dialog || !isTopmostDialog(dialog)) return;
+
       if (e.key === "Escape") {
         e.preventDefault();
         onCloseRef.current();
@@ -73,8 +103,6 @@ export function Modal({
       }
 
       if (e.key !== "Tab") return;
-      const dialog = dialogRef.current;
-      if (!dialog) return;
 
       const focusables = Array.from(
         dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
@@ -130,12 +158,13 @@ export function Modal({
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? titleId : undefined}
+            aria-labelledby={title ? titleId : labelledBy}
             aria-describedby={description ? descriptionId : undefined}
             tabIndex={-1}
             className={cn(
               "relative w-full bg-card rounded-2xl shadow-2xl max-h-[90vh] flex flex-col outline-none",
-              sizeClasses[size]
+              sizeClasses[size],
+              className
             )}
             initial={{ opacity: 0, scale: 0.95, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -156,17 +185,19 @@ export function Modal({
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-                  aria-label="Fermer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                {showClose && (
+                  <button
+                    onClick={onClose}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
+                    aria-label="Fermer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             )}
 
-            {!title && !description && (
+            {!title && !description && showClose && (
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors z-10"
@@ -176,7 +207,14 @@ export function Modal({
               </button>
             )}
 
-            <div className="p-6 overflow-y-auto flex-1">{children}</div>
+            <div
+              className={cn(
+                "p-6 overflow-y-auto flex-1",
+                contentClassName
+              )}
+            >
+              {children}
+            </div>
           </motion.div>
         </motion.div>
       )}

@@ -3,21 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Heart,
-  ArrowLeft,
   MapPin,
   MessageCircle,
   Navigation,
   Phone,
-  Rotate3D,
-  Share2,
-  Star,
   Wallet,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
-import { PanoramaViewer } from "@/components/media/panorama-viewer";
+import { ListingDetailModal } from "@/components/listings/listing-detail-modal";
 import { useAuth } from "@/contexts/auth-context";
 import { useLocation } from "@/contexts/location-context";
 import { useFavorites } from "@/contexts/favorites-context";
@@ -30,20 +26,15 @@ import {
   cn,
   formatFCFA,
   getAmenitiesInfo,
-  getCategoryLabel,
   PLACEHOLDER_IMAGE,
 } from "@/lib/utils";
+import {
+  categorySearchHref,
+  getCategoryBadgeClass,
+  getCategoryLabel,
+} from "@/lib/categories";
 import { isListingBookable, resolveCategorySlug } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
-
-/** Couleurs par catégorie pour les badges */
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
-  clinic: { bg: "bg-[#0ea5e9]", text: "text-[#0284c7]", ring: "ring-sky-500/20" },
-  school: { bg: "bg-[#1769e8]", text: "text-[#1769e8]", ring: "ring-[#1769e8]/20" },
-  restaurant: { bg: "bg-[#f97316]", text: "text-orange-600", ring: "ring-orange-500/20" },
-  hotel: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
-  residence: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
-};
 
 interface RoomCardProps {
   room: ListingView;
@@ -54,10 +45,6 @@ interface RoomCardProps {
 export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCardProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  // Index dans `room.panoramas`, ou null quand la visionneuse est fermée.
-  // Un index plutôt qu'un booléen : le contrat autorise plusieurs visites par
-  // annonce, même si l'interface n'en expose qu'une à la fois.
-  const [panoramaIndex, setPanoramaIndex] = useState<number | null>(null);
   const { location: userLocation } = useLocation();
   const { user } = useAuth();
   const router = useRouter();
@@ -67,11 +54,6 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
 
   const establishment = room.establishment;
   const coverImage = room.images[0] ?? PLACEHOLDER_IMAGE;
-  // Première visite exploitable, ou null. `parsePanoramas` a déjà écarté tout
-  // ce qui n'était pas une vraie visite 360° : une annonce sans panorama
-  // affichera donc exactement ce qu'elle affichait avant, bouton en moins.
-  const panorama = room.panoramas?.[0] ?? null;
-  const isPanoramaOpen = panoramaIndex !== null && panorama !== null;
   const amenities = getAmenitiesInfo(room.amenities ?? []).slice(0, 3);
   const mapsUrl = buildGoogleMapsUrl(
     establishment?.latitude,
@@ -81,7 +63,6 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
   const liked = isFavorite(room.id);
   const compared = isCompared(room.id);
   const catSlug = resolveCategorySlug(room);
-  const catColor = CATEGORY_COLORS[catSlug] ?? CATEGORY_COLORS.hotel;
 
   // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
   // Source de vérité partagée avec le BookingModal (sinon : clic sans effet).
@@ -116,9 +97,11 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
     setBookingOpen(true);
   };
 
+  // Lien de partage : il mène à la catégorie exacte de l'annonce (et non au
+  // portail entier), grâce au registre canonique des catégories.
   const listingUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/${catSlug === "school" ? "ecoles" : catSlug === "clinic" ? "cliniques" : catSlug === "restaurant" ? "restaurants" : "hotels"}?q=${encodeURIComponent(room.name)}`
+      ? `${window.location.origin}${categorySearchHref(catSlug, room.name)}`
       : "";
 
   const whatsappUrl = buildWhatsAppShareUrl({
@@ -162,7 +145,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           {/* Badge catégorie coloré */}
           <span className={cn(
             "absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-sm",
-            catColor.bg
+            getCategoryBadgeClass(catSlug)
           )}>
             {getCategoryLabel(catSlug)}
           </span>
@@ -303,64 +286,11 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
           </div>
       </motion.article>
 
-      <AnimatePresence>
-        {detailOpen && (
-          <motion.div className="fixed inset-0 z-[100] overflow-y-auto bg-navy/90 p-0 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="dialog" aria-modal="true" aria-label={"Détails de " + room.name}>
-            <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-secondary shadow-2xl sm:min-h-[calc(100dvh-3rem)] sm:rounded-[2rem]">
-              {isPanoramaOpen && panorama && (
-                <PanoramaViewer
-                  panorama={panorama}
-                  label={room.name}
-                  onClose={() => setPanoramaIndex(null)}
-                />
-              )}
-              <motion.div className="relative h-[48dvh] min-h-[320px] shrink-0 overflow-hidden" layoutId={"listing-image-" + room.id} transition={{ type: "spring", stiffness: 320, damping: 34 }}>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_62%,rgba(255,255,255,.22),transparent_2px)] bg-[size:12px_12px] opacity-70" />
-                <div className="absolute inset-0 bg-gradient-to-br from-navy via-primary to-primary-light" />
-                <Image src={coverImage} alt={room.name} fill priority sizes="(min-width: 640px) 430px, 100vw" className="object-contain px-8 pb-5 pt-24 drop-shadow-[0_22px_18px_rgba(16,42,114,.38)]" />
-                <div className="absolute inset-x-0 top-0 flex items-center justify-between p-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-                  <button type="button" onClick={() => setDetailOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Retour aux annonces"><ArrowLeft className="h-5 w-5" /></button>
-                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Partager l'annonce"><Share2 className="h-5 w-5" /></a>
-                </div>
-                <div className="absolute left-6 right-6 top-20"><h2 className="font-display text-2xl font-bold leading-tight text-white">{room.name}</h2><p className="mt-1 text-sm font-medium text-white/80">{getCategoryLabel(catSlug)}{location ? ` · ${location}` : ""}</p></div>
-              </motion.div>
-              <motion.div initial={{ y: 28, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} transition={{ delay: 0.08, duration: 0.28 }} className="relative -mt-5 flex flex-1 flex-col rounded-t-[2rem] bg-white px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 shadow-[0_-10px_26px_rgba(16,42,114,.18)]">
-                <div className="absolute -top-12 left-0 rounded-tr-[2rem] bg-white px-6 pb-4 pt-5"><p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Prix</p><p className="mt-0.5 text-xl font-extrabold leading-tight text-accent-hover">{formatFCFA(room.price ?? 0)}</p><p className="mt-0.5 text-xs text-muted-foreground">{priceSuffix}</p></div>
-                <button type="button" onClick={() => toggleFavorite(room.id)} className={cn("absolute right-6 -top-11 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm", liked ? "text-rose-500" : "text-navy")} aria-label="Ajouter aux favoris"><Heart className={cn("h-5 w-5", liked && "fill-current")} /></button>
-                <div className="mt-14 flex items-center justify-between gap-4"><h3 className="text-sm font-bold text-foreground">Description</h3><span className="flex items-center gap-1 text-xs font-semibold text-accent-hover"><Star className="h-4 w-4 fill-current" /> Trouvetou</span></div>
-                {panorama && !isPanoramaOpen && (
-                  <button
-                    type="button"
-                    onClick={() => setPanoramaIndex(0)}
-                    className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left transition-colors hover:bg-primary/10"
-                    aria-label={`Ouvrir la visite 360° de ${room.name}`}
-                  >
-                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary text-white">
-                      <Rotate3D className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-bold text-foreground">Vue 360°</span>
-                      <span className="block text-xs text-muted-foreground">Explorez la pièce comme si vous y étiez</span>
-                    </span>
-                  </button>
-                )}
-                {room.description ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{room.description}</p> : <p className="mt-2 text-sm leading-6 text-muted-foreground">Découvrez les informations et services proposés par cette annonce.</p>}
-                {amenities.length > 0 && <div className="mt-5"><h3 className="mb-2 text-sm font-bold text-foreground">Services</h3><div className="flex flex-wrap gap-2">{getAmenitiesInfo(room.amenities ?? []).map(({ label, icon: Icon }) => <span key={label} className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground"><Icon className="h-3.5 w-3.5 text-primary" />{label}</span>)}</div></div>}
-                {location && <p className="mt-5 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{location}</span></p>}
-                <div className="mt-auto grid grid-cols-3 gap-2 pt-7">
-                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#25D366]">
-                    <MessageCircle className="h-5 w-5" />WhatsApp
-                  </a>
-                  <button type="button" onClick={() => window.open(mapsUrl, "_blank", "noopener,noreferrer")} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
-                    <Navigation className="h-5 w-5" />Itinéraire
-                  </button>
-                  {isBookable ? <button type="button" onClick={openBooking} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />Contacter</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">Fermer</button>}
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ListingDetailModal
+        room={detailOpen ? room : null}
+        onClose={() => setDetailOpen(false)}
+        priceSuffix={priceSuffix}
+      />
 
       <BookingModal room={room} open={bookingOpen} onClose={() => setBookingOpen(false)} priceSuffix={priceSuffix} />
     </>

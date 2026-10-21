@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowRightLeft,
@@ -24,7 +24,8 @@ import {
   fetchListedListings,
   sortRooms,
 } from "@/lib/supabase/hotels";
-import { cn, getCategoryLabel } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { getCategoryEmoji, getCategoryLabel } from "@/lib/categories";
 import { detectPortalSuggestion } from "@/lib/search-intent";
 import { useLocation } from "@/contexts/location-context";
 import { VoiceButton } from "@/components/ui/voice-button";
@@ -52,16 +53,6 @@ const SORT_OPTIONS = [
   { label: "Récent", value: "recent", icon: ArrowDownWideNarrow },
 ];
 
-/** Catégories avec icônes visuelles */
-const CATEGORY_ICONS: Record<string, string> = {
-  hotel: "🏨",
-  residence: "🏠",
-  clinic: "🏥",
-  school: "🏫",
-  restaurant: "🍽️",
-  other: "📋",
-};
-
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -74,13 +65,50 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 interface CatalogContentProps {
   config: CatalogContentConfig;
   initialQuery?: string;
+  /**
+   * Catégorie(s) pré-sélectionnée(s) via `?type=` (ex. « residence »).
+   *
+   * Ce paramètre existait déjà dans l'URL des portails mais n'était jamais lu :
+   * impossible d'arriver sur une catégorie précise. Il est désormais appliqué
+   * au chargement, et réécrit à chaque changement de filtre.
+   */
+  initialType?: string;
 }
 
-export function CatalogContent({ config, initialQuery = "" }: CatalogContentProps) {
+/** Convertit `?type=hotel,residence` en une liste de catégories valides. */
+function parseTypes(raw: string | undefined, allowed: string[]): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => value.length > 0 && allowed.includes(value));
+}
+
+export function CatalogContent({
+  config,
+  initialQuery = "",
+  initialType,
+}: CatalogContentProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { location: userLocation } = useLocation();
   const [query, setQuery] = useState(initialQuery);
-  const [types, setTypes] = useState<string[]>([]);
+
+  // Catégories issues de l'URL : la page se charge déjà filtrée.
+  const initialTypes = useMemo(
+    () => parseTypes(initialType, config.categories),
+    [initialType, config.categories]
+  );
+  const initialTypesKey = initialTypes.join(",");
+  const [types, setTypes] = useState<string[]>(initialTypes);
+  const [appliedTypesKey, setAppliedTypesKey] = useState(initialTypesKey);
+
+  // L'URL fait foi : lien partagé, navigation arrière ou changement de page
+  // rechargent le filtre (et non l'inverse).
+  if (appliedTypesKey !== initialTypesKey) {
+    setAppliedTypesKey(initialTypesKey);
+    setTypes(initialTypes);
+  }
   const [budget, setBudget] = useState(0);
   const [sort, setSort] = useState<string>(userLocation ? "distance" : "price_asc");
 
@@ -146,12 +174,37 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
     return () => { cancelled = true; };
   }, [debounced, types, budget, sort, reloadKey, limit, config, suggestion, userLocation]);
 
+  /**
+   * Reflète le filtre de catégorie dans l'URL (`?type=`), pour que la page
+   * soit partageable et que le bouton « retour » retrouve le bon filtre.
+   */
+  function syncTypeParam(nextTypes: string[], nextQuery: string) {
+    const params = new URLSearchParams(window.location.search);
+    const trimmed = nextQuery.trim();
+    if (trimmed) {
+      params.set("q", trimmed);
+    } else {
+      params.delete("q");
+    }
+    if (nextTypes.length > 0) {
+      params.set("type", nextTypes.join(","));
+    } else {
+      params.delete("type");
+    }
+    const search = params.toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, {
+      scroll: false,
+    });
+  }
+
   function toggleType(type: string) {
     setLoading(true);
     setLimit(PAGE_SIZE);
-    setTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
+    const next = types.includes(type)
+      ? types.filter((t) => t !== type)
+      : [...types, type];
+    setTypes(next);
+    syncTypeParam(next, query);
   }
 
   function resetFilters() {
@@ -161,6 +214,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
     setBudget(0);
     setSort("price_asc");
     setLimit(PAGE_SIZE);
+    syncTypeParam([], "");
   }
 
   function loadMore() {
@@ -252,7 +306,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
             <>
               {config.typeFilters.map((type) => {
                 const active = types.includes(type);
-                const emoji = CATEGORY_ICONS[type] ?? "📋";
+                const emoji = getCategoryEmoji(type);
                 return (
                   <button
                     key={type}
@@ -288,6 +342,21 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
       {/* Active filter chips — résumé compact */}
       {hasActiveFilters && (
         <div className="mt-3 flex items-center gap-2 flex-wrap">
+          {types.map((type) => (
+            <span
+              key={type}
+              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+            >
+              {getCategoryEmoji(type)} {getCategoryLabel(type)}
+              <button
+                onClick={() => toggleType(type)}
+                className="ml-0.5 hover:text-primary/70"
+                aria-label={`Retirer le filtre ${getCategoryLabel(type)}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
           {budget > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
               💰 ≤ {budget.toLocaleString("fr-FR")} F

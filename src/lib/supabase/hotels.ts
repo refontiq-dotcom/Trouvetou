@@ -1,3 +1,4 @@
+import { NAVIGABLE_CATEGORY_SLUGS } from "@/lib/categories";
 import { fetchListings } from "./listings";
 import { toListingViews, type ListingView } from "./listing-view";
 import { haversineDistance, type LatLng } from "@/lib/geo";
@@ -17,12 +18,8 @@ import { haversineDistance, type LatLng } from "@/lib/geo";
  * filtrer aucun secteur. La section « Hôtels & Résidences » passe
  * explicitement `["hotel", "residence"]` (voir `components/catalog/configs`).
  */
-export const ALL_SECTION_CATEGORIES = [
-  "hotel",
-  "residence",
-  "school",
-  "clinic",
-  "restaurant",
+export const ALL_SECTION_CATEGORIES: string[] = [
+  ...NAVIGABLE_CATEGORY_SLUGS,
 ];
 
 export interface FetchListedListingsParams {

@@ -16,7 +16,6 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
-import type { EstablishmentType } from "./supabase/database.types";
 
 export function cn(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
@@ -38,23 +37,10 @@ export function formatNumber(amount: number): string {
   }).format(amount);
 }
 
-/**
- * Libellé de prix selon la catégorie d'une annonce.
- * Utilisé quand une carte est affichée hors de son portail dédié
- * (ex. page Favoris qui mélange toutes les catégories).
+/*
+ * Les libellés de catégorie (prix, couleurs, portail, icône) sont centralisés
+ * dans `lib/categories.ts` : une seule table pour toute l'application.
  */
-export function getPriceSuffix(categorySlug: string): string {
-  switch (categorySlug) {
-    case "school":
-      return "par scolarité";
-    case "restaurant":
-      return "par plat";
-    case "clinic":
-      return "par consultation";
-    default:
-      return "par nuit";
-  }
-}
 
 /** Indicatifs téléphoniques des pays couverts (Afrique de l'Ouest). */
 const COUNTRY_DIAL_CODES: Record<string, string> = {
@@ -154,31 +140,3 @@ export function getAmenitiesInfo(names: string[]): AmenityInfo[] {
   return names.map(getAmenityInfo);
 }
 
-export const ESTABLISHMENT_TYPE_LABELS: Record<EstablishmentType, string> = {
-  hotel: "Hôtel",
-  residence: "Résidence",
-  appartements: "Appartements",
-  villa: "Villa",
-  guesthouse: "Maison d'hôtes",
-  other: "Établissement",
-};
-
-export function getEstablishmentTypeLabel(type: EstablishmentType | null): string {
-  if (!type) return "Établissement";
-  return ESTABLISHMENT_TYPE_LABELS[type] ?? "Établissement";
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  hotel: "Hôtel",
-  residence: "Résidence",
-  restaurant: "Restaurant",
-  clinic: "Clinique",
-  school: "École",
-  other: "Établissement",
-};
-
-/** Libellé d'une catégorie Trouvetou (slug : hotel, residence, clinic, school, other). */
-export function getCategoryLabel(slug: string | null): string {
-  if (!slug) return "Établissement";
-  return CATEGORY_LABELS[slug] ?? slug;
-}

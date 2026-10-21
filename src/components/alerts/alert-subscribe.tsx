@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Check, Loader2 } from "lucide-react";
+import { CATEGORIES, NAVIGABLE_CATEGORY_SLUGS } from "@/lib/categories";
 
-const CATEGORIES = [
-  { slug: "clinic", label: "Cliniques" },
-  { slug: "school", label: "Écoles" },
-  { slug: "hotel", label: "Hôtels" },
-  { slug: "residence", label: "Résidences" },
-  { slug: "restaurant", label: "Restaurants" },
-];
+/** Catégories proposées à l'abonnement (libellés issus du registre). */
+const ALERT_CATEGORIES = NAVIGABLE_CATEGORY_SLUGS.map((slug) => ({
+  slug,
+  label: CATEGORIES[slug].plural,
+}));
 
 interface AlertSubscribeProps {
   /** Position d'affichage : inline (dans le flow) ou floating (bouton fixe). */
@@ -144,7 +143,7 @@ export function AlertSubscribe({ variant = "inline" }: AlertSubscribeProps) {
                       className="h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                     >
                       <option value="all">Toutes les catégories</option>
-                      {CATEGORIES.map((c) => (
+                      {ALERT_CATEGORIES.map((c) => (
                         <option key={c.slug} value={c.slug}>{c.label}</option>
                       ))}
                     </select>

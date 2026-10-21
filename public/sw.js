@@ -1,4 +1,4 @@
-const CACHE_NAME = "trouvetou-v2";
+const CACHE_NAME = "trouvetou-v4";
 const STATIC_ASSETS = ["/", "/ecoles", "/cliniques", "/hotels", "/restaurants"];
 
 self.addEventListener("install", (event) => {
@@ -57,6 +57,9 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith(".woff") ||
     url.pathname.endsWith(".ttf") ||
     url.pathname.startsWith("/icon-") ||
+    url.pathname.startsWith("/favicon-") ||
+    url.pathname === "/favicon.ico" ||
+    url.pathname.startsWith("/brand/") ||
     url.pathname.startsWith("/apple-touch-icon") ||
     url.hostname === "images.unsplash.com"
   ) {

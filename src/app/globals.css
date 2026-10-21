@@ -146,6 +146,67 @@ h1 {
   animation: fadeIn 0.4s ease-out both;
 }
 
+/* =========================================================================
+   Loader officiel Trouvetou — symbole feuille + loupe
+   CSS pur : uniquement opacity/transform (composité GPU, pas de layout).
+   ========================================================================= */
+@keyframes tt-loader-breathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.06) translateY(-3px); }
+}
+@keyframes tt-loader-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+/* Le conteneur est toujours monté : sa place est réservée dès le premier
+   rendu (aucun décalage de mise en page). Il reste invisible jusqu'à la fin
+   du délai anti-clignotement, puis apparaît en fondu. */
+.tt-loader-scope {
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+.tt-loader-scope--visible {
+  opacity: 1;
+}
+
+.tt-loader-scope--visible .tt-loader-symbol {
+  animation: tt-loader-breathe 2.4s ease-in-out 0.25s infinite;
+  will-change: transform, opacity;
+}
+.tt-loader-scope .tt-loader-track {
+  width: 120px;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+.tt-loader-scope .tt-loader-bar {
+  width: 40%;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--lime, #b5e04b);
+  will-change: transform;
+}
+.tt-loader-scope--visible .tt-loader-bar {
+  animation: tt-loader-slide 1.3s ease-in-out infinite;
+}
+
+/* Réduction des animations : version statique (apparition immédiate, symbole
+   fixe, barre immobile à 40 %) — toujours annoncée, mais sans mouvement. */
+@media (prefers-reduced-motion: reduce) {
+  .tt-loader-scope {
+    transition: none;
+  }
+  .tt-loader-scope--visible .tt-loader-symbol,
+  .tt-loader-scope--visible .tt-loader-bar {
+    animation: none;
+  }
+  .tt-loader-scope--visible .tt-loader-bar {
+    transform: translateX(0);
+  }
+}
+
 /* Masque la scrollbar des rangées de chips horizontales */
 .no-scrollbar {
   scrollbar-width: none;

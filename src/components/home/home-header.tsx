@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Bell, ChevronDown, MapPin, Search, User } from "lucide-react";
+import { ChevronDown, MapPin, Search, User } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { LocationPicker } from "@/components/location/location-picker";
 
@@ -58,14 +58,6 @@ export function HomeHeader({ query, onQueryChange, onSubmit }: HomeHeaderProps) 
         </form>
 
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-lime ring-2 ring-ink" />
-          </button>
           <Link
             href="/profil"
             aria-label="Mon profil"

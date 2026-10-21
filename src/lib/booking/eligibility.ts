@@ -5,10 +5,12 @@
 // le bouton « Réserver ». Avant, room-card / boosted-carousel utilisaient
 // `room.category_slug` et le modal un autre calcul : un clic pouvait donc ne
 // rien afficher, sans aucun message pour l'utilisateur.
+//
+// Les catégories réservables sont décrites par le registre canonique
+// `lib/categories.ts` : cette liste n'en est qu'un miroir.
 // ============================================================================
 
-/** Catégories dont la réservation « par nuit » a un sens. */
-const BOOKABLE_CATEGORIES = new Set(["hotel", "residence"]);
+import { isBookableCategory as registryIsBookable } from "@/lib/categories";
 
 /** Sous-ensemble de ListingView nécessaire au calcul (évite une dépendance). */
 export interface BookableListing {
@@ -29,8 +31,7 @@ export function resolveCategorySlug(listing: BookableListing): string {
 
 /** Un slug de catégorie donne-t-il droit à la réservation en ligne ? */
 export function isBookableCategory(slug: string | null | undefined): boolean {
-  if (!slug) return false;
-  return BOOKABLE_CATEGORIES.has(slug.trim().toLowerCase());
+  return registryIsBookable(slug);
 }
 
 /** Cette annonce est-elle réservable en ligne ? (bouton + modal) */

@@ -1,20 +1,20 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { MapPin, Mail } from "lucide-react";
+import { PORTALS } from "@/lib/categories";
 
-const CATEGORIES = [
-  { href: "/hotels", label: "Hôtels & Résidences meublées" },
-  { href: "/ecoles", label: "Écoles & Établissements privés" },
-  { href: "/cliniques", label: "Cliniques & Santé" },
-  { href: "/restaurants", label: "Restaurants & Gastronomie" },
-];
+/** Univers : une entrée par portail (libellés issus du registre). */
+const CATEGORIES = Object.values(PORTALS).map((portal) => ({
+  href: portal.path,
+  label: portal.label,
+}));
 
+/** Navigation applicative (les univers sont déjà listés ci-dessus). */
 const NAV_LINKS = [
   { href: "/", label: "Accueil" },
-  { href: "/hotels", label: "Hôtels & Résidences" },
-  { href: "/ecoles", label: "Écoles & Établissements" },
-  { href: "/cliniques", label: "Cliniques & Santé" },
-  { href: "/restaurants", label: "Restaurants" },
+  { href: "/favoris", label: "Mes favoris" },
+  { href: "/compare", label: "Comparateur" },
+  { href: "/profil", label: "Mon espace" },
 ];
 
 export function Footer() {

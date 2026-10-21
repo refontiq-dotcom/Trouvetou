@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Loader2, Mail } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { getBrowserSupabase, isAuthConfigured } from "@/lib/supabase/browser";
 
 /** N'accepte qu'un chemin interne : jamais d'URL absolue dans `returnTo`. */
@@ -158,7 +159,14 @@ export default function AuthPage() {
     <Suspense
       fallback={
         <div className="min-h-[70dvh] bg-ink px-4 py-16 text-white">
-          <div className="mx-auto max-w-md text-sm text-white/60">Chargement…</div>
+          <div className="mx-auto max-w-md" aria-busy="true">
+            <AnimatedLoader
+              label="Chargement en cours"
+              delayMs={300}
+              showProgress
+              tone="dark"
+            />
+          </div>
         </div>
       }
     >

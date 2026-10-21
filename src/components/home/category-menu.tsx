@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, X } from "lucide-react";
-import { categoryMeta, type HomeCategoryItem } from "@/lib/home-categories";
+import {
+  categoryHref,
+  getCategory,
+  type HomeCategoryItem,
+} from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
 /** Ressort d'ouverture du panneau (même sensations que l'effacement au scroll). */
@@ -116,8 +120,8 @@ export function CategoryMenu({ categories }: CategoryMenuProps) {
 
             <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
               {categories.map((category, i) => {
-                const meta = categoryMeta(category.slug);
-                const Icon = meta.icon;
+                const definition = getCategory(category.slug);
+                const Icon = definition?.icon;
                 return (
                   <motion.div
                     key={category.slug}
@@ -126,17 +130,24 @@ export function CategoryMenu({ categories }: CategoryMenuProps) {
                     transition={{ duration: 0.2, delay: i * 0.04 }}
                   >
                     <Link
-                      href={meta.href}
+                      href={categoryHref(category.slug)}
                       onClick={close}
                       className="flex items-center gap-2.5 rounded-2xl border border-neutral-100 bg-neutral-50 p-2.5 transition-colors hover:border-lime/60 hover:bg-lime/5 active:scale-[0.97]"
                     >
                       <span
                         className={cn(
                           "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                          meta.chipBg
+                          definition?.chipBg ?? "bg-neutral-100"
                         )}
                       >
-                        <Icon className={cn("h-4 w-4", meta.chipText)} />
+                        {Icon ? (
+                          <Icon
+                            className={cn(
+                              "h-4 w-4",
+                              definition?.chipText ?? "text-neutral-700"
+                            )}
+                          />
+                        ) : null}
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-[13px] font-semibold text-neutral-900">

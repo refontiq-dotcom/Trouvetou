@@ -10,7 +10,9 @@
 // aucun mot-clé de l'univers courant (évite les faux positifs).
 // ============================================================================
 
-export type UniverseSlug = "hotels" | "ecoles" | "cliniques" | "restaurants";
+import { PORTALS, type UniverseSlug } from "@/lib/categories";
+
+export type { UniverseSlug };
 
 export interface UniverseSuggestion {
   targetSlug: UniverseSlug;
@@ -50,8 +52,8 @@ function normalize(value: string): string {
 const UNIVERSES: UniverseProfile[] = [
   {
     slug: "hotels",
-    label: "Hôtels & Résidences",
-    href: "/hotels",
+    label: PORTALS.hotels.label,
+    href: PORTALS.hotels.path,
     keywords: toKeywords([
       "hôtel",
       "hôtels",
@@ -94,8 +96,8 @@ const UNIVERSES: UniverseProfile[] = [
   },
   {
     slug: "ecoles",
-    label: "Écoles & Établissements",
-    href: "/ecoles",
+    label: PORTALS.ecoles.label,
+    href: PORTALS.ecoles.path,
     keywords: toKeywords([
       "école",
       "écoles",
@@ -147,8 +149,8 @@ const UNIVERSES: UniverseProfile[] = [
   },
   {
     slug: "restaurants",
-    label: "Restaurants",
-    href: "/restaurants",
+    label: PORTALS.restaurants.label,
+    href: PORTALS.restaurants.path,
     keywords: toKeywords([
       "restaurant",
       "restaurants",
@@ -191,8 +193,8 @@ const UNIVERSES: UniverseProfile[] = [
   },
   {
     slug: "cliniques",
-    label: "Cliniques & Santé",
-    href: "/cliniques",
+    label: PORTALS.cliniques.label,
+    href: PORTALS.cliniques.path,
     keywords: toKeywords([
       "clinique",
       "cliniques",
