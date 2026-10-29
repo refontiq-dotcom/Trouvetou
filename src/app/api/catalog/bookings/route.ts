@@ -12,8 +12,8 @@ import {
  *
  * Sert de passerelle : le portail ne stocke aucune donnée client, il transmet
  * la demande au logiciel métier de l'établissement (Séjour@) via l'API externe
- * de Séjour@, authentifiée par la clé API de l'établissement stockée dans
- * `listings.attributes.sejoura_api_key` (masquée des réponses publiques).
+ * de Séjour@, authentifiée par un secret serveur partagé. Ce secret n'est
+ * jamais inclus dans les données des annonces ni exposé au navigateur.
  *
  * Trois actions :
  *   action = "check"   → vérifie la disponibilité temps réel et calcule le prix
@@ -154,10 +154,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("listing_id est requis.", 400, "MISSING_LISTING");
   }
 
-  // 1. Lire l'annonce en base (service_role) pour récupérer la clé API Séjour@
+  // 1. Lire l'annonce en base (service_role) pour récupérer son identifiant Séjour@
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, base_price, attributes, providers!inner(id, is_active)")
+    .select("id, external_id, base_price, providers!inner(id, is_active)")
     .eq("id", listing_id)
     .eq("is_available", true)
     .eq("providers.is_active", true)
@@ -175,21 +175,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Cette annonce ne permet pas la réservation en ligne.", 400, "NOT_BOOKABLE");
   }
 
-  const attrs = listing.attributes as Record<string, unknown> | null;
-  const sejouraApiKey = typeof attrs?.sejoura_api_key === "string"
-    ? attrs.sejoura_api_key
-    : null;
-  if (!sejouraApiKey) {
+  const bookingSecret = process.env.TROUVETOU_BOOKING_SHARED_SECRET;
+  if (!bookingSecret) {
     return jsonError(
-      "La réservation en ligne n'est pas activée pour cet établissement (clé API Séjour@ absente).",
-      409,
-      "BOOKING_NOT_AVAILABLE"
+      "La connexion sécurisée à Séjoura n'est pas configurée sur ce déploiement.",
+      503,
+      "BOOKING_INTEGRATION_CONFIG"
     );
   }
 
   const headers = {
     "Content-Type": "application/json",
-    "x-api-key": sejouraApiKey,
+    "x-trouvetou-booking-secret": bookingSecret,
   };
 
   // ── Action "check" : disponibilité temps réel + estimation du prix ────────
