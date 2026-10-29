@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 export function PwaRegister() {
   useEffect(() => {
+<<<<<<< HEAD
     if (!("serviceWorker" in navigator)) return;
 
     // En développement, le service worker n'a aucune utilité (le HMR de
@@ -18,6 +19,13 @@ export function PwaRegister() {
       return;
     }
 
+=======
+    // En développement, un service worker en cache-first sert des chunks
+    // périmés (et provoque des erreurs d'hydratation fantômes) : il n'est
+    // enregistré qu'en production.
+    if (process.env.NODE_ENV !== "production") return;
+    if (!("serviceWorker" in navigator)) return;
+>>>>>>> origin/main
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Silencieux : le service worker est optionnel
     });

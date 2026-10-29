@@ -244,21 +244,44 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 5. Soft-removal : toute annonce du provider absente du lot courant devient
   // indisponible (elle disparaît du catalogue public sans être supprimée,
   // l'historique reste consultable).
+  //
+  // Le passage se fait par un RPC qui reçoit les identifiants en `text[]` :
+  // aucune concaténation de filtre PostgREST (donc aucun risque d'injection
+  // via `external_id`, qui est une donnée fournisseur) et aucun plafond de
+  // longueur d'URL sur les gros lots.
   const externalIds = cleanItems.map((item) => item.external_id);
-  if (externalIds.length > 0) {
-    await admin
-      .from("listings")
-      .update({ is_available: false })
-      .eq("provider_id", provider.id)
-      .filter("external_id", "not.in", `(${externalIds.join(",")})`);
+
+  // `deactivate_missing_listings` n'est pas encore dans database.types.ts
+  // généré : signature locale explicite, runtime inchangé.
+  type DeactivateMissingRpc = (
+    fn: string,
+    args?: Record<string, unknown>
+  ) => Promise<{
+    data: number | null;
+    error: { message: string } | null;
+  }>;
+  const deactivateRpc = admin.rpc.bind(admin) as unknown as DeactivateMissingRpc;
+
+  const { data: deactivatedCount, error: deactivateError } = await deactivateRpc(
+    "deactivate_missing_listings",
+    { p_provider_id: provider.id, p_external_ids: externalIds }
+  );
+
+  const deactivated = deactivateError ? 0 : Number(deactivatedCount ?? 0);
+  const staleRemovalError = deactivateError?.message ?? null;
+  if (staleRemovalError) {
+    console.error("[sync] deactivate_missing_listings:", staleRemovalError);
   }
 
+  // Le lot a bien été ingéré : l'échec du soft-removal est journalisé en
+  // `partial` et remonté au client, jamais avalé silencieusement.
   await admin.from("sync_logs").insert({
     provider_id: provider.id,
-    status: "success",
+    status: staleRemovalError ? "partial" : "success",
     items_count: cleanItems.length,
     inserted,
     updated,
+    message: staleRemovalError ? `Soft-removal échoué : ${staleRemovalError}` : null,
     ip_address: ipAddress,
   });
 
@@ -268,6 +291,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     processed: cleanItems.length,
     inserted,
     updated,
+    deactivated,
+    ...(staleRemovalError
+      ? {
+          warning:
+            "Les annonces absentes du lot n'ont pas pu être désactivées : elles restent visibles jusqu'à la prochaine synchronisation.",
+        }
+      : {}),
   });
 }
 

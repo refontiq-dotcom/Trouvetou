@@ -1,0 +1,512 @@
+
+> trouvetou@0.1.0 dev
+> next dev --webpack
+
+▲ Next.js 16.2.12 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env.local
+✓ Ready in 1227ms
+
+○ Compiling /ecoles ...
+ GET /ecoles 200 in 31.7s (next.js: 29.5s, application-code: 2.2s)
+○ Compiling /api/catalog/categories ...
+ GET /api/catalog/categories 200 in 4.9s (next.js: 3.9s, application-code: 1001ms)
+ GET /api/catalog/categories 200 in 4.9s (next.js: 3.9s, application-code: 1007ms)
+ GET /api/catalog/categories 200 in 4.9s (next.js: 3.9s, application-code: 1015ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 5.0s (next.js: 3.9s, application-code: 1062ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 5.0s (next.js: 3.9s, application-code: 1112ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 5.0s (next.js: 3.9s, application-code: 1117ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 5.0s (next.js: 3.9s, application-code: 1121ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 5.0s (next.js: 3.9s, application-code: 1125ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 5.0s (next.js: 3.9s, application-code: 1133ms)
+ GET / 200 in 10.8s (next.js: 2.5s, application-code: 8.3s)
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 364ms (next.js: 15ms, application-code: 349ms)
+ GET / 200 in 38.8s (next.js: 29.5s, application-code: 9.3s)
+ GET / 200 in 38.7s (next.js: 29.5s, application-code: 9.3s)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 378ms (next.js: 52ms, application-code: 327ms)
+ POST /api/traffic 200 in 2.6s (next.js: 2.4s, application-code: 226ms)
+[browser] Uncaught Error: Failed prop type: The prop `href` expects a `string` or `object` in `<Link>`, but got `undefined` instead.
+Open your browser's console to view the Component stack trace.
+    at ListingCard (webpack-internal:///(app-pages-browser)/./src/components/home/listing-card.tsx:26:88)
+    at eval (src\components\home\home-screen.tsx:87:30)
+    at Array.map (<anonymous>)
+    at HomeScreen (src\components\home\home-screen.tsx:87:30)
+    at HomePage (src\app\page.tsx:73:5)
+  85 |               </div>
+  86 |
+> 87 |               <div className="mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-2">
+     |                              ^
+  88 |                 {listings.map((listing, index) => (
+  89 |                   <RoomCard
+  90 |                     key={listing.id}
+[browser] Uncaught Error: Failed prop type: The prop `href` expects a `string` or `object` in `<Link>`, but got `undefined` instead.
+Open your browser's console to view the Component stack trace.
+    at ListingCard (webpack-internal:///(app-pages-browser)/./src/components/home/listing-card.tsx:26:88)
+    at eval (src\components\home\home-screen.tsx:87:30)
+    at Array.map (<anonymous>)
+    at HomeScreen (src\components\home\home-screen.tsx:87:30)
+    at HomePage (src\app\page.tsx:73:5)
+  85 |               </div>
+  86 |
+> 87 |               <div className="mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-2">
+     |                              ^
+  88 |                 {listings.map((listing, index) => (
+  89 |                   <RoomCard
+  90 |                     key={listing.id}
+ GET /ecoles 200 in 1815ms (next.js: 199ms, application-code: 1616ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 371ms (next.js: 5ms, application-code: 366ms)
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 438ms (next.js: 20ms, application-code: 417ms)
+ POST /api/traffic 200 in 382ms (next.js: 4ms, application-code: 377ms)
+ GET /api/catalog/categories 200 in 591ms (next.js: 10ms, application-code: 581ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 651ms (next.js: 4ms, application-code: 647ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 612ms (next.js: 4ms, application-code: 607ms)
+ GET / 200 in 1241ms (next.js: 49ms, application-code: 1192ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /ecoles 200 in 1193ms (next.js: 40ms, application-code: 1153ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /ecoles 200 in 1064ms (next.js: 294ms, application-code: 771ms)
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 4.9s (next.js: 3.3s, application-code: 1540ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 5.3s (next.js: 3.7s, application-code: 1559ms)
+ GET /api/catalog/categories 200 in 5.3s (next.js: 3.7s, application-code: 1603ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 5.5s (next.js: 3.7s, application-code: 1763ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 5.1s (next.js: 3.3s, application-code: 1776ms)
+ GET /api/catalog/categories 200 in 5.5s (next.js: 3.7s, application-code: 1776ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 5.5s (next.js: 3.7s, application-code: 1844ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 5.6s (next.js: 3.8s, application-code: 1842ms)
+⨯ TypeError: __webpack_modules__[moduleId] is not a function
+    at ignore-listed frames {
+  digest: '3403313784'
+}
+⨯ TypeError: __webpack_modules__[moduleId] is not a function
+    at ignore-listed frames {
+  digest: '1760685944'
+}
+ GET /ecoles 200 in 3.5s (next.js: 8ms, application-code: 3.4s)
+ GET / 500 in 9.3s (next.js: 6ms, application-code: 9.2s)
+ GET / 500 in 10.7s (next.js: 478ms, application-code: 10.2s)
+[browser] Uncaught Error: Failed prop type: The prop `href` expects a `string` or `object` in `<Link>`, but got `undefined` instead.
+Open your browser's console to view the Component stack trace.
+    at ListingCard (webpack-internal:///(app-pages-browser)/./src/components/home/listing-card.tsx:26:88)
+    at eval (src\components\home\home-screen.tsx:87:30)
+    at Array.map (<anonymous>)
+    at HomeScreen (src\components\home\home-screen.tsx:87:30)
+    at HomePage (src\app\page.tsx:73:5)
+  85 |               </div>
+  86 |
+> 87 |               <div className="mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-2">
+     |                              ^
+  88 |                 {listings.map((listing, index) => (
+  89 |                   <RoomCard
+  90 |                     key={listing.id}
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 1288ms (next.js: 7ms, application-code: 1281ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 1231ms (next.js: 13ms, application-code: 1217ms)
+ GET /ecoles 200 in 1362ms (next.js: 10ms, application-code: 1352ms)
+ GET /ecoles 200 in 921ms (next.js: 9ms, application-code: 911ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+○ Compiling /hotels ...
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /api/catalog/categories 200 in 7.9s (next.js: 5.1s, application-code: 2.8s)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 7.9s (next.js: 5.1s, application-code: 2.8s)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 7.9s (next.js: 5.1s, application-code: 2.8s)
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 847ms (next.js: 9ms, application-code: 838ms)
+ GET /api/catalog/categories 200 in 951ms (next.js: 7ms, application-code: 945ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 1467ms (next.js: 8ms, application-code: 1459ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 1431ms (next.js: 7ms, application-code: 1424ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 1321ms (next.js: 15ms, application-code: 1306ms)
+ GET /ecoles 200 in 8.8s (next.js: 4.4s, application-code: 4.4s)
+ GET /cliniques 200 in 8.8s (next.js: 4.4s, application-code: 4.4s)
+ GET /cliniques 200 in 9.7s (next.js: 5.3s, application-code: 4.4s)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /hotels 200 in 9.2s (next.js: 4.8s, application-code: 4.5s)
+ GET / 200 in 10.2s (next.js: 91ms, application-code: 10.1s)
+ GET / 200 in 9.1s (next.js: 4.4s, application-code: 4.7s)
+○ Compiling /restaurants ...
+ GET /restaurants 200 in 7.2s (next.js: 5.1s, application-code: 2.2s)
+ GET /restaurants 200 in 7.2s (next.js: 5.1s, application-code: 2.2s)
+ GET /hotels 200 in 7.2s (next.js: 5.1s, application-code: 2.2s)
+ POST /api/traffic 200 in 9.5s (next.js: 7.2s, application-code: 2.4s)
+ GET /api/catalog/categories 200 in 787ms (next.js: 37ms, application-code: 750ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 907ms (next.js: 20ms, application-code: 887ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 791ms (next.js: 28ms, application-code: 763ms)
+ GET /api/catalog/categories 200 in 611ms (next.js: 13ms, application-code: 598ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 699ms (next.js: 22ms, application-code: 676ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 622ms (next.js: 11ms, application-code: 611ms)
+ GET / 200 in 9.3s (next.js: 5.2s, application-code: 4.0s)
+ GET / 200 in 9.1s (next.js: 5.1s, application-code: 4.0s)
+ GET /api/catalog/categories 200 in 276ms (next.js: 9ms, application-code: 268ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 315ms (next.js: 5ms, application-code: 310ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 287ms (next.js: 4ms, application-code: 283ms)
+ GET /api/catalog/categories 200 in 468ms (next.js: 6ms, application-code: 462ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 495ms (next.js: 6ms, application-code: 489ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 454ms (next.js: 5ms, application-code: 449ms)
+ GET / 200 in 1521ms (next.js: 7ms, application-code: 1514ms)
+ GET / 200 in 1350ms (next.js: 7ms, application-code: 1342ms)
+[browser] Uncaught Error: Failed prop type: The prop `href` expects a `string` or `object` in `<Link>`, but got `undefined` instead.
+Open your browser's console to view the Component stack trace.
+    at ListingCard (webpack-internal:///(app-pages-browser)/./src/components/home/listing-card.tsx:26:88)
+    at eval (src\components\home\home-screen.tsx:87:30)
+    at Array.map (<anonymous>)
+    at HomeScreen (src\components\home\home-screen.tsx:87:30)
+    at HomePage (src\app\page.tsx:73:5)
+  85 |               </div>
+  86 |
+> 87 |               <div className="mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-2">
+     |                              ^
+  88 |                 {listings.map((listing, index) => (
+  89 |                   <RoomCard
+  90 |                     key={listing.id}
+ GET /ecoles 200 in 1060ms (next.js: 56ms, application-code: 1004ms)
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 385ms (next.js: 8ms, application-code: 377ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 386ms (next.js: 6ms, application-code: 380ms)
+ POST /api/traffic 200 in 414ms (next.js: 5ms, application-code: 409ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /ecoles 200 in 247ms (next.js: 48ms, application-code: 199ms)
+ GET /api/catalog/categories 200 in 3.5s (next.js: 2.8s, application-code: 702ms)
+ GET /api/catalog/categories 200 in 3.6s (next.js: 2.9s, application-code: 705ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 3.6s (next.js: 2.8s, application-code: 766ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 3.6s (next.js: 2.9s, application-code: 782ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 3.6s (next.js: 2.8s, application-code: 788ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 3.6s (next.js: 2.8s, application-code: 792ms)
+ GET / 200 in 5.9s (next.js: 412ms, application-code: 5.5s)
+ GET / 200 in 4.8s (next.js: 5ms, application-code: 4.8s)
+ GET /api/catalog/categories 200 in 367ms (next.js: 6ms, application-code: 361ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 430ms (next.js: 12ms, application-code: 419ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 382ms (next.js: 5ms, application-code: 377ms)
+ GET /api/catalog/categories 200 in 261ms (next.js: 6ms, application-code: 255ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 778ms (next.js: 5ms, application-code: 773ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 744ms (next.js: 6ms, application-code: 737ms)
+ GET / 200 in 3.4s (next.js: 220ms, application-code: 3.1s)
+ GET / 200 in 2.2s (next.js: 15ms, application-code: 2.2s)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <SegmentViewNode type="page" pagePath="page.tsx">
+      <SegmentTrieNode>
+      <HomePage>
+        <HomeScreen listings={[...]} categories={[...]} nearbyCount={6}>
+          ...
+            <div className="flex gap-6">
+              <div className="min-w-0 fl...">
+                <NearbyBar>
+                <div>
+                <div className="mt-4 grid ...">
+                  <RoomCard room={{id:"0c3f24...", ...}} index={0} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A%F0%9..."
+-                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A%F0%9..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"e6ae6e...", ...}} index={1} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Villa%20%E2%80%94%20Plazza*%0A%F0%9F%93%8D%20Abidjan%20%0..."
+-                                 href="https://wa.me/?text=*Villa%20%E2%80%94%20Plazza*%0A%F0%9F%93%8D%20Abidjan%20%0..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"40ef6e...", ...}} index={2} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abidjan%0..."
+-                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abidjan%0..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"9affc1...", ...}} index={3} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abid..."
+-                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abid..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"c1a068...", ...}} index={4} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20Dady*%0A%F0%9F%93%8D%20Abidjan%0A%F0..."
+-                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20Dady*%0A%F0%9F%93%8D%20Abidjan%0A%F0..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"bbc76c...", ...}} index={5} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A..."
+-                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+              ...
+          ...
+            <div className="px-4">
+              <div>
+              <section className="mt-4 round...">
+                <PubBanner>
+                <div className="mt-3 grid ...">
+                  <RoomCard room={{id:"0c3f24...", ...}} index={0} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A%F0%9..."
+-                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A%F0%9..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"e6ae6e...", ...}} index={1} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Villa%20%E2%80%94%20Plazza*%0A%F0%9F%93%8D%20Abidjan%20%0..."
+-                                 href="https://wa.me/?text=*Villa%20%E2%80%94%20Plazza*%0A%F0%9F%93%8D%20Abidjan%20%0..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"40ef6e...", ...}} index={2} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abidjan%0..."
+-                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abidjan%0..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"9affc1...", ...}} index={3} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abid..."
+-                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE%202*%0A%F0%9F%93%8D%20Abid..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"c1a068...", ...}} index={4} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20Dady*%0A%F0%9F%93%8D%20Abidjan%0A%F0..."
+-                                 href="https://wa.me/?text=*Studio%20%E2%80%94%20Dady*%0A%F0%9F%93%8D%20Abidjan%0A%F0..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+                  <RoomCard room={{id:"bbc76c...", ...}} index={5} priceSuffix="par nuit">
+                    <motion.article initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true, ...}} ...>
+                      <article className="group flex..." onClick={function onClick} style={{opacity:0, ...}} ...>
+                        <motion.div>
+                        <div className="flex min-w...">
+                          <div>
+                            <div>
+                            <p>
+                            <div>
+                            <div className="mt-1.5 fle...">
+                              <div>
+                              <div className="grid min-w...">
+                                <a
++                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A..."
+-                                 href="https://wa.me/?text=*Appartement%20%E2%80%94%20GAGE*%0A%F0%9F%93%8D%20Dakar%0A..."
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={function onClick}
+                                  className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg bord..."
+                                  aria-label="Partager sur WhatsApp"
+                                >
+                                ...
+                    ...
+ 
+ GET /ecoles 200 in 1462ms (next.js: 91ms, application-code: 1372ms)
+ POST /api/traffic 200 in 2.9s (next.js: 2.4s, application-code: 455ms)
+ POST /api/traffic 200 in 165ms (next.js: 7ms, application-code: 158ms)
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 180ms (next.js: 15ms, application-code: 165ms)
+ POST /api/traffic 200 in 368ms (next.js: 6ms, application-code: 362ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 410ms (next.js: 5ms, application-code: 405ms)
+ GET /api/catalog/categories 200 in 614ms (next.js: 22ms, application-code: 591ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 674ms (next.js: 8ms, application-code: 666ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 605ms (next.js: 8ms, application-code: 597ms)
+ GET / 200 in 2.8s (next.js: 300ms, application-code: 2.5s)
+ GET /ecoles 200 in 84ms (next.js: 22ms, application-code: 62ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 657ms (next.js: 6ms, application-code: 651ms)
+ GET /api/catalog/listings?categories=school&limit=20&boosted=1 200 in 1143ms (next.js: 12ms, application-code: 1131ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 756ms (next.js: 21ms, application-code: 734ms)
+ GET /api/catalog/listings?categories=school&limit=15 200 in 681ms (next.js: 6ms, application-code: 674ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=8 200 in 510ms (next.js: 9ms, application-code: 501ms)
+ GET /api/catalog/categories 200 in 506ms (next.js: 8ms, application-code: 498ms)
+ GET /api/catalog/listings?categories=hotel%2Cresidence&limit=60 200 in 490ms (next.js: 8ms, application-code: 481ms)
+ GET / 200 in 686ms (next.js: 5ms, application-code: 681ms)

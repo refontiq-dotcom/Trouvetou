@@ -21,29 +21,50 @@ export function AlertSubscribe({ variant = "inline" }: AlertSubscribeProps) {
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState("all");
   const [city, setCity] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "duplicate" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [confirmationSent, setConfirmationSent] = useState(true);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
     setStatus("loading");
+    setErrorMessage("");
 
-    // Pour l'instant, on sauvegarde en localStorage comme démo.
-    // En prod, on enverrait un email via Resend/SendGrid + une table Supabase.
     try {
-      const alerts = JSON.parse(localStorage.getItem("trouvetou_alerts") ?? "[]");
-      alerts.push({
-        email: email.trim(),
-        category: category === "all" ? null : category,
-        city: city.trim() || null,
-        created_at: new Date().toISOString(),
+      const response = await fetch("/api/alerts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          category: category === "all" ? null : category,
+          city: city.trim() || null,
+        }),
       });
-      localStorage.setItem("trouvetou_alerts", JSON.stringify(alerts));
-      setStatus("success");
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        already_subscribed?: boolean;
+        email_sent?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setStatus("error");
+        setErrorMessage(
+          payload.error ?? "L'inscription n'a pas pu être enregistrée."
+        );
+        return;
+      }
+
+      setConfirmationSent(payload.email_sent !== false);
+      setStatus(payload.already_subscribed ? "duplicate" : "success");
       setEmail("");
       setCity("");
     } catch {
       setStatus("error");
+      setErrorMessage("Connexion impossible. Vérifiez votre réseau et réessayez.");
     }
   }
 
@@ -83,16 +104,22 @@ export function AlertSubscribe({ variant = "inline" }: AlertSubscribeProps) {
             </p>
 
             <AnimatePresence mode="wait">
-              {status === "success" ? (
+              {status === "success" || status === "duplicate" ? (
                 <motion.div
                   key="success"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700"
+                  className="mt-4 flex items-start gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700"
                 >
-                  <Check className="h-5 w-5" />
-                  Alerte enregistrée ! Vous serez notifié de nouvelles annonces.
+                  <Check className="mt-0.5 h-5 w-5 shrink-0" />
+                  <span>
+                    {status === "duplicate"
+                      ? "Cette alerte existe déjà : vous êtes bien inscrit."
+                      : confirmationSent
+                        ? "Alerte enregistrée ! Un email de confirmation vient de partir."
+                        : "Alerte enregistrée. L'email de confirmation n'a pas pu être envoyé, mais votre abonnement est actif."}
+                  </span>
                 </motion.div>
               ) : (
                 <motion.form
@@ -100,7 +127,7 @@ export function AlertSubscribe({ variant = "inline" }: AlertSubscribeProps) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   onSubmit={handleSubmit}
-                  className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"
+                  className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
                 >
                   <div className="flex-1 flex flex-col gap-3 sm:flex-row">
                     <input
@@ -141,6 +168,20 @@ export function AlertSubscribe({ variant = "inline" }: AlertSubscribeProps) {
                     )}
                     M&apos;abonner
                   </button>
+
+                  {status === "error" && errorMessage && (
+                    <p
+                      role="alert"
+                      className="text-sm font-medium text-red-600 sm:basis-full"
+                    >
+                      {errorMessage}
+                    </p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground sm:basis-full">
+                    Vous ne recevrez que les emails liés à cette alerte.
+                    Répondez à l&apos;email reçu pour vous désinscrire.
+                  </p>
                 </motion.form>
               )}
             </AnimatePresence>

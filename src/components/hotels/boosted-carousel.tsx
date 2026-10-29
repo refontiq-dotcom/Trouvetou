@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Phone, MessageCircle, Sparkles } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -11,6 +12,7 @@ import "swiper/css/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookingModal } from "@/components/hotels/booking-modal";
+import { useAuth } from "@/contexts/auth-context";
 import { formatFCFA, buildWhatsAppUrl, PLACEHOLDER_IMAGE } from "@/lib/utils";
 import { isListingBookable, resolveCategorySlug, getContactAction } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
@@ -31,7 +33,19 @@ function BoostedCard({
   priceSuffix?: string;
 }) {
   const [bookingOpen, setBookingOpen] = useState(false);
+  const { user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const establishment = room.establishment;
+
+  // Un compte est requis pour réserver (historique rattaché au client).
+  const openBooking = () => {
+    if (!user) {
+      router.push(`/auth?returnTo=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    setBookingOpen(true);
+  };
   const image = room.images[0] ?? PLACEHOLDER_IMAGE;
 
   // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
@@ -97,8 +111,13 @@ function BoostedCard({
             {isBookable ? (
               <Button
                 size="sm"
+<<<<<<< HEAD
                 className="rounded-full bg-white text-foreground shadow transition-colors hover:bg-white/90"
                 onClick={() => setBookingOpen(true)}
+=======
+                className="rounded-full bg-white text-slate-900 shadow hover:bg-yellow-50"
+                onClick={openBooking}
+>>>>>>> origin/main
               >
                 <Phone className="h-4 w-4" />
                 Réserver

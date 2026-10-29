@@ -4,6 +4,7 @@ import { DesktopChrome } from "@/components/layout/desktop-chrome";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { LocationProvider } from "@/contexts/location-context";
+import { AuthProvider } from "@/contexts/auth-context";
 import { FavoritesProvider } from "@/contexts/favorites-context";
 import { CompareProvider } from "@/contexts/compare-context";
 import { BookingsProvider } from "@/contexts/bookings-context";
@@ -36,9 +37,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+<<<<<<< HEAD
   maximumScale: 1,
   userScalable: false,
   themeColor: "#102a72",
+=======
+  themeColor: "#00215E",
+>>>>>>> origin/main
   viewportFit: "cover",
 };
 
@@ -72,6 +77,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        {/* AuthProvider enveloppe favoris et réservations : ils lisent la session. */}
+        <AuthProvider>
         <LocationProvider>
           <FavoritesProvider>
             <CompareProvider>
@@ -92,6 +99,7 @@ export default function RootLayout({
             </CompareProvider>
           </FavoritesProvider>
         </LocationProvider>
+        </AuthProvider>
       </body>
     </html>
   );

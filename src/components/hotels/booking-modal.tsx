@@ -223,6 +223,7 @@ export function BookingModal({
       }
       setBooking(body.booking ?? {});
       addBooking({
+        listing_id: room.id,
         booking_code: body.booking?.booking_code,
         listing_name: room.name,
         check_in_date: checkIn,

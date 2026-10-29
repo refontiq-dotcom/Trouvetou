@@ -10,12 +10,26 @@ import { haversineDistance, type LatLng } from "@/lib/geo";
 //   hotel (chambres d'hôtel) et residence (résidences meublées).
 // ============================================================================
 
-/** Catégories couvertes par la section « Hôtels & Résidences ». */
-const HOTELS_SECTION_CATEGORIES = ["hotel", "residence"];
+/**
+ * Toutes les catégories publiables du catalogue.
+ *
+ * Sert de défaut aux vues TRANSVERSES (favoris, comparateur) qui ne doivent
+ * filtrer aucun secteur. La section « Hôtels & Résidences » passe
+ * explicitement `["hotel", "residence"]` (voir `components/catalog/configs`).
+ */
+export const ALL_SECTION_CATEGORIES = [
+  "hotel",
+  "residence",
+  "school",
+  "clinic",
+  "restaurant",
+];
 
 export interface FetchListedListingsParams {
   search?: string;
   categorySlugs?: string[];
+  /** Identifiants précis à charger (favoris, comparateur). */
+  ids?: string[];
   maxPrice?: number;
   limit?: number;
   /** Ne retourne que les annonces `is_boosted = true` (filtre SQL). */
@@ -23,20 +37,24 @@ export interface FetchListedListingsParams {
 }
 
 /**
- * Récupère les annonces du secteur Hôtels depuis la base Trouvetou.
- * Par défaut la section couvre les catégories `hotel` et `residence`.
+ * Récupère des annonces depuis la base Trouvetou.
+ *
+ * Par défaut, TOUS les secteurs sont inclus : un défaut restreint aux hôtels
+ * masquait silencieusement les écoles et cliniques dans les favoris et le
+ * comparateur. Les portails passent leurs propres catégories.
  */
 export async function fetchListedListings(
   params: FetchListedListingsParams = {}
 ): Promise<{ data: ListingView[]; error: Error | null }> {
-  const { search, categorySlugs, maxPrice, limit, boosted } = params;
+  const { search, categorySlugs, ids, maxPrice, limit, boosted } = params;
 
   const { data, error } = await fetchListings({
     search,
     categorySlugs:
       categorySlugs && categorySlugs.length > 0
         ? categorySlugs
-        : HOTELS_SECTION_CATEGORIES,
+        : ALL_SECTION_CATEGORIES,
+    ids,
     maxPrice,
     limit,
     boosted,

@@ -39,6 +39,7 @@ export default function FavorisPage() {
 
     let cancelled = false;
 
+<<<<<<< HEAD
     // On charge un volume raisonnable et on filtre côté client pour ne garder
     // que les annonces réellement en favori. La liste complète est limitée pour
     // ne pas saturer le client quand les favoris couvrent plusieurs univers.
@@ -48,6 +49,15 @@ export default function FavorisPage() {
         if (!cancelled) {
           const filtered = data.filter((r) => favorites.has(r.id));
           setRooms(filtered);
+=======
+    // Chargement ciblé : seuls les favoris sont demandés à l'API. Charger le
+    // catalogue puis filtrer côté client faisait disparaître sans message les
+    // favoris situés au-delà de la limite.
+    fetchListedListings({ ids: Array.from(favorites) })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setRooms(data);
+>>>>>>> origin/main
           setLoadedSignature(currentSignature);
         }
       })

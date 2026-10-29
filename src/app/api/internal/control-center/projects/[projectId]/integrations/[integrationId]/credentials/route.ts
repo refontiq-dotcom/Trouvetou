@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import { generateApiKey, hashApiKey } from "@/lib/sync/api-key";
+import {
+  generateApiKey,
+  hashApiKey,
+  isApiKeyPepperConfigured,
+} from "@/lib/sync/api-key";
 
 const INTEGRATIONS = {
   sejoura: {
@@ -104,6 +108,15 @@ export async function POST(
   if (categoryError || category?.slug !== integration.category) {
     console.error("[control-center key rotation] category lookup failed", categoryError);
     return NextResponse.json({ error: "Le fournisseur ne correspond pas au secteur attendu pour cette intégration." }, { status: 409 });
+  }
+
+  // Sans pepper, l'empreinte serait calculée avec une clé vide et la nouvelle
+  // clé ne pourrait jamais être validée par /api/v1/sync.
+  if (!isApiKeyPepperConfigured()) {
+    return NextResponse.json(
+      { error: "Configuration serveur incomplète (TROUVETOU_API_KEY_PEPPER) : rotation impossible." },
+      { status: 500 },
+    );
   }
 
   const newApiKey = generateApiKey(provider.id);

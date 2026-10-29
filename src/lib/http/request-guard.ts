@@ -66,6 +66,24 @@ export type OriginVerdict =
   | { ok: false; reason: "origin_missing" | "origin_forbidden"; detail: string };
 
 /**
+ * En développement uniquement : accepte une origine dont l'hôte est celui de
+ * la requête (aperçus, tunnels, `localhost` sur un autre port).
+ *
+ * La production ne passe jamais par ce chemin : la liste blanche explicite
+ * reste la seule autorité, une origine inconnue est refusée.
+ */
+function devHostMatches(candidate: string, headers: Headers): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  const host = headers.get("host");
+  if (!host) return false;
+  try {
+    return new URL(candidate).host.toLowerCase() === host.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Vérifie que la requête provient bien du site (et non d'un formulaire tiers).
  *
  * `Origin` est envoyé par les navigateurs sur toutes les requêtes POST. En
@@ -87,7 +105,7 @@ export function verifySameOrigin(headers: Headers): OriginVerdict {
 
   const origin = headers.get("origin");
   if (origin) {
-    return allowed.has(normalizeOrigin(origin))
+    return allowed.has(normalizeOrigin(origin)) || devHostMatches(origin, headers)
       ? { ok: true }
       : { ok: false, reason: "origin_forbidden", detail: "Origine non autorisée." };
   }
@@ -104,7 +122,7 @@ export function verifySameOrigin(headers: Headers): OriginVerdict {
     return { ok: false, reason: "origin_forbidden", detail: "Referer illisible." };
   }
 
-  return allowed.has(normalizeOrigin(refererOrigin))
+  return allowed.has(normalizeOrigin(refererOrigin)) || devHostMatches(refererOrigin, headers)
     ? { ok: true }
     : { ok: false, reason: "origin_forbidden", detail: "Origine non autorisée." };
 }
@@ -162,6 +180,12 @@ export function createRateLimiter(): RateLimiter {
 
 /** Limiteur partagé par le module (une seule instance par processus). */
 export const bookingsRateLimiter = createRateLimiter();
+
+/** Limiteur du compteur de trafic (une requête par chargement de page). */
+export const trafficRateLimiter = createRateLimiter();
+
+/** Limiteur des inscriptions aux alertes email. */
+export const alertsRateLimiter = createRateLimiter();
 
 /** Adresse client pour le débit : 1re valeur de X-Forwarded-For (gérée par Vercel). */
 export function getClientKey(headers: Headers): string {

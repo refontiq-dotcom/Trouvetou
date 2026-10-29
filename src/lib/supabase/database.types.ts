@@ -84,6 +84,49 @@ export type SyncLog = {
   created_at: string;
 };
 
+// ---------------------------------------------------------------------------
+// Table `alerts` — Abonnements email aux nouvelles annonces
+// (migration 20261018_create_alerts.sql)
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Table `favorites` — Annonces mises de côté par un utilisateur
+// (RLS `auth.uid() = user_id`, voir supabase/schema.sql)
+// ---------------------------------------------------------------------------
+export type Favorite = {
+  user_id: string;
+  listing_id: string;
+  created_at: string;
+};
+
+// ---------------------------------------------------------------------------
+// Table `bookings` — Historique des réservations du client
+// (migration 20261018_create_bookings.sql)
+// ---------------------------------------------------------------------------
+export type Booking = {
+  id: string;
+  user_id: string;
+  listing_id: string | null;
+  booking_code: string | null;
+  listing_name: string;
+  check_in_date: string;
+  check_out_date: string;
+  number_of_guests: number;
+  total_amount: number | null;
+  created_at: string;
+};
+
+export type Alert = {
+  id: string;
+  email: string;
+  /** NULL = toutes les catégories. */
+  category_slug: string | null;
+  /** NULL = toutes les villes. */
+  city: string | null;
+  is_active: boolean;
+  last_notified_at: string | null;
+  created_at: string;
+};
+
 // ============================================================================
 // TYPES HÉRITÉS (compatibilité) — lecture du schéma Séjoura partagé legacy.
 // Ces types ne font plus partie du schéma dédié Trouvetou ; ils sont conservés
@@ -223,6 +266,57 @@ export type Database = {
         };
         Update: {
           message?: string | null;
+        };
+        Relationships: [];
+      };
+      favorites: {
+        Row: Favorite;
+        Insert: {
+          user_id: string;
+          listing_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          listing_id?: string;
+        };
+        Relationships: [];
+      };
+      bookings: {
+        Row: Booking;
+        Insert: {
+          id?: string;
+          user_id: string;
+          listing_id?: string | null;
+          booking_code?: string | null;
+          listing_name: string;
+          check_in_date: string;
+          check_out_date: string;
+          number_of_guests?: number;
+          total_amount?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          booking_code?: string | null;
+        };
+        Relationships: [];
+      };
+      alerts: {
+        Row: Alert;
+        Insert: {
+          id?: string;
+          email: string;
+          category_slug?: string | null;
+          city?: string | null;
+          is_active?: boolean;
+          last_notified_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          category_slug?: string | null;
+          city?: string | null;
+          is_active?: boolean;
+          last_notified_at?: string | null;
         };
         Relationships: [];
       };

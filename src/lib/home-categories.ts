@@ -83,13 +83,15 @@ export function categoryMeta(slug: string): CategoryMeta {
 }
 
 /**
- * Catégories de repli affichées quand la base n'est pas configurée
- * (même logique que les annonces de démonstration de l'accueil).
+ * Catégories de repli affichées quand la base n'est pas configurée.
+ *
+ * Les compteurs restent à 0 : un nombre inventé donnerait l'illusion d'un
+ * catalogue peuplé alors que la base est injoignable.
  */
 export const FALLBACK_CATEGORIES: HomeCategoryItem[] = [
-  { slug: "hotel", label: "Hôtels", count: 24 },
-  { slug: "residence", label: "Résidences", count: 15 },
-  { slug: "school", label: "Écoles", count: 12 },
-  { slug: "clinic", label: "Cliniques", count: 8 },
-  { slug: "restaurant", label: "Restaurants", count: 6 },
+  { slug: "hotel", label: "Hôtels", count: 0 },
+  { slug: "residence", label: "Résidences", count: 0 },
+  { slug: "school", label: "Écoles", count: 0 },
+  { slug: "clinic", label: "Cliniques", count: 0 },
+  { slug: "restaurant", label: "Restaurants", count: 0 },
 ];

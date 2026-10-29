@@ -1,7 +1,12 @@
 "use client";
 
+<<<<<<< HEAD
 import { Suspense, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+=======
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+>>>>>>> origin/main
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
@@ -12,6 +17,7 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 
 function CompareContent() {
   const searchParams = useSearchParams();
+<<<<<<< HEAD
   const ids = searchParams.get("ids")?.split(",").map((id) => id.trim()).filter(Boolean) ?? [];
   const pathname = usePathname();
   // Déduit l'univers courant depuis l'URL (fallback /hotels).
@@ -20,6 +26,18 @@ function CompareContent() {
     pathname.includes("/cliniques") ? "/cliniques" :
     pathname.includes("/restaurants") ? "/restaurants" :
     "/hotels";
+=======
+  const idsParam = searchParams.get("ids") ?? "";
+  // Tableau stable tant que le paramètre d'URL ne change pas.
+  const ids = useMemo(
+    () =>
+      idsParam
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    [idsParam]
+  );
+>>>>>>> origin/main
   const [rooms, setRooms] = useState<ListingView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +52,7 @@ function CompareContent() {
 
     let cancelled = false;
 
+<<<<<<< HEAD
     fetchListedListings({ limit: MAX_CLIENT_LIMIT })
       .then(({ data }) => {
         if (cancelled) return;
@@ -46,6 +65,16 @@ function CompareContent() {
         setRooms(matched);
         setLoading(false);
         setError(null);
+=======
+    // Chargement ciblé : le comparateur ne demande que les deux annonces
+    // comparées, quels que soient leurs secteurs.
+    fetchListedListings({ ids, limit: ids.length })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setRooms(data.slice(0, 2));
+          setLoading(false);
+        }
+>>>>>>> origin/main
       })
       .catch(() => {
         if (!cancelled) {
@@ -54,9 +83,13 @@ function CompareContent() {
         }
       });
 
+<<<<<<< HEAD
     return () => {
       cancelled = true;
     };
+=======
+    return () => { cancelled = true; };
+>>>>>>> origin/main
   }, [ids]);
 
   if (ids.length < 2) {

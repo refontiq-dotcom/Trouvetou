@@ -41,6 +41,8 @@ export const LISTINGS_SELECT = `
 export interface FetchListingsParams {
   search?: string;
   categorySlugs?: string[];
+  /** Identifiants précis à charger (favoris, comparateur). */
+  ids?: string[];
   maxPrice?: number;
   sort?: "price_asc" | "price_desc" | "updated";
   limit?: number;
@@ -124,7 +126,7 @@ function mapRows(data: unknown): ListedListing[] {
 export async function fetchListings(
   params: FetchListingsParams = {}
 ): Promise<{ data: ListedListing[]; error: Error | null }> {
-  const { search, categorySlugs, maxPrice, sort, limit, boosted } = params;
+  const { search, categorySlugs, ids, maxPrice, sort, limit, boosted } = params;
 
   const base =
     typeof window !== "undefined"
@@ -137,6 +139,9 @@ export async function fetchListings(
   }
   if (categorySlugs && categorySlugs.length > 0) {
     url.searchParams.set("categories", categorySlugs.join(","));
+  }
+  if (ids && ids.length > 0) {
+    url.searchParams.set("ids", ids.join(","));
   }
   if (maxPrice && maxPrice > 0) {
     url.searchParams.set("maxPrice", String(maxPrice));
