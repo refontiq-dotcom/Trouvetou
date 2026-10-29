@@ -1,15 +1,11 @@
 "use client";
 
-<<<<<<< HEAD
-import { Suspense, useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-=======
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
->>>>>>> origin/main
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
+
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { buildGoogleMapsUrl, formatFCFA, MAX_CLIENT_LIMIT, PLACEHOLDER_IMAGE } from "@/lib/utils";
 import { getContactAction } from "@/lib/booking/eligibility";
@@ -17,18 +13,8 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 
 function CompareContent() {
   const searchParams = useSearchParams();
-<<<<<<< HEAD
-  const ids = searchParams.get("ids")?.split(",").map((id) => id.trim()).filter(Boolean) ?? [];
   const pathname = usePathname();
-  // Déduit l'univers courant depuis l'URL (fallback /hotels).
-  const currentPortal =
-    pathname.includes("/ecoles") ? "/ecoles" :
-    pathname.includes("/cliniques") ? "/cliniques" :
-    pathname.includes("/restaurants") ? "/restaurants" :
-    "/hotels";
-=======
   const idsParam = searchParams.get("ids") ?? "";
-  // Tableau stable tant que le paramètre d'URL ne change pas.
   const ids = useMemo(
     () =>
       idsParam
@@ -37,7 +23,12 @@ function CompareContent() {
         .filter((id) => id.length > 0),
     [idsParam]
   );
->>>>>>> origin/main
+  const currentPortal =
+    pathname.includes("/ecoles") ? "/ecoles" :
+    pathname.includes("/cliniques") ? "/cliniques" :
+    pathname.includes("/restaurants") ? "/restaurants" :
+    "/hotels";
+
   const [rooms, setRooms] = useState<ListingView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +43,6 @@ function CompareContent() {
 
     let cancelled = false;
 
-<<<<<<< HEAD
     fetchListedListings({ limit: MAX_CLIENT_LIMIT })
       .then(({ data }) => {
         if (cancelled) return;
@@ -65,16 +55,6 @@ function CompareContent() {
         setRooms(matched);
         setLoading(false);
         setError(null);
-=======
-    // Chargement ciblé : le comparateur ne demande que les deux annonces
-    // comparées, quels que soient leurs secteurs.
-    fetchListedListings({ ids, limit: ids.length })
-      .then(({ data }) => {
-        if (!cancelled) {
-          setRooms(data.slice(0, 2));
-          setLoading(false);
-        }
->>>>>>> origin/main
       })
       .catch(() => {
         if (!cancelled) {
@@ -83,20 +63,16 @@ function CompareContent() {
         }
       });
 
-<<<<<<< HEAD
     return () => {
       cancelled = true;
     };
-=======
-    return () => { cancelled = true; };
->>>>>>> origin/main
   }, [ids]);
 
   if (ids.length < 2) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <p className="text-muted-foreground">
-          Sélectionnez exactement 2 annonces à comparer depuis les résultats de recherche.
+          S?lectionnez exactement 2 annonces ? comparer depuis les r?sultats de recherche.
         </p>
         <Link href={currentPortal} className="mt-4 text-sm font-semibold text-primary hover:underline">
           Retourner au catalogue
@@ -107,7 +83,7 @@ function CompareContent() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {[1, 2].map((i) => (
           <div key={i} className="animate-pulse rounded-2xl border bg-card p-6">
             <div className="h-48 rounded-xl bg-muted" />
@@ -134,7 +110,7 @@ function CompareContent() {
   if (rooms.length < 2) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground">Impossible de charger les annonces sélectionnées.</p>
+        <p className="text-muted-foreground">Impossible de charger les annonces s?lectionn?es.</p>
         <Link href={currentPortal} className="mt-4 text-sm font-semibold text-primary hover:underline">
           Retourner au catalogue
         </Link>
@@ -147,33 +123,33 @@ function CompareContent() {
   const fields = [
     {
       label: "Prix",
-      a: a.price ? formatFCFA(a.price) : "—",
-      b: b.price ? formatFCFA(b.price) : "—",
+      a: a.price ? formatFCFA(a.price) : "?",
+      b: b.price ? formatFCFA(b.price) : "?",
     },
     {
       label: "Ville",
-      a: a.establishment?.city ?? "—",
-      b: b.establishment?.city ?? "—",
+      a: a.establishment?.city ?? "?",
+      b: b.establishment?.city ?? "?",
     },
     {
       label: "Adresse",
-      a: a.establishment?.address ?? "—",
-      b: b.establishment?.address ?? "—",
+      a: a.establishment?.address ?? "?",
+      b: b.establishment?.address ?? "?",
     },
     {
-      label: "Capacité",
-      a: a.capacity ? `${a.capacity} pers.` : "—",
-      b: b.capacity ? `${b.capacity} pers.` : "—",
+      label: "Capacit?",
+      a: a.capacity ? `${a.capacity} pers.` : "?",
+      b: b.capacity ? `${b.capacity} pers.` : "?",
     },
     {
       label: "Services",
-      a: (a.amenities ?? []).join(", ") || "—",
-      b: (b.amenities ?? []).join(", ") || "—",
+      a: (a.amenities ?? []).join(", ") || "?",
+      b: (b.amenities ?? []).join(", ") || "?",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
       {[a, b].map((room, idx) => {
         const est = room.establishment;
         const img = room.images[0] ?? PLACEHOLDER_IMAGE;
@@ -190,7 +166,7 @@ function CompareContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
+            className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
           >
             <div className="relative h-48 overflow-hidden">
               <img src={img} alt={room.name} className="h-full w-full object-cover" />
@@ -206,7 +182,7 @@ function CompareContent() {
                 {fields.map((f) => (
                   <div key={f.label} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{f.label}</span>
-                    <span className="font-medium text-foreground text-right max-w-[60%] truncate">
+                    <span className="max-w-[60%] truncate text-right font-medium text-foreground">
                       {idx === 0 ? f.a : f.b}
                     </span>
                   </div>
@@ -217,19 +193,24 @@ function CompareContent() {
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  <Navigation className="h-3.5 w-3.5" /> Itinéraire
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    <Navigation className="h-3.5 w-3.5" /> Itin?raire
+                  </span>
                 </a>
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(
-                    `${room.name} - ${est?.city ?? ""}\n${window.location.origin}`
+                    `${room.name} - ${est?.city ?? ""}
+${window.location.origin}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-[#25D366] hover:bg-[#25D366]/10 transition-colors"
+                  className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-medium text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                 >
-                  <Phone className="h-3.5 w-3.5" /> {contactAction.label}
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5" /> Partager
+                  </span>
                 </a>
               </div>
             </div>
@@ -242,14 +223,17 @@ function CompareContent() {
 
 export default function ComparePage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
-        <ArrowLeft className="h-4 w-4" /> Retour
-      </Link>
-      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-8">
-        Comparer les annonces
-      </h1>
-      <Suspense fallback={<div className="text-muted-foreground">Chargement…</div>}>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-primary">Comparatif</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Comparer 2 annonces</h1>
+        </div>
+        <Link href="/hotels" className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">
+          <ArrowLeft className="h-4 w-4" /> Retour
+        </Link>
+      </div>
+      <Suspense fallback={<div className="text-muted-foreground">Chargement?</div>}>
         <CompareContent />
       </Suspense>
     </div>

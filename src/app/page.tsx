@@ -7,20 +7,7 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 
 export const revalidate = 60;
 
-<<<<<<< HEAD
-/** Nombre d'annonces mises en avant sur l'accueil. */
 const FEATURED_LIMIT = 8;
-=======
-/**
- * Les annonces de démonstration ne s'affichent que si `NEXT_PUBLIC_DEMO=1`.
- * Par défaut, une base vide ou non configurée donne un accueil sans annonce :
- * jamais de fausses annonces présentées comme un vrai catalogue.
- */
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO === "1";
-
-/** Catégories proposées à la nuitée (prix affiché « / nuit »). */
-const STAY_SLUGS = new Set(["hotel", "residence"]);
->>>>>>> origin/main
 
 /**
  * Annonces mises en avant sur l'accueil.
@@ -34,12 +21,10 @@ const STAY_SLUGS = new Set(["hotel", "residence"]);
  * clic ouvre alors directement le détail de l'annonce, sans redirection.
  *
  * Logique d'ordonnancement : annonces sponsorisées (`is_boosted`) d'abord, puis
- * les plus récentes (voir sortRooms). Le tout limité à FEATURED_LIMIT.
+ * les plus récentes. Le tout limité à FEATURED_LIMIT.
  */
 async function getFeaturedListings(): Promise<ListingView[]> {
-  const { data, error } = await fetchListedListings({
-    limit: FEATURED_LIMIT,
-  });
+  const { data, error } = await fetchListedListings({ limit: FEATURED_LIMIT });
   if (error) return [];
   return data;
 }
@@ -47,28 +32,19 @@ async function getFeaturedListings(): Promise<ListingView[]> {
 /**
  * Catégories disponibles avec leur nombre d'annonces — alimente le menu
  * déroulant de l'accueil. Repli sur une liste statique si l'API échoue.
- *
- * Comme pour les annonces, la lecture passe par les routes serveur
- * (/api/catalog/*) : le rôle `anon` n'a pas accès à `categories`/`listings`.
- * On récupère les catégories puis on compte les annonces par catégorie à
- * partir d'un unique appel catalogue (service_role).
  */
 async function getHomeCategories(): Promise<HomeCategoryItem[]> {
-  // 1️⃣ Récupère d'abord la liste des catégories pour connaître leurs slugs.
   const { data: cats, error: catsError } = await fetchCategories();
   if (catsError || cats.length === 0) return FALLBACK_CATEGORIES;
 
   const categorySlugs = cats.map((row) => row.slug);
 
-  // 2️⃣ Récupère les annonces de TOUTES les catégories (et pas seulement
-  //    hotel/residence qui est le défaut de fetchListedListings).
   const { data: listings, error: listingsError } = await fetchListedListings({
     categorySlugs,
     limit: MAX_CLIENT_LIMIT,
   });
 
   if (listingsError) {
-    // En cas d'échec, on affiche les catégories avec un compteur à 0.
     return cats
       .map((row) => ({ slug: row.slug, label: row.name, count: 0 }))
       .sort((a, b) => b.count - a.count);
@@ -94,12 +70,6 @@ export default async function HomePage() {
     getHomeCategories(),
   ]);
 
-<<<<<<< HEAD
-=======
-  const visibleListings =
-    listings.length > 0 ? listings : DEMO_MODE ? FALLBACK_LISTINGS : [];
-
->>>>>>> origin/main
   return (
     <HomeScreen
       listings={listings}

@@ -19,7 +19,6 @@ import type { ListingView } from "@/lib/supabase/listing-view";
 
 interface BoostedCarouselProps {
   rooms: ListingView[];
-  /** Libellé du prix (défaut : "/ nuit"). */
   priceSuffix?: string;
 }
 
@@ -38,7 +37,6 @@ function BoostedCard({
   const pathname = usePathname();
   const establishment = room.establishment;
 
-  // Un compte est requis pour réserver (historique rattaché au client).
   const openBooking = () => {
     if (!user) {
       router.push(`/auth?returnTo=${encodeURIComponent(pathname)}`);
@@ -48,8 +46,6 @@ function BoostedCard({
   };
   const image = room.images[0] ?? PLACEHOLDER_IMAGE;
 
-  // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
-  // Même source de vérité que le bouton du catalogue et le BookingModal.
   const isBookable = isListingBookable(room);
   const contactAction = getContactAction(resolveCategorySlug(room));
   const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
@@ -82,11 +78,10 @@ function BoostedCard({
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
 
-        {/* Badge brillant "À la une" */}
         <div className="absolute left-4 top-4">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary shadow-lg">
             <Sparkles className="h-3.5 w-3.5" />
-            Établissement à la une
+            ?tablissement ? la une
           </span>
         </div>
 
@@ -111,16 +106,11 @@ function BoostedCard({
             {isBookable ? (
               <Button
                 size="sm"
-<<<<<<< HEAD
                 className="rounded-full bg-white text-foreground shadow transition-colors hover:bg-white/90"
-                onClick={() => setBookingOpen(true)}
-=======
-                className="rounded-full bg-white text-slate-900 shadow hover:bg-yellow-50"
                 onClick={openBooking}
->>>>>>> origin/main
               >
                 <Phone className="h-4 w-4" />
-                Réserver
+                R?server
               </Button>
             ) : contactUrl ? (
               <a
@@ -157,10 +147,10 @@ export function BoostedCarousel({ rooms, priceSuffix }: BoostedCarouselProps) {
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow">
             <Sparkles className="h-4 w-4" />
           </span>
-          Établissements à la une
+          ?tablissements ? la une
         </h2>
         <Badge variant="accent" className="hidden sm:inline-flex">
-          Sponsorisés
+          Sponsoris?s
         </Badge>
       </div>
 

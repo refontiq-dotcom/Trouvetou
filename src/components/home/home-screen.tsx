@@ -102,8 +102,8 @@ export function HomeScreen({
                 <PubBanner variant="desktop" />
               </div>
 
-<<<<<<< HEAD
               <div className="mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-2">
+                {listings.length === 0 && <EmptyCatalog />}
                 {listings.map((listing, index) => (
                   <RoomCard
                     key={listing.id}
@@ -111,12 +111,6 @@ export function HomeScreen({
                     index={index}
                     priceSuffix={getPriceSuffix(listing.category_slug)}
                   />
-=======
-              <div className="mt-4 grid grid-cols-2 gap-4 2xl:grid-cols-3">
-                {listings.length === 0 && <EmptyCatalog />}
-                {listings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
->>>>>>> origin/main
                 ))}
               </div>
             </div>
@@ -224,8 +218,8 @@ export function HomeScreen({
           {/* Carte blanche : PUB + annonces */}
           <section className="mt-4 rounded-[28px] bg-white p-3 shadow-2xl">
             <PubBanner />
-<<<<<<< HEAD
             <div className="mt-3 grid grid-cols-1 gap-3">
+              {listings.length === 0 && <EmptyCatalog />}
               {listings.map((listing, index) => (
                 <RoomCard
                   key={listing.id}
@@ -233,12 +227,6 @@ export function HomeScreen({
                   index={index}
                   priceSuffix={getPriceSuffix(listing.category_slug)}
                 />
-=======
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {listings.length === 0 && <EmptyCatalog />}
-              {listings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
->>>>>>> origin/main
               ))}
             </div>
           </section>
