@@ -11,6 +11,7 @@ function utcDay() {
 
 export function TrafficTracker() {
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const day = utcDay();
     const key = `${STORAGE_PREFIX}${day}`;
     const alreadyCountedUnique = window.localStorage.getItem(key) === "1";

@@ -16,6 +16,7 @@ export function PwaInstallBanner() {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     // Don't show if already dismissed or already installed
     if (isDismissed) return;
 
@@ -56,7 +57,7 @@ export function PwaInstallBanner() {
 
   return (
     <div className="fixed bottom-20 md:bottom-6 left-4 right-4 z-50 animate-in slide-in-from-bottom-5">
-      <div className="mx-auto max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 flex items-center gap-3">
+      <div className="mx-auto max-w-md bg-white rounded-2xl shadow-2xl border border-border p-4 flex items-center gap-3">
         <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
           <Download className="w-5 h-5 text-primary" />
         </div>

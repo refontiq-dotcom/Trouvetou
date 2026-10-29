@@ -25,7 +25,8 @@ interface CategoryBannerAd {
   emoji: string;
 }
 
-/** Bannières par catégorie — chaque partenaire est mappé à sa catégorie */
+/** Couleurs d'accent unifiées pour les bannières par catégorie.
+ *  Harmonisées avec le design system de l'application. */
 const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
   clinic: {
     category: "clinic",
@@ -35,7 +36,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "RDV sous 48h · Cardiologie, Dermatologie, Pédiatrie à Marcory",
     cta: "Prendre RDV",
     href: "/cliniques?q=SAINTE-MARIE",
-    accent: "from-[#0ea5e9] to-[#0284c7]",
+    accent: "from-sky-400 to-blue-600",
     emoji: "🏥",
   },
   school: {
@@ -46,7 +47,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "-15% sur les frais de scolarité · Inscriptions anticipées ouvertes",
     cta: "Découvrir",
     href: "/ecoles?q=ECA",
-    accent: "from-[#1769e8] to-[#102a72]",
+    accent: "from-blue-400 to-indigo-600",
     emoji: "🎓",
   },
   hotel: {
@@ -57,7 +58,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "Dès 15 000 F/nuit · Cocody, Abidjan · WiFi + Clim inclus",
     cta: "Voir l'offre",
     href: "/hotels?q=LES+PALMIERS",
-    accent: "from-[#f5a400] to-[#e8890c]",
+    accent: "from-yellow-400 to-amber-500",
     emoji: "🏨",
   },
   residence: {
@@ -68,7 +69,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "Dès 15 000 F/nuit · Cocody · Autonomie totale",
     cta: "Voir l'offre",
     href: "/hotels?q=LES+PALMIERS",
-    accent: "from-[#f5a400] to-[#e8890c]",
+    accent: "from-yellow-400 to-amber-500",
     emoji: "🏠",
   },
   restaurant: {
@@ -79,7 +80,7 @@ const CATEGORY_ADS: Record<string, CategoryBannerAd> = {
     description: "Attiéké, alloco, braisés · Terrace & soirée live",
     cta: "Voir le menu",
     href: "/restaurants?q=LE+TERROIR",
-    accent: "from-[#f97316] to-[#c2410c]",
+    accent: "from-orange-400 to-red-500",
     emoji: "🍽️",
   },
 };

@@ -19,19 +19,19 @@ const NAV_LINKS = [
 
 export function Footer() {
   return (
-    <footer className="bg-navy text-white">
+    <footer className="bg-background text-foreground border-t border-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="grid gap-10 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-2">
             <Logo size="sm" />
-            <p className="mt-4 max-w-md text-sm text-white/60">
+            <p className="mt-4 max-w-md text-sm text-muted-foreground">
               L&apos;endroit qu&apos;il vous faut, au moment qu&apos;il le faut.
               Trouvetou vous aide à trouver rapidement ce que vous cherchez,
               autour de vous — hôtels, résidences, écoles et cliniques de
               confiance.
             </p>
-            <div className="mt-5 flex items-center gap-4 text-white/40 text-sm">
+            <div className="mt-5 flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4" /> Abidjan, Côte d&apos;Ivoire
               </span>
@@ -43,7 +43,7 @@ export function Footer() {
 
           {/* Univers */}
           <div>
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
               Univers
             </h3>
             <ul className="mt-4 space-y-3">
@@ -51,7 +51,7 @@ export function Footer() {
                 <li key={cat.label}>
                   <Link
                     href={cat.href}
-                    className="text-sm text-white/50 hover:text-accent transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     {cat.label}
                   </Link>
@@ -62,7 +62,7 @@ export function Footer() {
 
           {/* Navigation */}
           <div>
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
               Navigation
             </h3>
             <ul className="mt-4 space-y-3">
@@ -70,7 +70,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/50 hover:text-accent transition-colors"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -81,12 +81,12 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-white/40">
+        <div className="mt-12 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Trouvetou. Tous droits réservés.
           </p>
-          <div className="flex items-center gap-2 text-xs text-white/40">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             Trouvez tout, tout simplement.
           </div>
         </div>

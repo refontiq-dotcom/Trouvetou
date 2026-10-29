@@ -16,7 +16,9 @@ import { HomeHeader } from "@/components/home/home-header";
 import { NearbyBar } from "@/components/home/nearby-bar";
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { PubBanner } from "@/components/home/pub-banner";
-import { ListingCard, type HomeListing } from "@/components/home/listing-card";
+import { RoomCard } from "@/components/hotels/room-card";
+import { getPriceSuffix } from "@/lib/utils";
+import type { ListingView } from "@/lib/supabase/listing-view";
 
 /** Ressort doux utilisé pour l'effacement du logo / de la cloche au scroll. */
 const SPRING = { type: "spring" as const, stiffness: 380, damping: 34, mass: 0.6 };
@@ -26,7 +28,7 @@ export function HomeScreen({
   categories,
   nearbyCount,
 }: {
-  listings: HomeListing[];
+  listings: ListingView[];
   categories: HomeCategoryItem[];
   /** Nombre d'établissements proposés autour de la position. */
   nearbyCount: number;
@@ -82,9 +84,14 @@ export function HomeScreen({
                 <PubBanner variant="desktop" />
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-4 2xl:grid-cols-3">
-                {listings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+              <div className="mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-2">
+                {listings.map((listing, index) => (
+                  <RoomCard
+                    key={listing.id}
+                    room={listing}
+                    index={index}
+                    priceSuffix={getPriceSuffix(listing.category_slug)}
+                  />
                 ))}
               </div>
             </div>
@@ -192,9 +199,14 @@ export function HomeScreen({
           {/* Carte blanche : PUB + annonces */}
           <section className="mt-4 rounded-[28px] bg-white p-3 shadow-2xl">
             <PubBanner />
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {listings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+            <div className="mt-3 grid grid-cols-1 gap-3">
+              {listings.map((listing, index) => (
+                <RoomCard
+                  key={listing.id}
+                  room={listing}
+                  index={index}
+                  priceSuffix={getPriceSuffix(listing.category_slug)}
+                />
               ))}
             </div>
           </section>

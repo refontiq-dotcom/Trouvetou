@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, ArrowRight } from "lucide-react";
@@ -13,6 +13,10 @@ import { fetchListedListings } from "@/lib/supabase/hotels";
 import { getPriceSuffix } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
+/** Seuil maximal de chargement côté client pour éviter de tout vouloir
+ *  télécharger si l'utilisateur a beaucoup de favoris. */
+const MAX_FAVORIS_LIMIT = 120;
+
 export default function FavorisPage() {
   const { favorites, count } = useFavorites();
   const [rooms, setRooms] = useState<ListingView[]>([]);
@@ -23,6 +27,11 @@ export default function FavorisPage() {
   // Le chargement est « vrai » tant que la liste affichée ne correspond pas aux favoris courants.
   const loading = count > 0 && loadedSignature !== currentSignature;
 
+  // Catégories uniques des favoris — calculées après chargement des annonces.
+  // Laisser vide ici car les IDs seuls ne suffisent pas : il faudrait joindre
+  // avec les données des annonces (optimisation à venir côté SQL).
+  const favoriteCategories: string[] = [];
+
   useEffect(() => {
     if (count === 0) {
       return;
@@ -30,13 +39,15 @@ export default function FavorisPage() {
 
     let cancelled = false;
 
-    // On charge toutes les annonces (sans filtre) puis on filtre côté client
-    // pour ne garder que celles en favori. Pour un gros catalogue, on pourrait
-    // passer les IDs en paramètre SQL.
-    fetchListedListings({ limit: 100 })
+    // On charge un volume raisonnable et on filtre côté client pour ne garder
+    // que les annonces réellement en favori. La liste complète est limitée pour
+    // ne pas saturer le client quand les favoris couvrent plusieurs univers.
+    const limit = Math.min(favorites.size, MAX_FAVORIS_LIMIT);
+    fetchListedListings({ limit })
       .then(({ data }) => {
         if (!cancelled) {
-          setRooms(data.filter((r) => favorites.has(r.id)));
+          const filtered = data.filter((r) => favorites.has(r.id));
+          setRooms(filtered);
           setLoadedSignature(currentSignature);
         }
       })

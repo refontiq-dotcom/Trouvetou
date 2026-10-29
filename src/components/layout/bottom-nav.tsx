@@ -3,15 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Heart, MapPin, User } from "lucide-react";
+import { Home, Heart, MapPin, User, type LucideIcon } from "lucide-react";
 import { LocationPicker } from "@/components/location/location-picker";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Accueil", icon: Home },
-  { href: "__autour__", label: "À proximité", icon: MapPin },
-  { href: "/favoris", label: "Favoris", icon: Heart },
-  { href: "/profil", label: "Profil", icon: User },
+type NavItem =
+  | { kind: "link"; href: string; label: string; icon: LucideIcon }
+  | { kind: "action"; label: string; icon: LucideIcon };
+
+const NAV_ITEMS: NavItem[] = [
+  { kind: "link", href: "/", label: "Accueil", icon: Home },
+  { kind: "action", label: "À proximité", icon: MapPin },
+  { kind: "link", href: "/favoris", label: "Favoris", icon: Heart },
+  { kind: "link", href: "/profil", label: "Profil", icon: User },
 ];
 
 export function BottomNav() {
@@ -24,26 +28,25 @@ export function BottomNav() {
         <div className="flex items-center justify-around px-2 py-1.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isAutour = item.href === "__autour__";
-            const isActive = isAutour
-              ? false
-              : item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
 
-            if (isAutour) {
+            if (item.kind === "action") {
               return (
                 <button
-                  key={item.href}
+                  key={item.label}
                   onClick={() => setPickerOpen(true)}
                   className="relative flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors text-muted-foreground"
                 >
                   <Icon className="h-5 w-5" />
-                  <span className="text-[10px] font-medium">À proximité</span>
+                  <span className="text-[10px] font-medium">{item.label}</span>
                   <span className="h-0.5 w-8 rounded-full bg-transparent" />
                 </button>
               );
             }
+
+            const isActive =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.href);
 
             return (
               <Link

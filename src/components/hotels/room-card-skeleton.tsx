@@ -12,7 +12,7 @@ export function RoomCardSkeleton() {
           <Skeleton className="h-5 w-20 rounded-md" />
           <Skeleton className="h-5 w-14 rounded-md" />
         </div>
-        <div className="mt-auto flex items-end justify-between gap-2 border-t border-slate-100 pt-2">
+        <div className="mt-auto flex items-end justify-between gap-2 border-t border-border pt-2">
           <Skeleton className="h-6 w-28" />
           <div className="flex gap-1.5">
             <Skeleton className="h-7 w-20 rounded-lg" />

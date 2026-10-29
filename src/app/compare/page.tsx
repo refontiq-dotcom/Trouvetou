@@ -1,37 +1,63 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
 import { fetchListedListings } from "@/lib/supabase/hotels";
-import { buildGoogleMapsUrl, formatFCFA, PLACEHOLDER_IMAGE } from "@/lib/utils";
+import { buildGoogleMapsUrl, formatFCFA, MAX_CLIENT_LIMIT, PLACEHOLDER_IMAGE } from "@/lib/utils";
+import { getContactAction } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 function CompareContent() {
   const searchParams = useSearchParams();
-  const ids = searchParams.get("ids")?.split(",") ?? [];
+  const ids = searchParams.get("ids")?.split(",").map((id) => id.trim()).filter(Boolean) ?? [];
+  const pathname = usePathname();
+  // Déduit l'univers courant depuis l'URL (fallback /hotels).
+  const currentPortal =
+    pathname.includes("/ecoles") ? "/ecoles" :
+    pathname.includes("/cliniques") ? "/cliniques" :
+    pathname.includes("/restaurants") ? "/restaurants" :
+    "/hotels";
   const [rooms, setRooms] = useState<ListingView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (ids.length < 2) return;
+    if (ids.length < 2) {
+      setRooms([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     let cancelled = false;
 
-    fetchListedListings({ limit: 200 })
+    fetchListedListings({ limit: MAX_CLIENT_LIMIT })
       .then(({ data }) => {
-        if (!cancelled) {
-          setRooms(data.filter((r) => ids.includes(r.id)).slice(0, 2));
-          setLoading(false);
-        }
+        if (cancelled) return;
+
+        const filtered = data.filter((r) => ids.includes(r.id));
+        const matched = ids
+          .map((id) => filtered.find((r) => r.id === id))
+          .filter((r): r is NonNullable<typeof r> => r !== undefined);
+
+        setRooms(matched);
+        setLoading(false);
+        setError(null);
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setError("Impossible de charger les annonces.");
+        }
       });
 
-    return () => { cancelled = true; };
-  }, [ids.join(",")]);
+    return () => {
+      cancelled = true;
+    };
+  }, [ids]);
 
   if (ids.length < 2) {
     return (
@@ -39,7 +65,7 @@ function CompareContent() {
         <p className="text-muted-foreground">
           Sélectionnez exactement 2 annonces à comparer depuis les résultats de recherche.
         </p>
-        <Link href="/ecoles" className="mt-4 text-sm font-semibold text-primary hover:underline">
+        <Link href={currentPortal} className="mt-4 text-sm font-semibold text-primary hover:underline">
           Retourner au catalogue
         </Link>
       </div>
@@ -61,11 +87,22 @@ function CompareContent() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-destructive">{error}</p>
+        <Link href={currentPortal} className="mt-4 text-sm font-semibold text-primary hover:underline">
+          Retourner au catalogue
+        </Link>
+      </div>
+    );
+  }
+
   if (rooms.length < 2) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <p className="text-muted-foreground">Impossible de charger les annonces sélectionnées.</p>
-        <Link href="/ecoles" className="mt-4 text-sm font-semibold text-primary hover:underline">
+        <Link href={currentPortal} className="mt-4 text-sm font-semibold text-primary hover:underline">
           Retourner au catalogue
         </Link>
       </div>
@@ -75,11 +112,31 @@ function CompareContent() {
   const [a, b] = rooms;
 
   const fields = [
-    { label: "Prix", a: a.price ? formatFCFA(a.price) : "—", b: b.price ? formatFCFA(b.price) : "—" },
-    { label: "Ville", a: a.establishment?.city ?? "—", b: b.establishment?.city ?? "—" },
-    { label: "Adresse", a: a.establishment?.address ?? "—", b: b.establishment?.address ?? "—" },
-    { label: "Capacité", a: a.capacity ? `${a.capacity} pers.` : "—", b: b.capacity ? `${b.capacity} pers.` : "—" },
-    { label: "Services", a: (a.amenities ?? []).join(", ") || "—", b: (b.amenities ?? []).join(", ") || "—" },
+    {
+      label: "Prix",
+      a: a.price ? formatFCFA(a.price) : "—",
+      b: b.price ? formatFCFA(b.price) : "—",
+    },
+    {
+      label: "Ville",
+      a: a.establishment?.city ?? "—",
+      b: b.establishment?.city ?? "—",
+    },
+    {
+      label: "Adresse",
+      a: a.establishment?.address ?? "—",
+      b: b.establishment?.address ?? "—",
+    },
+    {
+      label: "Capacité",
+      a: a.capacity ? `${a.capacity} pers.` : "—",
+      b: b.capacity ? `${b.capacity} pers.` : "—",
+    },
+    {
+      label: "Services",
+      a: (a.amenities ?? []).join(", ") || "—",
+      b: (b.amenities ?? []).join(", ") || "—",
+    },
   ];
 
   return (
@@ -87,7 +144,12 @@ function CompareContent() {
       {[a, b].map((room, idx) => {
         const est = room.establishment;
         const img = room.images[0] ?? PLACEHOLDER_IMAGE;
-        const mapsUrl = buildGoogleMapsUrl(est?.latitude, est?.longitude, est?.address ?? est?.city);
+        const contactAction = getContactAction(room.category_slug);
+        const mapsUrl = buildGoogleMapsUrl(
+          est?.latitude,
+          est?.longitude,
+          est?.address ?? est?.city
+        );
 
         return (
           <motion.div
@@ -111,7 +173,9 @@ function CompareContent() {
                 {fields.map((f) => (
                   <div key={f.label} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{f.label}</span>
-                    <span className="font-medium text-foreground text-right max-w-[60%] truncate">{idx === 0 ? f.a : f.b}</span>
+                    <span className="font-medium text-foreground text-right max-w-[60%] truncate">
+                      {idx === 0 ? f.a : f.b}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -125,12 +189,14 @@ function CompareContent() {
                   <Navigation className="h-3.5 w-3.5" /> Itinéraire
                 </a>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`${room.name} - ${est?.city ?? ""}\n${window.location.origin}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `${room.name} - ${est?.city ?? ""}\n${window.location.origin}`
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-[#25D366] hover:bg-[#25D366]/10 transition-colors"
                 >
-                  <Phone className="h-3.5 w-3.5" /> Contacter
+                  <Phone className="h-3.5 w-3.5" /> {contactAction.label}
                 </a>
               </div>
             </div>

@@ -25,6 +25,10 @@ export function cn(...classes: Array<string | false | null | undefined>): string
 /** Image de secours affichée quand une annonce n'a pas de photo. */
 export const PLACEHOLDER_IMAGE = "/placeholder-hotel.svg";
 
+/** Limite maximale de chargement côté client pour les listes de résultats.
+ *  Empêche de télécharger trop d'annonces en une demande. */
+export const MAX_CLIENT_LIMIT = 60;
+
 export function formatFCFA(amount: number): string {
   return (
     new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(amount) +
@@ -163,6 +167,7 @@ export const ESTABLISHMENT_TYPE_LABELS: Record<EstablishmentType, string> = {
   other: "Établissement",
 };
 
+/** Libellé lisible d'un type d'établissement. */
 export function getEstablishmentTypeLabel(type: EstablishmentType | null): string {
   if (!type) return "Établissement";
   return ESTABLISHMENT_TYPE_LABELS[type] ?? "Établissement";

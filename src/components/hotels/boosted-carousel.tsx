@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookingModal } from "@/components/hotels/booking-modal";
 import { formatFCFA, buildWhatsAppUrl, PLACEHOLDER_IMAGE } from "@/lib/utils";
-import { isListingBookable } from "@/lib/booking/eligibility";
+import { isListingBookable, resolveCategorySlug, getContactAction } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 interface BoostedCarouselProps {
@@ -37,14 +37,16 @@ function BoostedCard({
   // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
   // Même source de vérité que le bouton du catalogue et le BookingModal.
   const isBookable = isListingBookable(room);
+  const contactAction = getContactAction(resolveCategorySlug(room));
   const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
-  const contactUrl = contactPhone
-    ? buildWhatsAppUrl(
-        contactPhone,
-        `Bonjour, je vous contacte depuis Trouvetou à propos de « ${establishment?.name ?? room.name} ».`,
-        establishment?.country
-      )
-    : null;
+  const contactUrl =
+    contactPhone && !isBookable
+      ? buildWhatsAppUrl(
+          contactPhone,
+          contactAction.message(establishment?.name ?? room.name),
+          establishment?.country
+        )
+      : null;
 
   return (
     <>
@@ -52,7 +54,7 @@ function BoostedCard({
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="group relative h-80 overflow-hidden rounded-3xl border border-accent/40 shadow-lg shadow-accent/20"
+        className="group relative h-80 overflow-hidden rounded-3xl border border-border bg-card shadow-lg"
       >
         <Image
           src={image}
@@ -68,7 +70,7 @@ function BoostedCard({
 
         {/* Badge brillant "À la une" */}
         <div className="absolute left-4 top-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/50 bg-gradient-to-r from-accent via-yellow-300 to-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-accent-foreground shadow-lg shadow-accent/30">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary shadow-lg">
             <Sparkles className="h-3.5 w-3.5" />
             Établissement à la une
           </span>
@@ -95,7 +97,7 @@ function BoostedCard({
             {isBookable ? (
               <Button
                 size="sm"
-                className="rounded-full bg-white text-slate-900 shadow hover:bg-yellow-50"
+                className="rounded-full bg-white text-foreground shadow transition-colors hover:bg-white/90"
                 onClick={() => setBookingOpen(true)}
               >
                 <Phone className="h-4 w-4" />
@@ -106,10 +108,10 @@ function BoostedCard({
                 href={contactUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow transition-colors hover:bg-yellow-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-foreground shadow transition-colors hover:bg-white/90"
               >
                 <MessageCircle className="h-4 w-4" />
-                Contacter
+                {contactAction.label}
               </a>
             ) : null}
           </div>
@@ -133,7 +135,7 @@ export function BoostedCarousel({ rooms, priceSuffix }: BoostedCarouselProps) {
     <section className="mt-8">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-yellow-500 text-accent-foreground shadow">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow">
             <Sparkles className="h-4 w-4" />
           </span>
           Établissements à la une
@@ -154,7 +156,7 @@ export function BoostedCarousel({ rooms, priceSuffix }: BoostedCarouselProps) {
           768: { slidesPerView: 2 },
           1280: { slidesPerView: 3 },
         }}
-        className="!pb-10 [&_.swiper-pagination-bullet]:bg-accent"
+        className="!pb-10 [&_.swiper-pagination-bullet]:bg-primary"
       >
         {rooms.map((room, i) => (
           <SwiperSlide key={room.id}>

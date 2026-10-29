@@ -1,4 +1,4 @@
-const CACHE_NAME = "trouvetou-v2";
+const CACHE_NAME = "trouvetou-v3";
 const STATIC_ASSETS = ["/", "/ecoles", "/cliniques", "/hotels", "/restaurants"];
 
 self.addEventListener("install", (event) => {

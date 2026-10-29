@@ -52,6 +52,8 @@ export const ECOLES_CONFIG: CatalogContentConfig = {
   priceSuffix: "par scolarité",
   footerNote:
     "Les annonces sont gérées par les établissements via nos logiciels partenaires.",
+  /** Catégories autorisées sur ce portail. `residence` est propre à
+   *  `HOTELS_CONFIG`, pas aux autres univers. */
 };
 
 export const RESTAURANTS_CONFIG: CatalogContentConfig = {
@@ -64,6 +66,7 @@ export const RESTAURANTS_CONFIG: CatalogContentConfig = {
   priceSuffix: "par plat",
   footerNote:
     "Les annonces sont gérées par les établissements partenaires.",
+  /** Catégories propres à ce portail. */
 };
 
 export const CLINIQUES_CONFIG: CatalogContentConfig = {
@@ -76,4 +79,5 @@ export const CLINIQUES_CONFIG: CatalogContentConfig = {
   priceSuffix: "par consultation",
   footerNote:
     "Les annonces sont gérées par les établissements via nos logiciels partenaires.",
+  /** Catégories propres à ce portail. */
 };

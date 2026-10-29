@@ -30,16 +30,16 @@ import {
   getCategoryLabel,
   PLACEHOLDER_IMAGE,
 } from "@/lib/utils";
-import { isListingBookable, resolveCategorySlug } from "@/lib/booking/eligibility";
+import { isListingBookable, resolveCategorySlug, getContactAction } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 /** Couleurs par catégorie pour les badges */
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
-  clinic: { bg: "bg-[#0ea5e9]", text: "text-[#0284c7]", ring: "ring-sky-500/20" },
-  school: { bg: "bg-[#1769e8]", text: "text-[#1769e8]", ring: "ring-[#1769e8]/20" },
-  restaurant: { bg: "bg-[#f97316]", text: "text-orange-600", ring: "ring-orange-500/20" },
-  hotel: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
-  residence: { bg: "bg-[#f5a400]", text: "text-[#d97706]", ring: "ring-[#f5a400]/20" },
+  clinic: { bg: "bg-sky-500", text: "text-sky-600", ring: "ring-sky-500/20" },
+  school: { bg: "bg-primary", text: "text-primary", ring: "ring-primary/20" },
+  restaurant: { bg: "bg-orange-500", text: "text-orange-600", ring: "ring-orange-500/20" },
+  hotel: { bg: "bg-accent", text: "text-accent", ring: "ring-accent/20" },
+  residence: { bg: "bg-accent", text: "text-accent", ring: "ring-accent/20" },
 };
 
 interface RoomCardProps {
@@ -70,14 +70,17 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
 
   // Une réservation (nuits × prix) n'a de sens que pour l'hôtellerie.
   // Source de vérité partagée avec le BookingModal (sinon : clic sans effet).
-  // Les autres catégories proposent un simple contact WhatsApp.
+  // Les autres catégories proposent une action de contact adaptée au métier
+  // (demander une place, prendre RDV, réserver une table) — libellé et message
+  // WhatsApp viennent de la même source de vérité (eligibility.ts).
   const isBookable = isListingBookable(room);
+  const contactAction = getContactAction(catSlug);
   const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
   const contactUrl =
     contactPhone && !isBookable
       ? buildWhatsAppUrl(
           contactPhone,
-          `Bonjour, je vous contacte depuis Trouvetou à propos de « ${room.name} ».`,
+          contactAction.message(room.name),
           establishment?.country
         )
       : null;
@@ -144,7 +147,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
 
           {/* Badge Sponsorisé — pour les annonces boostées */}
           {room.is_boosted && (
-            <span className="absolute left-2 top-8 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-2 py-0.5 text-[8px] sm:text-[9px] font-bold text-white shadow-sm">
+            <span className="absolute left-2 top-8 inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[8px] sm:text-[9px] font-bold text-accent-foreground shadow-sm">
               ⭐ Sponsorisé
             </span>
           )}
@@ -206,9 +209,9 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 {amenities.map(({ label, icon: Icon }) => (
                   <span
                     key={label}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] lg:text-[11px] font-medium text-slate-600"
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] lg:text-[11px] font-medium text-muted-foreground"
                   >
-                    <Icon className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-slate-400" />
+                    <Icon className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-muted-foreground/70" />
                     {label}
                   </span>
                 ))}
@@ -216,11 +219,11 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
             )}
 
           {/* Bas : prix visuel + actions avec icônes */}
-          <div className="mt-1.5 flex items-end justify-between gap-1.5 border-t border-slate-100 pt-1.5">
+          <div className="mt-1.5 flex items-end justify-between gap-1.5 border-t border-border pt-1.5">
             {/* Prix avec icône wallet */}
             <div className="min-w-0 flex items-center gap-1">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10">
-                <Wallet className="h-3 w-3 text-accent" />
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
+                <Wallet className="h-3 w-3 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-bold text-foreground leading-tight">
@@ -238,7 +241,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-border px-1 text-[9px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                 aria-label="Partager sur WhatsApp"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
@@ -246,7 +249,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
               {/* Itinéraire */}
               <button
                 onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, "_blank", "noopener,noreferrer"); }}
-                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-slate-200 px-1 text-[9px] font-semibold text-slate-600 transition-colors hover:text-foreground"
+                className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-lg border border-border px-1 text-[9px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
                 <Navigation className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Itinéraire</span>
@@ -269,7 +272,7 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Contacter</span>
+                  <span className="hidden sm:inline">{contactAction.label}</span>
                 </a>
               ) : null}
             </div>
@@ -280,33 +283,33 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
 
       <AnimatePresence>
         {detailOpen && (
-          <motion.div className="fixed inset-0 z-[100] overflow-y-auto bg-navy/90 p-0 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="dialog" aria-modal="true" aria-label={"Détails de " + room.name}>
-            <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-secondary shadow-2xl sm:min-h-[calc(100dvh-3rem)] sm:rounded-[2rem]">
-              <motion.div className="relative h-[48dvh] min-h-[320px] shrink-0 overflow-hidden" layoutId={"listing-image-" + room.id} transition={{ type: "spring", stiffness: 320, damping: 34 }}>
+          <motion.div className="fixed inset-0 z-[100] overflow-y-auto bg-background p-0 sm:p-6 lg:flex lg:items-center lg:justify-center lg:bg-background/70 lg:backdrop-blur-sm" onClick={() => setDetailOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} role="dialog" aria-modal="true" aria-label={"Détails de " + room.name}>
+            <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-card shadow-2xl sm:min-h-[calc(100dvh-3rem)] sm:rounded-[2rem] lg:min-h-0 lg:h-[88vh] lg:max-h-[820px] lg:max-w-5xl lg:flex-row lg:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+              <motion.div className="relative h-[48dvh] min-h-[320px] shrink-0 overflow-hidden lg:h-full lg:min-h-0 lg:w-1/2" layoutId={"listing-image-" + room.id} transition={{ type: "spring", stiffness: 320, damping: 34 }}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_62%,rgba(255,255,255,.22),transparent_2px)] bg-[size:12px_12px] opacity-70" />
-                <div className="absolute inset-0 bg-gradient-to-br from-navy via-primary to-primary-light" />
-                <Image src={coverImage} alt={room.name} fill priority sizes="(min-width: 640px) 430px, 100vw" className="object-contain px-8 pb-5 pt-24 drop-shadow-[0_22px_18px_rgba(16,42,114,.38)]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-light via-card to-card" />
+                <Image src={coverImage} alt={room.name} fill priority sizes="(min-width: 1024px) 50vw, (min-width: 640px) 430px, 100vw" className="object-contain px-8 pb-5 pt-24 drop-shadow-[0_22px_18px_rgba(16,42,114,.38)] lg:object-cover lg:p-0 lg:pt-0" />
                 <div className="absolute inset-x-0 top-0 flex items-center justify-between p-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-                  <button type="button" onClick={() => setDetailOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Retour aux annonces"><ArrowLeft className="h-5 w-5" /></button>
-                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-navy shadow-sm" aria-label="Partager l'annonce"><Share2 className="h-5 w-5" /></a>
+                  <button type="button" onClick={() => setDetailOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-foreground shadow-sm" aria-label="Retour aux annonces"><ArrowLeft className="h-5 w-5" /></button>
+                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-foreground shadow-sm" aria-label="Partager l'annonce"><Share2 className="h-5 w-5" /></a>
                 </div>
                 <div className="absolute left-6 right-6 top-20"><h2 className="font-display text-2xl font-bold leading-tight text-white">{room.name}</h2><p className="mt-1 text-sm font-medium text-white/80">{getCategoryLabel(catSlug)}{location ? ` · ${location}` : ""}</p></div>
               </motion.div>
-              <motion.div initial={{ y: 28, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} transition={{ delay: 0.08, duration: 0.28 }} className="relative -mt-5 flex flex-1 flex-col rounded-t-[2rem] bg-white px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 shadow-[0_-10px_26px_rgba(16,42,114,.18)]">
-                <div className="absolute -top-12 left-0 rounded-tr-[2rem] bg-white px-6 pb-4 pt-5"><p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Prix</p><p className="mt-0.5 text-xl font-extrabold leading-tight text-accent-hover">{formatFCFA(room.price ?? 0)}</p><p className="mt-0.5 text-xs text-muted-foreground">{priceSuffix}</p></div>
-                <button type="button" onClick={() => toggleFavorite(room.id)} className={cn("absolute right-6 -top-11 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm", liked ? "text-rose-500" : "text-navy")} aria-label="Ajouter aux favoris"><Heart className={cn("h-5 w-5", liked && "fill-current")} /></button>
-                <div className="mt-14 flex items-center justify-between gap-4"><h3 className="text-sm font-bold text-foreground">Description</h3><span className="flex items-center gap-1 text-xs font-semibold text-accent-hover"><Star className="h-4 w-4 fill-current" /> Trouvetou</span></div>
+              <motion.div initial={{ y: 28, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} transition={{ delay: 0.08, duration: 0.28 }} className="relative -mt-5 flex flex-1 flex-col rounded-t-[2rem] bg-white px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 shadow-[0_-10px_26px_rgba(16,42,114,.18)] lg:mt-0 lg:w-1/2 lg:flex-none lg:overflow-y-auto lg:rounded-none lg:rounded-r-3xl lg:px-10 lg:py-8 lg:shadow-none">
+                <div className="absolute -top-12 left-0 rounded-tr-[2rem] bg-white px-6 pb-4 pt-5 lg:static lg:rounded-none lg:px-0 lg:pb-2 lg:pt-0"><p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Prix</p><p className="mt-0.5 text-xl font-extrabold leading-tight text-primary">{formatFCFA(room.price ?? 0)}</p><p className="mt-0.5 text-xs text-muted-foreground">{priceSuffix}</p></div>
+                <button type="button" onClick={() => toggleFavorite(room.id)} className={cn("absolute right-6 -top-11 flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm lg:absolute lg:right-4 lg:top-4 lg:bg-white/95 lg:backdrop-blur-sm", liked ? "text-red-500" : "text-foreground")} aria-label="Ajouter aux favoris"><Heart className={cn("h-5 w-5", liked && "fill-current")} /></button>
+                <div className="mt-14 flex items-center justify-between gap-4 lg:mt-8"><h3 className="text-sm font-bold text-foreground">Description</h3><span className="flex items-center gap-1 text-xs font-semibold text-primary"><Star className="h-4 w-4 fill-current" /> Trouvetou</span></div>
                 {room.description ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{room.description}</p> : <p className="mt-2 text-sm leading-6 text-muted-foreground">Découvrez les informations et services proposés par cette annonce.</p>}
                 {amenities.length > 0 && <div className="mt-5"><h3 className="mb-2 text-sm font-bold text-foreground">Services</h3><div className="flex flex-wrap gap-2">{getAmenitiesInfo(room.amenities ?? []).map(({ label, icon: Icon }) => <span key={label} className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground"><Icon className="h-3.5 w-3.5 text-primary" />{label}</span>)}</div></div>}
                 {location && <p className="mt-5 flex items-start gap-1.5 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{location}</span></p>}
-                <div className="mt-auto grid grid-cols-3 gap-2 pt-7">
-                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#25D366]">
+                <div className="mt-auto grid grid-cols-3 gap-2 pt-7 lg:pt-8">
+                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold text-[#25D366]">
                     <MessageCircle className="h-5 w-5" />WhatsApp
                   </a>
-                  <button type="button" onClick={() => window.open(mapsUrl, "_blank", "noopener,noreferrer")} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
+                  <button type="button" onClick={() => window.open(mapsUrl, "_blank", "noopener,noreferrer")} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
                     <Navigation className="h-5 w-5" />Itinéraire
                   </button>
-                  {isBookable ? <button type="button" onClick={() => setBookingOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />Contacter</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">Fermer</button>}
+                  {isBookable ? <button type="button" onClick={() => setBookingOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><Phone className="h-5 w-5" />Réserver</button> : contactUrl ? <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm"><MessageCircle className="h-5 w-5" />{contactAction.label}</a> : <button type="button" onClick={() => setDetailOpen(false)} className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">Fermer</button>}
                 </div>
               </motion.div>
             </div>

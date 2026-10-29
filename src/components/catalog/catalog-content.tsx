@@ -218,18 +218,18 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
       </div>
 
       {/* Zone sticky : barre de recherche + filtres restent visibles au scroll */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 bg-white/95 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-3 border-b border-slate-100">
+      <div className="sticky top-0 z-30 -mx-4 px-4 bg-white/95 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-3 border-b border-border">
 
       {/* Search bar — style identique à la home */}
-      <div className="mt-5 flex w-full items-stretch gap-0 rounded-xl bg-white shadow-sm border border-slate-200">
+      <div className="mt-5 flex w-full items-stretch gap-0 rounded-xl bg-white shadow-sm border border-border">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             value={query}
             onChange={(e) => { setLoading(true); setQuery(e.target.value); setLimit(PAGE_SIZE); }}
             placeholder={config.searchPlaceholder}
-            className="h-12 w-full border-0 bg-transparent pl-10 pr-12 text-sm outline-none placeholder:text-slate-400"
+            className="h-12 w-full border-0 bg-transparent pl-10 pr-12 text-sm outline-none placeholder:text-muted-foreground"
           />
           <VoiceButton
             onResult={(text) => { setLoading(true); setQuery(text); setLimit(PAGE_SIZE); }}
@@ -239,7 +239,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
         <button
           type="button"
           onClick={() => { setLoading(true); setLimit(PAGE_SIZE); }}
-          className="inline-flex h-12 items-center gap-1.5 rounded-r-xl bg-[#102a72] px-4 text-xs font-semibold text-white hover:bg-[#1769e8] transition-colors"
+          className="inline-flex h-12 items-center gap-1.5 rounded-r-xl bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary-hover transition-colors"
         >
           <Search className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Rechercher</span>
@@ -269,7 +269,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
                   </button>
                 );
               })}
-              <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
+              <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
             </>
           )}
 
@@ -369,7 +369,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
           </div>
         ) : effectiveRooms.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
               <Search className="h-7 w-7" />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-foreground">
@@ -415,7 +415,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
 
       {!effectiveLoading && !effectiveError && effectiveRooms.length > 0 && (
         <p className="mt-6 flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-accent" />
+          <Sparkles className="h-4 w-4 text-primary" />
           {config.footerNote}
         </p>
       )}

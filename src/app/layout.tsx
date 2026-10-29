@@ -38,7 +38,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#00215E",
+  themeColor: "#102a72",
   viewportFit: "cover",
 };
 
@@ -50,6 +50,19 @@ export default function RootLayout({
   return (
     <html lang="fr" className="h-full antialiased">
       <head>
+        {process.env.NODE_ENV !== "production" && (
+          // Dev uniquement : le service worker met en cache les chunks
+          // /_next/static/ en « cache-first », ce qui peut resservir un ancien
+          // bundle référençant des modules supprimés (ex. l'erreur « ListingCard:
+          // href undefined » après suppression d'un composant). On purge avant
+          // l'hydration, puis on recharge une seule fois (garde sessionStorage
+          // contre les boucles de reload).
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{if(!("serviceWorker" in navigator))return;if(sessionStorage.getItem("tv_sw_purged"))return;var purge=function(){return navigator.serviceWorker.getRegistrations().then(function(rs){var unreg=rs.length>0;return Promise.all(rs.map(function(r){return r.unregister()})).then(function(){return window.caches?caches.keys():Promise.resolve([])}).then(function(ks){var hit=ks.filter(function(n){return n.indexOf("trouvetou")===0});return Promise.all(hit.map(function(n){return caches.delete(n)})).then(function(){return unreg||hit.length>0;});});}).catch(function(){return false;});};purge().then(function(changed){sessionStorage.setItem("tv_sw_purged","1");if(changed)location.reload();});}catch(e){sessionStorage.setItem("tv_sw_purged","1");}})();`,
+            }}
+          />
+        )}
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/png" href="/brand/TrouveTout_logo_fond_transparent.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -22,14 +22,14 @@ export function HomeHeader({ query, onQueryChange, onSubmit }: HomeHeaderProps) 
 
   return (
     <header className="sticky top-0 z-30 bg-ink/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center gap-6 px-6 py-3 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8 h-16">
         <Link href="/" aria-label="Trouvetou — Accueil" className="shrink-0">
           <Logo size="sm" />
         </Link>
 
         <form
           onSubmit={onSubmit}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-ink-soft py-2 pl-4 pr-2"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-ink-soft px-4 py-2 sm:px-5"
         >
           <Search className="h-4 w-4 shrink-0 text-white/70" />
           <span className="flex min-w-0 flex-1 flex-col">
@@ -61,7 +61,7 @@ export function HomeHeader({ query, onQueryChange, onSubmit }: HomeHeaderProps) 
           <button
             type="button"
             aria-label="Notifications"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
           >
             <Bell className="h-5 w-5" />
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-lime ring-2 ring-ink" />
@@ -69,7 +69,7 @@ export function HomeHeader({ query, onQueryChange, onSubmit }: HomeHeaderProps) 
           <Link
             href="/profil"
             aria-label="Mon profil"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white transition-colors hover:bg-white/10"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 text-white transition-colors hover:bg-white/10"
           >
             <User className="h-4 w-4" />
           </Link>
