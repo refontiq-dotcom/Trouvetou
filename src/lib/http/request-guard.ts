@@ -27,10 +27,26 @@ function normalizeOrigin(value: string): string {
  *
  * - `NEXT_PUBLIC_SITE_URL` : le domaine public de production.
  * - `BOOKING_ALLOWED_ORIGINS` : liste séparée par des virgules (previews
- *   Vercel, staging, éventuellement un alias de domaine).
+ *   Vercel, staging, alias de domaine, etc.).
+ * - `VERCEL_URL` / `VERCEL_BRANCH_URL` / `VERCEL_PROJECT_PRODUCTION_URL` :
+ *   Vercel injecte automatiquement l'hôte réel du déploiement ; sans cette
+ *   autorisation, les réservations bloquent en production même lorsque le site
+ *   est bien servi depuis Vercel.
  * - En développement : localhost et loopback, sinon aucun formulaire local ne
  *   fonctionnerait une fois le contrôle actif.
  */
+function addOriginCandidate(origins: Set<string>, value: string | undefined): void {
+  if (!value) return;
+
+  const trimmed = value.trim();
+  if (!trimmed) return;
+
+  const normalized = normalizeOrigin(
+    trimmed.includes("://") ? trimmed : `https://${trimmed}`
+  );
+  if (normalized) origins.add(normalized);
+}
+
 export function getAllowedOrigins(): Set<string> {
   if (allowedOriginsCache) return allowedOriginsCache;
 
@@ -39,11 +55,14 @@ export function getAllowedOrigins(): Set<string> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (siteUrl) origins.add(normalizeOrigin(siteUrl));
 
+  addOriginCandidate(origins, process.env.VERCEL_URL);
+  addOriginCandidate(origins, process.env.VERCEL_BRANCH_URL);
+  addOriginCandidate(origins, process.env.VERCEL_PROJECT_PRODUCTION_URL);
+
   const extra = process.env.BOOKING_ALLOWED_ORIGINS;
   if (extra) {
     for (const candidate of extra.split(",")) {
-      const normalized = normalizeOrigin(candidate);
-      if (normalized) origins.add(normalized);
+      addOriginCandidate(origins, candidate);
     }
   }
 
