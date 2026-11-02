@@ -157,7 +157,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Lire l'annonce en base (service_role) pour récupérer son identifiant Séjour@
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, base_price, providers!inner(id, is_active)")
+    .select("id, external_id, base_price, attributes, providers!inner(id, is_active)")
     .eq("id", listing_id)
     .eq("is_available", true)
     .eq("providers.is_active", true)
@@ -175,10 +175,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Cette annonce ne permet pas la réservation en ligne.", 400, "NOT_BOOKABLE");
   }
 
-  const bookingSecret = process.env.TROUVETOU_BOOKING_SHARED_SECRET;
-  if (!bookingSecret) {
+  // La clé API propre au tenant est synchronisée dans les attributs de l'annonce.
+  // Elle reste côté serveur : listings.attributes n'est pas lisible par anon/authenticated.
+  const attributes = listing.attributes as Record<string, unknown> | null;
+  const sejouraApiKey =
+    typeof attributes?.sejoura_api_key === "string"
+      ? attributes.sejoura_api_key.trim()
+      : "";
+
+  if (!sejouraApiKey) {
     return jsonError(
-      "La connexion sécurisée à Séjoura n'est pas configurée sur ce déploiement.",
+      "La réservation en ligne n'est pas configurée pour cette annonce.",
       503,
       "BOOKING_INTEGRATION_CONFIG"
     );
@@ -186,7 +193,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const headers = {
     "Content-Type": "application/json",
-    "x-trouvetou-booking-secret": bookingSecret,
+    "x-api-key": sejouraApiKey,
   };
 
   // ── Action "check" : disponibilité temps réel + estimation du prix ────────
