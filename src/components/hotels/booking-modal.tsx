@@ -62,6 +62,7 @@ export function BookingModal({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [requests, setRequests] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState("");
 
   const [checking, setChecking] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -87,6 +88,7 @@ export function BookingModal({
     setPhone("");
     setEmail("");
     setRequests("");
+    setIdempotencyKey("");
     setChecking(false);
     setCreating(false);
     setCheckError(null);
@@ -193,12 +195,15 @@ export function BookingModal({
     }
     setCreating(true);
     setCreateError(null);
+    const requestKey = idempotencyKey || globalThis.crypto.randomUUID();
+    setIdempotencyKey(requestKey);
     try {
       const res = await fetch("/api/catalog/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "create",
+          idempotency_key: requestKey,
           listing_id: room.id,
           check_in_date: checkIn,
           check_out_date: checkOut,
