@@ -62,6 +62,7 @@ interface BookingRequestBody {
     phone?: string | null;
     email?: string | null;
   };
+  idempotency_key?: string;
 }
 
 function jsonError(message: string, status: number, code?: string): NextResponse {
@@ -376,6 +377,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         check_out_date,
         number_of_guests: parseInt(String(number_of_guests), 10) || 1,
         special_requests: specialRequests,
+        idempotency_key: body.idempotency_key,
         guest: {
           full_name: guestName,
           phone: guestPhone,
