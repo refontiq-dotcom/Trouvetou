@@ -136,7 +136,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const levelId = typeof body.level_id === "string" ? body.level_id : "";
   const level = availability.niveaux.find((item) => item.id === levelId);
   if (!level) return jsonError("Choisissez un niveau valide pour cette école.", 400, "INVALID_LEVEL");
-  if (level.disponible === false || (typeof level.places_disponibles === "number" && level.places_disponibles <= 0)) {
+  if (level.disponible === false || (level.disponible !== null && typeof level.places_disponibles === "number" && level.places_disponibles <= 0)) {
     return jsonError("Ce niveau ne dispose plus de places annoncées disponibles.", 409, "LEVEL_FULL");
   }
 
