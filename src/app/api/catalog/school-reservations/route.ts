@@ -188,6 +188,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     status?: string;
     created_at?: string;
     payment_required?: boolean;
+    availability_confirmed?: boolean;
+    qr_code?: string | null;
+    expires_at?: string | null;
     level?: { id?: string; label?: string };
     error?: string;
     code?: string;
@@ -206,6 +209,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       status: result.status ?? "requested",
       created_at: result.created_at ?? null,
       level: result.level ?? { id: levelId, label: level.label ?? "Niveau sélectionné" },
+      qr_code: result.qr_code ?? null,
+      expires_at: result.expires_at ?? null,
+      availability_confirmed: result.availability_confirmed === true,
       reused: result.reused === true,
     },
     payment_required: false,
