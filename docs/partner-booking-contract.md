@@ -57,4 +57,4 @@ Les adaptateurs sont spécifiques au domaine (hébergement, inscription scolaire
 ## Intégrations existantes
 
 - **Séjoura** : adaptateur hébergement historique ; secret dédié résolu par le helper commun, avec compatibilité temporaire pour `TROUVETOU_BOOKING_SHARED_SECRET`.
-- **Schooly** : le catalogue et l'adaptateur de demande de place sont raccordés. Trouvetou récupère la disponibilité, transmet une demande idempotente à Schooly et confirme au parent sa réception. Le statut `requested` ne bloque pas une place ; aucun paiement en ligne ni inscription définitive n'est déclenché. La famille poursuit l'inscription directement auprès de l'école.
+- **Schooly** : le catalogue et l'adaptateur de réservation scolaire sont raccordés. Trouvetou récupère la disponibilité et transmet une demande idempotente à Schooly. Si la capacité est configurée, Schooly bloque une place pendant 72 heures et renvoie une référence/QR ; si la capacité est inconnue, la demande reste à confirmer par l'école. Aucun paiement en ligne ni inscription définitive n'est déclenché ; la famille termine l'inscription directement auprès de l'établissement.
