@@ -15,6 +15,7 @@ import {
   Share2,
   Star,
   Wallet,
+  GraduationCap,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
 import { SchoolReservationModal } from "@/components/schools/school-reservation-modal";
