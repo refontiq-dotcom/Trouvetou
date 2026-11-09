@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { buildPartnerBookingHeaders, getPartnerBookingSecret } from "@/lib/booking/partner-secret";
 import {
   bookingsRateLimiter,
   getClientKey,
@@ -158,7 +159,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Lire l'annonce en base (service_role) pour récupérer son identifiant Séjour@
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, base_price, providers!inner(id, is_active)")
+    .select("id, external_id, base_price, providers!inner(id, name, is_active)")
     .eq("id", listing_id)
     .eq("is_available", true)
     .eq("providers.is_active", true)
@@ -176,9 +177,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Cette annonce ne permet pas la réservation en ligne.", 400, "NOT_BOOKABLE");
   }
 
-  // Authentification partenaire serveur-à-serveur : le secret ne doit jamais
-  // être copié dans les annonces (attributes) ni envoyé au navigateur.
-  const partnerSecret = process.env.TROUVETOU_BOOKING_SHARED_SECRET;
+  // Résoudre le secret propre au provider. Aucun secret n'est stocké dans
+  // listings.attributes : les annonces ne contiennent que des données métier.
+  const providerRelation = listing.providers as
+    | { name?: string }
+    | { name?: string }[]
+    | null;
+  const providerName = Array.isArray(providerRelation)
+    ? providerRelation[0]?.name
+    : providerRelation?.name;
+  const partnerSecret = providerName ? getPartnerBookingSecret(providerName) : null;
   if (!partnerSecret) {
     return jsonError(
       "La connexion sécurisée à la plateforme partenaire n'est pas configurée.",
@@ -187,10 +195,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const headers = {
-    "Content-Type": "application/json",
-    "x-trouvetou-booking-secret": partnerSecret,
-  };
+  const headers = buildPartnerBookingHeaders(partnerSecret);
 
   // ── Action "check" : disponibilité temps réel + estimation du prix ────────
   if (action === "check") {
