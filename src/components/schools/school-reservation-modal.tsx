@@ -17,6 +17,9 @@ type ReservationResult = {
   id: string;
   status: string;
   level?: { label?: string };
+  qr_code?: string | null;
+  expires_at?: string | null;
+  availability_confirmed?: boolean;
   reused?: boolean;
 };
 
@@ -138,16 +141,17 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-emerald-300/40 bg-emerald-50 px-4 py-6 text-center">
             <CheckCircle2 className="h-10 w-10 text-emerald-600" />
             <div>
-              <p className="text-lg font-bold text-emerald-800">Votre demande a bien été envoyée</p>
-              <p className="mt-1 text-sm text-emerald-700">L'école pourra vous contacter pour poursuivre l'inscription.</p>
+              <p className="text-lg font-bold text-emerald-800">{result.availability_confirmed ? "Votre place est pré-réservée" : "Votre demande a bien été transmise"}</p>
+              <p className="mt-1 text-sm text-emerald-700">{result.availability_confirmed ? "Présentez la référence à l'établissement pour poursuivre l'inscription." : "L'école doit confirmer la disponibilité de ce niveau et pourra vous contacter."}</p>
             </div>
             <div className="rounded-xl bg-white/70 px-4 py-3 text-sm text-emerald-900">
               <p>Niveau : <strong>{result.level?.label ?? selectedLevel?.label ?? "—"}</strong></p>
-              <p className="mt-1">Référence : <strong>{result.id}</strong></p>
+              <p className="mt-1">Référence : <strong>{result.qr_code ?? result.id}</strong></p>
+              {result.expires_at && <p className="mt-1">À utiliser avant le : <strong>{new Date(result.expires_at).toLocaleString("fr-FR")}</strong></p>}
             </div>
           </div>
           <p className="text-center text-sm text-muted-foreground">
-            Aucun paiement ni inscription définitive n'a été effectué sur Trouvetou. Vous pourrez régler les formalités directement auprès de l'établissement.
+            Aucun paiement en ligne ni inscription définitive n'a été effectué. Vous finaliserez les formalités directement auprès de l'établissement.
           </p>
           <Button onClick={close} className="w-full">Fermer</Button>
         </div>
