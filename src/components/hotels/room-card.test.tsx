@@ -38,6 +38,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/hotels/booking-modal", () => ({
   BookingModal: () => null,
 }));
+vi.mock("@/components/schools/school-reservation-modal", () => ({
+  SchoolReservationModal: () => null,
+}));
 
 const panorama: PanoramaMedia = {
   id: "p1",
