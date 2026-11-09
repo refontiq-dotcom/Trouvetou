@@ -52,7 +52,7 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
         if (!active) return;
         const nextLevels = body.levels as SchoolLevelView[];
         setLevels(nextLevels);
-        const firstAvailable = nextLevels.find((level) => level.disponible !== false && level.places_disponibles !== 0);
+        const firstAvailable = nextLevels.find((level) => level.disponible !== false && !(level.disponible !== null && level.places_disponibles === 0));
         setLevelId(firstAvailable?.id ?? nextLevels[0]?.id ?? "");
         if (nextLevels.length === 0) setError("Aucun niveau n'est actuellement publié pour cette école.");
       })
@@ -173,8 +173,8 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
                 >
                   <option value="">Choisir un niveau</option>
                   {levels.map((level) => (
-                    <option key={level.id} value={level.id} disabled={level.disponible === false || level.places_disponibles === 0}>
-                      {level.label}{typeof level.places_disponibles === "number" ? ` — ${level.places_disponibles} place(s) annoncée(s)` : ""}{level.disponible === false ? " — complet" : ""}
+                    <option key={level.id} value={level.id} disabled={level.disponible === false || (level.disponible !== null && level.places_disponibles === 0)}>
+                      {level.label}{level.disponible !== null && typeof level.places_disponibles === "number" ? ` — ${level.places_disponibles} place(s) annoncée(s)` : ""}{level.disponible === false ? " — complet" : ""}
                     </option>
                   ))}
                 </select>
