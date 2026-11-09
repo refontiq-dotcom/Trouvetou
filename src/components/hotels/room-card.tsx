@@ -17,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { BookingModal } from "@/components/hotels/booking-modal";
+import { SchoolReservationModal } from "@/components/schools/school-reservation-modal";
 import { PanoramaViewer } from "@/components/media/panorama-viewer";
 import { useAuth } from "@/contexts/auth-context";
 import { useLocation } from "@/contexts/location-context";
@@ -53,6 +54,7 @@ interface RoomCardProps {
 
 export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCardProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [schoolRequestOpen, setSchoolRequestOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   // Index dans `room.panoramas`, ou null quand la visionneuse est fermée.
   // Un index plutôt qu'un booléen : le contrat autorise plusieurs visites par
@@ -90,9 +92,10 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
   // WhatsApp viennent de la même source de vérité (eligibility.ts).
   const isBookable = isListingBookable(room);
   const contactAction = getContactAction(catSlug);
+  const isSchool = catSlug === "school";
   const contactPhone = establishment?.whatsapp ?? establishment?.contact_phone;
   const contactUrl =
-    contactPhone && !isBookable
+    contactPhone && !isBookable && !isSchool
       ? buildWhatsAppUrl(
           contactPhone,
           contactAction.message(room.name),
@@ -117,6 +120,15 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
       return;
     }
     setBookingOpen(true);
+  };
+
+  const openSchoolRequest = () => {
+    setDetailOpen(false);
+    if (!user) {
+      router.push(`/auth?returnTo=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    setSchoolRequestOpen(true);
   };
 
   const listingUrl =
@@ -288,6 +300,15 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                   <Phone className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Réserver</span>
                 </button>
+              ) : isSchool ? (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); openSchoolRequest(); }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 h-7 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-primary/90"
+                >
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{contactAction.label}</span>
+                </button>
               ) : contactUrl ? (
                 <a
                   href={contactUrl}
@@ -444,6 +465,11 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
                       <Phone className="h-5 w-5" />
                       Réserver
                     </button>
+                  ) : isSchool ? (
+                    <button type="button" onClick={openSchoolRequest} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">
+                      <GraduationCap className="h-5 w-5" />
+                      {contactAction.label}
+                    </button>
                   ) : contactUrl ? (
                     <a href={contactUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-white shadow-sm">
                       <MessageCircle className="h-5 w-5" />
@@ -462,6 +488,9 @@ export function RoomCard({ room, index = 0, priceSuffix = "par nuit" }: RoomCard
       </AnimatePresence>
 
       <BookingModal room={room} open={bookingOpen} onClose={() => setBookingOpen(false)} priceSuffix={priceSuffix} />
+      {isSchool && (
+        <SchoolReservationModal school={room} open={schoolRequestOpen} onClose={() => setSchoolRequestOpen(false)} />
+      )}
     </>
   );
 }
