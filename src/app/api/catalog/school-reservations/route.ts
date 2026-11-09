@@ -81,15 +81,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { data: listing, error } = await admin
     .from("listings")
-    .select("id, external_id, attributes, providers!inner(name, is_active), categories!inner(slug)")
+    .select("id, external_id, title, attributes, provider_id, category_id")
     .eq("id", body.listing_id)
     .eq("is_available", true)
-    .eq("providers.is_active", true)
-    .eq("categories.slug", "school")
     .maybeSingle();
 
   if (error) return jsonError("Erreur lors de la lecture de l'école.", 500, "SCHOOL_LOOKUP");
   if (!listing) return jsonError("École introuvable ou non publiée.", 404, "SCHOOL_NOT_FOUND");
+
+  const [{ data: provider, error: providerError }, { data: category, error: categoryError }] = await Promise.all([
+    admin.from("providers").select("name, is_active").eq("id", listing.provider_id).maybeSingle(),
+    admin.from("categories").select("slug").eq("id", listing.category_id).maybeSingle(),
+  ]);
+  if (providerError || categoryError) return jsonError("Impossible de vérifier le partenaire de cette école.", 500, "SCHOOL_PROVIDER_LOOKUP");
+  if (!provider?.is_active || category?.slug !== "school") {
+    return jsonError("Cette annonce n'est pas une école partenaire active.", 404, "SCHOOL_NOT_FOUND");
+  }
 
   const attributes = listing.attributes && typeof listing.attributes === "object" && !Array.isArray(listing.attributes)
     ? listing.attributes as Record<string, unknown>
@@ -100,9 +107,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("La connexion à Schooly n'est pas configurée pour cette école. Synchronisez à nouveau l'établissement.", 503, "SCHOOLY_ENDPOINT_MISSING");
   }
 
-  const providerRelation = listing.providers as { name?: string } | { name?: string }[] | null;
-  const providerName = Array.isArray(providerRelation) ? providerRelation[0]?.name : providerRelation?.name;
-  const secret = providerName ? getPartnerBookingSecret(providerName) : null;
+  const secret = getPartnerBookingSecret(provider.name);
   if (!secret) return jsonError("Le secret de réservation Schooly n'est pas configuré.", 503, "BOOKING_INTEGRATION_CONFIG");
 
   const headers = buildPartnerBookingHeaders(secret);
