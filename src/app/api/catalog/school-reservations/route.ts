@@ -37,8 +37,10 @@ function getSchoolBaseUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
   try {
     const url = new URL(value);
-    if (url.protocol !== "https:" || !url.hostname || url.username || url.password) return null;
-    if (url.hostname === "localhost" || url.hostname.endsWith(".local")) return null;
+    const hostname = url.hostname.toLowerCase();
+    const isIpLiteral = hostname.includes(":") || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname);
+    if (url.protocol !== "https:" || !hostname || url.username || url.password || isIpLiteral) return null;
+    if (hostname === "localhost" || hostname.endsWith(".local") || hostname.endsWith(".internal") || hostname.endsWith(".localhost")) return null;
     return url.origin;
   } catch {
     return null;
