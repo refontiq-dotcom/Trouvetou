@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { buildPartnerBookingHeaders, getPartnerBookingSecret } from "@/lib/booking/partner-secret";
 import { isValidDateOnly } from "@/lib/booking/date-validation";
@@ -39,6 +41,25 @@ import {
  */
 
 export const runtime = "nodejs";
+
+/**
+ * Lecture du catalogue public côté serveur.
+ * En Preview, l'absence de service_role ne doit pas empêcher les tests :
+ * la policy RLS publique autorise uniquement la lecture des annonces disponibles
+ * dont le provider est actif. Le client anonyme ne peut effectuer aucune écriture.
+ */
+function getBookingCatalogClient() {
+  const admin = getAdminClient();
+  if (admin) return admin;
+
+  const supabaseUrl = process.env.TROUVETOU_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) return null;
+
+  return createClient<Database>(supabaseUrl, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 const SEJOURA_API_URL =
   process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app";
@@ -142,10 +163,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const admin = getAdminClient();
+  const admin = getBookingCatalogClient();
   if (!admin) {
     return jsonError(
-      "Configuration serveur incomplète (TROUVETOU_SUPABASE_URL / TROUVETOU_SUPABASE_SERVICE_ROLE_KEY).",
+      "Configuration serveur incomplète : TROUVETOU_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY sont requis pour lire le catalogue.",
       500,
       "SERVER_CONFIG"
     );
