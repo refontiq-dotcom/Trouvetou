@@ -26,6 +26,13 @@ export interface EstablishmentView {
   contact_email: string | null;
 }
 
+export interface SchoolLevelView {
+  id: string;
+  label: string;
+  places_disponibles: number | null;
+  disponible: boolean | null;
+}
+
 export interface ListingView {
   id: string;
   external_id: string;
@@ -38,6 +45,10 @@ export interface ListingView {
   capacity: number | null;
   is_boosted: boolean;
   category_slug: string;
+  /** Données de routage partenaire, présentes uniquement pour les écoles. */
+  school_id: string | null;
+  schooly_instance_url: string | null;
+  school_levels: SchoolLevelView[];
   establishment: EstablishmentView;
   /**
    * Visites 360° exploitables, déjà validées par `parsePanoramas`.
@@ -82,6 +93,22 @@ export function toListingView(listing: ListedListing): ListingView {
     capacity: asNumber(attrs.capacity),
     is_boosted: attrs.is_boosted === true,
     category_slug: listing.category.slug,
+    school_id: asString(attrs.school_id),
+    schooly_instance_url: asString(attrs.schooly_instance_url),
+    school_levels: Array.isArray(attrs.levels)
+      ? attrs.levels.flatMap((level): SchoolLevelView[] => {
+          if (typeof level !== "object" || level === null || Array.isArray(level)) return [];
+          const row = level as Record<string, unknown>;
+          if (typeof row.id !== "string" || typeof row.label !== "string") return [];
+          const places = asNumber(row.places_disponibles);
+          return [{
+            id: row.id,
+            label: row.label,
+            places_disponibles: places,
+            disponible: places === null ? null : places > 0,
+          }];
+        })
+      : [],
     panoramas: parsePanoramas(attrs.panoramas),
     establishment: {
       id: listing.provider_id,

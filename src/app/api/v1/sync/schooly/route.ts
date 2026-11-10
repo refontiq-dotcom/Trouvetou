@@ -35,8 +35,13 @@ interface SchoolPayload {
   description_publique?: string | null;
   itineraire?: string | null;
   photos_360?: unknown[] | null;
+  cover_photo?: string | null;
+  gallery?: string[] | null;
   video_url?: string | null;
   grille_tarifaire_publique?: unknown[] | null;
+  contact?: Record<string, unknown> | null;
+  highlights?: string[] | null;
+  admission_notes?: string | null;
   published?: boolean | null;
 }
 
@@ -200,16 +205,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         description: school.description_publique ?? null,
         city: school.ville ?? null,
         base_price: null,
-        images: Array.isArray(school.photos_360)
-          ? school.photos_360.filter((photo) => typeof photo === "string").map((photo) => String(photo))
-          : [],
+        images: [
+          ...(typeof school.cover_photo === "string" ? [school.cover_photo] : []),
+          ...(Array.isArray(school.gallery) ? school.gallery.filter((photo): photo is string => typeof photo === "string") : []),
+          ...(Array.isArray(school.photos_360) ? school.photos_360.filter((photo): photo is string => typeof photo === "string") : []),
+        ],
         attributes: {
           school_id: school.id,
+          schooly_instance_url: school.schooly_instance_url,
           latitude: school.latitude ?? null,
           longitude: school.longitude ?? null,
+          address: typeof school.contact?.address === "string" ? school.contact.address : null,
+          contact_phone: typeof school.contact?.phone === "string" ? school.contact.phone : null,
+          contact_email: typeof school.contact?.email === "string" ? school.contact.email : null,
+          public_website_url: typeof school.contact?.website === "string" ? school.contact.website : null,
           itineraire: school.itineraire ?? null,
           video_url: school.video_url ?? null,
           grille_tarifaire_publique: school.grille_tarifaire_publique ?? null,
+          highlights: school.highlights ?? [],
+          admission_notes: school.admission_notes ?? null,
           levels: levels.map((level) => ({
             id: level.id,
             label: level.label,
