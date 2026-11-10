@@ -8,7 +8,6 @@ import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
 
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { buildGoogleMapsUrl, formatFCFA, MAX_CLIENT_LIMIT, PLACEHOLDER_IMAGE } from "@/lib/utils";
-import { getContactAction } from "@/lib/booking/eligibility";
 import type { ListingView } from "@/lib/supabase/listing-view";
 
 function CompareContent() {
@@ -30,16 +29,13 @@ function CompareContent() {
     "/hotels";
 
   const [rooms, setRooms] = useState<ListingView[]>([]);
-  const [loading, setLoading] = useState(true);
+  const idsKey = ids.join(",");
+  const [loadedIdsKey, setLoadedIdsKey] = useState<string | null>(null);
+  const loading = ids.length >= 2 && loadedIdsKey !== idsKey;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (ids.length < 2) {
-      setRooms([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+    if (ids.length < 2) return;
 
     let cancelled = false;
 
@@ -53,12 +49,12 @@ function CompareContent() {
           .filter((r): r is NonNullable<typeof r> => r !== undefined);
 
         setRooms(matched);
-        setLoading(false);
+        setLoadedIdsKey(idsKey);
         setError(null);
       })
       .catch(() => {
         if (!cancelled) {
-          setLoading(false);
+          setLoadedIdsKey(idsKey);
           setError("Impossible de charger les annonces.");
         }
       });
@@ -66,7 +62,7 @@ function CompareContent() {
     return () => {
       cancelled = true;
     };
-  }, [ids]);
+  }, [ids, idsKey]);
 
   if (ids.length < 2) {
     return (
@@ -153,7 +149,6 @@ function CompareContent() {
       {[a, b].map((room, idx) => {
         const est = room.establishment;
         const img = room.images[0] ?? PLACEHOLDER_IMAGE;
-        const contactAction = getContactAction(room.category_slug);
         const mapsUrl = buildGoogleMapsUrl(
           est?.latitude,
           est?.longitude,
