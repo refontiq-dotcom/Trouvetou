@@ -31,7 +31,8 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [parentEmail, setParentEmail] = useState("");
-  const [loadingLevels, setLoadingLevels] = useState(false);
+  const [loadedSchoolId, setLoadedSchoolId] = useState<string | null>(null);
+  const loadingLevels = open && loadedSchoolId !== school.id;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ReservationResult | null>(null);
@@ -40,8 +41,6 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
   useEffect(() => {
     if (!open) return;
     let active = true;
-    setLoadingLevels(true);
-    setError(null);
     fetch("/api/catalog/school-reservations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,13 +56,17 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
         setLevels(nextLevels);
         const firstAvailable = nextLevels.find((level) => level.disponible !== false && !(level.disponible !== null && level.places_disponibles === 0));
         setLevelId(firstAvailable?.id ?? nextLevels[0]?.id ?? "");
+        setLoadedSchoolId(school.id);
         if (nextLevels.length === 0) setError("Aucun niveau n'est actuellement publié pour cette école.");
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : "Impossible de contacter Schooly.");
+        if (active) {
+          setError(cause instanceof Error ? cause.message : "Impossible de contacter Schooly.");
+          setLoadedSchoolId(school.id);
+        }
       })
       .finally(() => {
-        if (active) setLoadingLevels(false);
+        // L'état de chargement est dérivé de loadedSchoolId.
       });
     return () => { active = false; };
   }, [open, school.id]);
@@ -76,7 +79,7 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
     setParentName("");
     setParentPhone("");
     setParentEmail("");
-    setLoadingLevels(false);
+    setLoadedSchoolId(null);
     setSubmitting(false);
     setError(null);
     setResult(null);
@@ -151,7 +154,7 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
             </div>
           </div>
           <p className="text-center text-sm text-muted-foreground">
-            Aucun paiement en ligne ni inscription définitive n'a été effectué. Vous finaliserez les formalités directement auprès de l'établissement.
+            Aucun paiement en ligne ni inscription définitive n&apos;a été effectué. Vous finaliserez les formalités directement auprès de l&apos;établissement.
           </p>
           <Button onClick={close} className="w-full">Fermer</Button>
         </div>
@@ -159,7 +162,7 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
         <div className="mt-4 grid gap-4">
           <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
             <GraduationCap className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <span>Envoyez une demande à l'école. Elle sera traitée par son équipe dans Schooly. L'inscription se fera ensuite directement auprès de l'établissement.</span>
+            <span>Envoyez une demande à l&apos;école. Elle sera traitée par son équipe dans Schooly. L&apos;inscription se fera ensuite directement auprès de l&apos;établissement.</span>
           </div>
 
           {loadingLevels ? (
@@ -185,7 +188,7 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1.5 sm:col-span-2">
-                  <span className="text-sm font-medium text-foreground">Nom complet de l'élève *</span>
+                  <span className="text-sm font-medium text-foreground">Nom complet de l&apos;élève *</span>
                   <Input value={studentName} onChange={(event) => setStudentName(event.target.value)} placeholder="Nom et prénoms de l'élève" maxLength={180} />
                 </label>
                 <label className="grid gap-1.5">
