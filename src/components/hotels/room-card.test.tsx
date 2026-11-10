@@ -38,6 +38,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/hotels/booking-modal", () => ({
   BookingModal: () => null,
 }));
+vi.mock("@/components/schools/school-reservation-modal", () => ({
+  SchoolReservationModal: () => null,
+}));
 
 const panorama: PanoramaMedia = {
   id: "p1",
@@ -62,6 +65,9 @@ const annonce = (overrides: Partial<ListingView> = {}): ListingView => ({
   capacity: null,
   is_boosted: false,
   category_slug: "school",
+  school_id: "s1",
+  schooly_instance_url: "https://admin.schooly.ci",
+  school_levels: [],
   panoramas: [],
   establishment: {
     id: "p1",
