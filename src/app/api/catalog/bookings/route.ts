@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { buildPartnerBookingHeaders, getPartnerBookingSecret } from "@/lib/booking/partner-secret";
+import { isValidDateOnly } from "@/lib/booking/date-validation";
 import {
   bookingsRateLimiter,
   getClientKey,
@@ -37,6 +41,25 @@ import {
  */
 
 export const runtime = "nodejs";
+
+/**
+ * Lecture du catalogue public côté serveur.
+ * En Preview, l'absence de service_role ne doit pas empêcher les tests :
+ * la policy RLS publique autorise uniquement la lecture des annonces disponibles
+ * dont le provider est actif. Le client anonyme ne peut effectuer aucune écriture.
+ */
+function getBookingCatalogClient() {
+  const admin = getAdminClient();
+  if (admin) return admin;
+
+  const supabaseUrl = process.env.TROUVETOU_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) return null;
+
+  return createClient<Database>(supabaseUrl, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 const SEJOURA_API_URL =
   process.env.SEJOURA_API_URL ?? "https://sejoura-lemon.vercel.app";
@@ -140,10 +163,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const admin = getAdminClient();
+  const admin = getBookingCatalogClient();
   if (!admin) {
     return jsonError(
-      "Configuration serveur incomplète (TROUVETOU_SUPABASE_URL / TROUVETOU_SUPABASE_SERVICE_ROLE_KEY).",
+      "Configuration serveur incomplète : TROUVETOU_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY sont requis pour lire le catalogue.",
       500,
       "SERVER_CONFIG"
     );
@@ -158,7 +181,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Lire l'annonce en base (service_role) pour récupérer son identifiant Séjour@
   const { data: listing, error: listingError } = await admin
     .from("listings")
-    .select("id, external_id, base_price, attributes, providers!inner(id, is_active)")
+    .select("id, external_id, base_price, providers!inner(id, name, is_active)")
     .eq("id", listing_id)
     .eq("is_available", true)
     .eq("providers.is_active", true)
@@ -176,33 +199,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return jsonError("Cette annonce ne permet pas la réservation en ligne.", 400, "NOT_BOOKABLE");
   }
 
-  // La clé API propre au tenant est synchronisée dans les attributs de l'annonce.
-  // Elle reste côté serveur : listings.attributes n'est pas lisible par anon/authenticated.
-  const attributes = listing.attributes as Record<string, unknown> | null;
-  const sejouraApiKey =
-    typeof attributes?.sejoura_api_key === "string"
-      ? attributes.sejoura_api_key.trim()
-      : "";
-
-  if (!sejouraApiKey) {
+  // Résoudre le secret propre au provider. Aucun secret n'est stocké dans
+  // listings.attributes : les annonces ne contiennent que des données métier.
+  const providerRelation = listing.providers as
+    | { name?: string }
+    | { name?: string }[]
+    | null;
+  const providerName = Array.isArray(providerRelation)
+    ? providerRelation[0]?.name
+    : providerRelation?.name;
+  const partnerSecret = providerName ? getPartnerBookingSecret(providerName) : null;
+  if (!partnerSecret) {
     return jsonError(
-      "La réservation en ligne n'est pas configurée pour cette annonce.",
+      "La connexion sécurisée à la plateforme partenaire n'est pas configurée.",
       503,
       "BOOKING_INTEGRATION_CONFIG"
     );
   }
 
-  const headers = {
-    "Content-Type": "application/json",
-    "x-api-key": sejouraApiKey,
-  };
+  const headers = buildPartnerBookingHeaders(partnerSecret);
 
   // ── Action "check" : disponibilité temps réel + estimation du prix ────────
   if (action === "check") {
     if (!check_in_date || !check_out_date) {
       return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(check_in_date) || !/^\d{4}-\d{2}-\d{2}$/.test(check_out_date)) {
+    if (!isValidDateOnly(check_in_date) || !isValidDateOnly(check_out_date)) {
       return jsonError("Les dates doivent respecter le format YYYY-MM-DD.", 400, "INVALID_DATE_FORMAT");
     }
     const checkIn = new Date(check_in_date + "T00:00:00Z");
@@ -330,7 +352,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!check_in_date || !check_out_date) {
     return jsonError("check_in_date et check_out_date sont requis.", 400, "MISSING_DATES");
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(check_in_date) || !/^\d{4}-\d{2}-\d{2}$/.test(check_out_date)) {
+  if (!isValidDateOnly(check_in_date) || !isValidDateOnly(check_out_date)) {
     return jsonError("Les dates doivent respecter le format YYYY-MM-DD.", 400, "INVALID_DATE_FORMAT");
   }
   const checkIn = new Date(check_in_date + "T00:00:00Z");
