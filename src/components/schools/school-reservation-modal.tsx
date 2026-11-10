@@ -64,8 +64,7 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
           setError(cause instanceof Error ? cause.message : "Impossible de contacter Schooly.");
           setLoadedSchoolId(school.id);
         }
-      })
-;
+      });
     return () => { active = false; };
   }, [open, school.id]);
 
