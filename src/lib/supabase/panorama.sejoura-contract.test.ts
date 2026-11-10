@@ -43,6 +43,31 @@ describe("contrat Séjoura → Trouvetou", () => {
     expect(parsePanoramas([{ ...SENT_BY_SEJOURA, url: "javascript:alert(1)" }])).toEqual([]);
   });
 
+
+  it("expose les métadonnées Schooly synchronisées pour le formulaire de demande", () => {
+    const listing = {
+      id: "school-listing",
+      external_id: "s1",
+      provider_id: "schooly-provider",
+      title: "École Saint-Jean",
+      images: ["https://cdn.example.com/cover.jpg"],
+      attributes: {
+        school_id: "s1",
+        schooly_instance_url: "https://admin.schooly.ci",
+        levels: [{ id: "level-1", label: "CP1", places_disponibles: 12 }],
+      },
+      provider: { name: "Schooly" },
+      category: { slug: "school" },
+    } as unknown as ListedListing;
+
+    const view = toListingView(listing);
+    expect(view.school_id).toBe("s1");
+    expect(view.schooly_instance_url).toBe("https://admin.schooly.ci");
+    expect(view.school_levels).toEqual([
+      { id: "level-1", label: "CP1", places_disponibles: 12, disponible: true },
+    ]);
+  });
+
   it("une annonce Séjoura sans panorama garde `panoramas` vide et ses photos intactes", () => {
     const listing = {
       id: "l1",
