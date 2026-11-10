@@ -65,9 +65,7 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
           setLoadedSchoolId(school.id);
         }
       })
-      .finally(() => {
-        // L'état de chargement est dérivé de loadedSchoolId.
-      });
+;
     return () => { active = false; };
   }, [open, school.id]);
 
