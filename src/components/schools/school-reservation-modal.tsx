@@ -55,9 +55,13 @@ export function SchoolReservationModal({ school, open, onClose }: SchoolReservat
         const nextLevels = body.levels as SchoolLevelView[];
         setLevels(nextLevels);
         const firstAvailable = nextLevels.find((level) => level.disponible !== false && !(level.disponible !== null && level.places_disponibles === 0));
-        setLevelId(firstAvailable?.id ?? nextLevels[0]?.id ?? "");
+        setLevelId(firstAvailable?.id ?? "");
         setLoadedSchoolId(school.id);
-        if (nextLevels.length === 0) setError("Aucun niveau n'est actuellement publié pour cette école.");
+        if (nextLevels.length === 0) {
+          setError("Aucun niveau n'est actuellement publié pour cette école.");
+        } else if (!firstAvailable) {
+          setError("Aucun niveau ne dispose de places annoncées disponibles pour le moment.");
+        }
       })
       .catch((cause: unknown) => {
         if (active) {
