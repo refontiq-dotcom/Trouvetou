@@ -3,15 +3,9 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 /**
- * TROUVETOU — Retour du lien magique.
- *
- *   GET /auth/callback?code=...            (flux PKCE, par défaut)
- *   GET /auth/callback?token_hash=...&type=magiclink   (flux OTP)
- *
- * Échange la preuve contre une session en cookies, puis renvoie l'utilisateur
- * vers la page qu'il demandait (`next`), en refusant toute URL externe.
+ * Échange le code de confirmation / récupération contre une session en cookies,
+ * puis renvoie l'utilisateur vers une destination interne validée.
  */
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -28,20 +22,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const type = searchParams.get("type");
 
   const supabase = await getServerSupabase();
-  if (!supabase) {
-    return NextResponse.redirect(`${origin}/auth?error=not_configured`);
-  }
+  if (!supabase) return NextResponse.redirect(new URL("/auth?error=not_configured", origin));
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
-  } else if (tokenHash && type) {
+    if (!error) return NextResponse.redirect(new URL(next, origin));
+  } else if (tokenHash && type && ["signup", "email", "recovery", "magiclink"].includes(type)) {
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type: type as EmailOtpType,
     });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) return NextResponse.redirect(new URL(next, origin));
   }
 
-  return NextResponse.redirect(`${origin}/auth?error=link_invalid`);
+  return NextResponse.redirect(new URL("/auth?error=link_invalid", origin));
 }
