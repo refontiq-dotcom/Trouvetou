@@ -54,7 +54,7 @@ function ResetPasswordForm() {
         <div className="mt-8 flex justify-center"><Logo size="sm" /></div>
         <div className="mt-8 rounded-[28px] bg-white p-6 text-neutral-900 shadow-2xl sm:p-8">
           <h1 className="text-xl font-bold tracking-tight">Choisir un nouveau mot de passe</h1>
-          <p className="mt-1 text-sm text-neutral-500">Choisissez un mot de passe d'au moins 8 caractères.</p>
+          <p className="mt-1 text-sm text-neutral-500">Choisissez un mot de passe d&apos;au moins 8 caractères.</p>
 
           {status === "success" ? (
             <div role="status" className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
