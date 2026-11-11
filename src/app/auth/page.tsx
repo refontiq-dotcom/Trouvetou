@@ -136,7 +136,7 @@ function AuthForm() {
           {status === "success" ? (
             <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800" role="status">
               <div className="flex items-start gap-2"><Check className="mt-0.5 h-5 w-5 shrink-0" /><span>{message}</span></div>
-              {mode !== "forgot" && <button type="button" onClick={() => changeMode("login")} className="mt-4 font-semibold underline">Revenir à la connexion</button>}
+              <button type="button" onClick={() => changeMode("login")} className="mt-4 font-semibold underline">Revenir à la connexion</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
