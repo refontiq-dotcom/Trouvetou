@@ -123,7 +123,7 @@ function AuthForm() {
 
           {!configured && (
             <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
-              L'authentification n'est pas encore activée sur cet environnement.
+              L&apos;authentification n&apos;est pas encore activée sur cet environnement.
             </p>
           )}
 
@@ -166,7 +166,7 @@ function AuthForm() {
           {status !== "success" && (
             <div className="mt-6 border-t border-neutral-100 pt-5 text-center text-sm text-neutral-500">
               {mode === "login" ? (
-                <>Vous n'avez pas encore de compte ? <button type="button" onClick={() => changeMode("signup")} className="font-semibold text-neutral-900 underline">Créer un compte</button></>
+                <>Vous n&apos;avez pas encore de compte ? <button type="button" onClick={() => changeMode("signup")} className="font-semibold text-neutral-900 underline">Créer un compte</button></>
               ) : mode === "signup" ? (
                 <>Vous avez déjà un compte ? <button type="button" onClick={() => changeMode("login")} className="font-semibold text-neutral-900 underline">Se connecter</button></>
               ) : (
