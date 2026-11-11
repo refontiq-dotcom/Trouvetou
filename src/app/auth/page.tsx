@@ -44,15 +44,21 @@ function AuthForm() {
     setMessage("");
 
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnTo)}`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
 
-    if (error) {
+      if (error) {
+        setGoogleLoading(false);
+        setStatus("error");
+        setMessage("La connexion avec Google n'a pas pu démarrer. Réessayez ou utilisez votre adresse e-mail.");
+      }
+    } catch {
       setGoogleLoading(false);
       setStatus("error");
-      setMessage("La connexion avec Google n'a pas pu démarrer. Réessayez ou utilisez votre adresse e-mail.");
+      setMessage("Un problème empêche actuellement la connexion avec Google. Réessayez ou utilisez votre adresse e-mail.");
     }
   }
 
