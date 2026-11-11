@@ -19,7 +19,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-ink/95 backdrop-blur-md">
+    <header className="w-full border-b border-white/10 bg-ink/95 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between gap-4">
           {/* Groupe gauche : hamburger (mobile) + logo (desktop) */}

@@ -9,6 +9,7 @@ import { useLocation } from "@/contexts/location-context";
 import { useBookings } from "@/contexts/bookings-context";
 import { AlertSubscribe } from "@/components/alerts/alert-subscribe";
 import { BackLink } from "@/components/layout/back-link";
+import { PAGE_CONTAINER_CLASS } from "@/components/layout/page-container";
 
 const MENU_ITEMS = [
   { href: "/favoris", label: "Mes favoris", icon: Heart, color: "text-red-500" },
@@ -22,7 +23,7 @@ export default function ProfilPage() {
   const { bookings, count: bookingCount } = useBookings();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <div className={PAGE_CONTAINER_CLASS}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}

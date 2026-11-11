@@ -33,6 +33,7 @@ import { FilterDrawer } from "@/components/catalog/filter-drawer";
 import { BackLink } from "@/components/layout/back-link";
 import type { ListingView } from "@/lib/supabase/listing-view";
 import type { CatalogContentConfig } from "@/components/catalog/configs";
+import { PAGE_CONTAINER_CLASS } from "@/components/layout/page-container";
 
 const PAGE_SIZE = 15;
 const MAX_CLIENT_LIMIT = 60;
@@ -186,7 +187,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
   const canLoadMore = !effectiveLoading && !effectiveError && effectiveRooms.length >= limit && limit < MAX_CLIENT_LIMIT;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div className={PAGE_CONTAINER_CLASS}>
       {/* Header — titre seul, pas de sous-titre */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -218,7 +219,7 @@ export function CatalogContent({ config, initialQuery = "" }: CatalogContentProp
       </div>
 
       {/* Zone sticky : barre de recherche + filtres restent visibles au scroll */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 bg-white/95 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-3 border-b border-border">
+      <div className="sticky top-0 z-30 -mx-4 px-4 bg-white/95 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-3 border-b border-border md:top-[65px]">
 
       {/* Search bar — style identique à la home */}
       <div className="mt-5 flex w-full items-stretch gap-0 rounded-xl bg-white shadow-sm border border-border">

@@ -9,6 +9,7 @@ import { ArrowLeft, MapPin, Navigation, Phone } from "lucide-react";
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { buildGoogleMapsUrl, formatFCFA, MAX_CLIENT_LIMIT, PLACEHOLDER_IMAGE } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
+import { PAGE_CONTAINER_CLASS } from "@/components/layout/page-container";
 
 function CompareContent() {
   const searchParams = useSearchParams();
@@ -218,7 +219,7 @@ ${window.location.origin}`
 
 export default function ComparePage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className={PAGE_CONTAINER_CLASS}>
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-primary">Comparatif</p>

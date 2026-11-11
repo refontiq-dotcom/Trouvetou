@@ -18,7 +18,7 @@ export function DesktopChrome() {
 
   return (
     <>
-      <div className={cn("hidden md:block", isHome && "lg:hidden")}>
+      <div className={cn("sticky top-0 z-40 hidden md:block", isHome && "lg:hidden")}>
         <Header />
       </div>
       {!isHome && (

@@ -133,7 +133,7 @@ export function HomeScreen({
           animate={{ paddingTop: stuck ? 10 : 12, paddingBottom: stuck ? 10 : 12 }}
           transition={SPRING}
           className={cn(
-            "sticky top-0 z-30 bg-ink/95 px-4 backdrop-blur-md transition-shadow duration-300 md:top-16",
+            "sticky top-0 z-30 bg-ink/95 px-4 backdrop-blur-md transition-shadow duration-300 md:top-[65px]",
             stuck && "shadow-[0_12px_28px_-14px_rgba(0,0,0,0.95)]"
           )}
         >

@@ -12,6 +12,7 @@ import { BackLink } from "@/components/layout/back-link";
 import { fetchListedListings } from "@/lib/supabase/hotels";
 import { getPriceSuffix } from "@/lib/utils";
 import type { ListingView } from "@/lib/supabase/listing-view";
+import { PAGE_CONTAINER_CLASS } from "@/components/layout/page-container";
 
 const MAX_FAVORIS_LIMIT = 120;
 
@@ -47,7 +48,7 @@ export default function FavorisPage() {
   }, [favorites, count, currentSignature]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className={PAGE_CONTAINER_CLASS}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
